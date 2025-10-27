@@ -115,7 +115,7 @@ if (isDashboardPage) {
   let clients = DEMO_CLIENTS.length ? DEMO_CLIENTS : [
     {
       id: 'c1',
-      name: 'خالد العتيبي',
+      name: 'باسل',
       sessions: [
         createSession(
           [3,3,2,3,2,3,2,2,3,2,3,3,2,2,2,2,3,2,3],
@@ -141,7 +141,7 @@ if (isDashboardPage) {
     },
     {
       id: 'c2',
-      name: 'ندى السعيد',
+      name: 'علي',
       sessions: [
         createSession(
           [3,4,3,4,4,3,4,4,4,3,3,4,3,3,4,3,4,3,4],
@@ -157,7 +157,7 @@ if (isDashboardPage) {
     },
     {
       id: 'c3',
-      name: 'سالم الغامدي',
+      name: 'بشير',
       sessions: []
     }
   ];
