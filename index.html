@@ -1,1 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UnitySphere | Client Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --accent: #22c55e;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --card: #ffffff;
+      --danger: #ef4444;
+    }
 
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .app-shell {
+      background: var(--card);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 1200px;
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.9), rgba(99, 102, 241, 0.9));
+      color: #fff;
+      padding: 2.5rem 3rem 2rem;
+    }
+
+    header .user-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header .user-meta h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    header .user-meta span {
+      font-size: 1rem;
+      font-weight: 300;
+    }
+
+    header .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      padding: 0.4rem 1rem;
+      font-size: 0.95rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 600px;
+    }
+
+    nav {
+      background: #f8fafc;
+      border-right: 1px solid #e5e7eb;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    nav h2 {
+      font-size: 1.1rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .client-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .client-btn {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 0.9rem 1rem;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .client-btn:hover {
+      transform: translateX(4px);
+      border-color: var(--primary);
+      box-shadow: 0 10px 18px rgba(79, 70, 229, 0.15);
+    }
+
+    .client-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    main {
+      background: #fff;
+      padding: 2rem 2.5rem 3rem;
+      overflow-y: auto;
+    }
+
+    main h2 {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .report-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.9rem;
+      color: var(--primary);
+      background: rgba(79, 70, 229, 0.1);
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+    }
+
+    form {
+      display: grid;
+      gap: 1.75rem;
+    }
+
+    fieldset {
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 1.5rem;
+      background: #f9fafb;
+    }
+
+    fieldset legend {
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding: 0 0.75rem;
+      color: var(--primary-dark);
+    }
+
+    .question {
+      display: grid;
+      gap: 0.3rem;
+      margin-bottom: 1rem;
+    }
+
+    .question:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    select, textarea {
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      transition: border 0.2s ease;
+      background: #fff;
+    }
+
+    select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.85rem 2.2rem;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+
+    button.primary:hover {
+      background: var(--primary-dark);
+    }
+
+    button.link {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Authentication styles */
+    .auth-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 480px;
+    }
+
+    .auth-hero {
+      background: linear-gradient(160deg, rgba(79, 70, 229, 0.95), rgba(56, 189, 248, 0.9));
+      color: #fff;
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .auth-hero h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .auth-hero p {
+      font-size: 1.05rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .auth-form {
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .auth-form h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .input-group {
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .input-group label {
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .input-group input {
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      transition: border 0.2s ease;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .switch-auth {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .switch-auth button {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .chart-placeholder {
+      margin-top: 1.5rem;
+      padding: 1.2rem;
+      border-radius: 16px;
+      background: #eef2ff;
+      color: #312e81;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .chart-placeholder strong {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 0.4rem;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      nav {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 1rem;
+        padding: 1.5rem;
+      }
+
+      nav h2 {
+        display: none;
+      }
+
+      .client-list {
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+      }
+
+      .client-btn {
+        min-width: 180px;
+      }
+    }
+
+    @media (max-width: 780px) {
+      body {
+        padding: 1rem;
+      }
+
+      .auth-wrapper {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-hero {
+        display: none;
+      }
+
+      header {
+        padding: 2rem 1.5rem 1.5rem;
+      }
+
+      main {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <section id="auth" class="auth-wrapper">
+      <div class="auth-hero">
+        <div>
+          <h1>منصة UnitySphere</h1>
+          <p>إدارة جلسات الأطفال وتوثيق تقدمهم عبر المجالات المعرفية، اللغوية، الاجتماعية، الحركية، الأكاديمية والتنفيذية في لوحة معلومات واحدة.</p>
+        </div>
+        <div class="chart-placeholder">
+          <strong>تقارير ذكية</strong>
+          <span>يتابع النظام تطور الأطفال ويصنف المستوى تلقائيًا: 🟢 متقدم، 🔵 متوسط، 🟠 يحتاج دعم، 🔴 ضعيف.</span>
+        </div>
+      </div>
+      <form id="auth-form" class="auth-form" autocomplete="off">
+        <div>
+          <h2 id="auth-title">تسجيل الدخول</h2>
+          <p id="auth-subtitle" class="hint">أدخل بيانات الدخول للوصول إلى لوحة المتابعة.</p>
+        </div>
+        <div class="input-group">
+          <label for="auth-name">الاسم الكامل</label>
+          <input type="text" id="auth-name" name="name" placeholder="مثلًا: د. آمنة العتيبي" required>
+        </div>
+        <div id="email-group" class="input-group">
+          <label for="auth-email">البريد الإلكتروني</label>
+          <input type="email" id="auth-email" name="email" placeholder="example@email.com" required>
+        </div>
+        <div class="input-group">
+          <label for="auth-password">كلمة المرور</label>
+          <input type="password" id="auth-password" name="password" placeholder="••••••••" required>
+        </div>
+        <div id="confirm-password-group" class="input-group hidden">
+          <label for="auth-confirm">تأكيد كلمة المرور</label>
+          <input type="password" id="auth-confirm" name="confirm" placeholder="••••••••">
+        </div>
+        <button type="submit" class="primary" id="auth-action">دخول</button>
+        <p class="switch-auth">
+          <span id="switch-text">لا تملك حسابًا؟</span>
+          <button type="button" id="switch-mode">إنشاء حساب</button>
+        </p>
+      </form>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <header>
+        <div class="user-meta">
+          <div>
+            <span class="hint">أهلاً بعودتك</span>
+            <h1 id="user-display">—</h1>
+          </div>
+          <div class="status-pill">
+            <span>إجمالي مستوى الطفل</span>
+            <strong id="overall-score">—</strong>
+          </div>
+        </div>
+      </header>
+      <div class="layout">
+        <nav>
+          <h2>العملاء</h2>
+          <div class="client-list" id="client-list"></div>
+          <button class="primary" id="add-client">➕ إضافة عميل</button>
+        </nav>
+        <main>
+          <h2>
+            <span id="client-title">اختر عميلًا لبدء التوثيق</span>
+            <span class="report-pill">📈 تقرير شهري مُولد آليًا</span>
+          </h2>
+          <form id="session-form" class="hidden">
+            <input type="hidden" id="active-client" />
+
+            <fieldset>
+              <legend>🧠 المجال المعرفي</legend>
+              <div class="question">
+                <label for="cognitive-attention">الانتباه والتركيز</label>
+                <span class="hint">نسبة الوقت الذي يبقى فيه الطفل على المهمة</span>
+                <select id="cognitive-attention" name="cognitiveAttention" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1 - ضعيف جدًا</option>
+                  <option value="2">2 - يحتاج دعم</option>
+                  <option value="3">3 - متوسط</option>
+                  <option value="4">4 - جيد جدًا</option>
+                  <option value="5">5 - ممتاز</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="cognitive-problem">حل المشكلات</label>
+                <span class="hint">عدد المهام المنجزة دون مساعدة</span>
+                <select id="cognitive-problem" name="cognitiveProblem" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="cognitive-memory">الذاكرة العاملة</label>
+                <span class="hint">عدد المحفزات التي يتذكرها من تجربة معينة</span>
+                <select id="cognitive-memory" name="cognitiveMemory" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="cognitive-planning">التخطيط والتنظيم</label>
+                <span class="hint">قدرة الطفل على اتباع خطوات متسلسلة</span>
+                <select id="cognitive-planning" name="cognitivePlanning" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>💬 المجال اللغوي</legend>
+              <div class="question">
+                <label for="language-comprehension">الفهم اللغوي</label>
+                <span class="hint">استجابة الطفل للتعليمات اللفظية</span>
+                <select id="language-comprehension" name="languageComprehension" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="language-expression">التعبير الشفهي</label>
+                <span class="hint">عدد الجمل أو الكلمات الصحيحة في الجلسة</span>
+                <select id="language-expression" name="languageExpression" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="language-social">اللغة الاجتماعية</label>
+                <span class="hint">تفاعل الطفل اللفظي مع المختص أو البيئة الافتراضية</span>
+                <select id="language-social" name="languageSocial" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>❤ المجال الاجتماعي والعاطفي</legend>
+              <div class="question">
+                <label for="social-emotion">الاستجابة للمشاعر</label>
+                <span class="hint">قدرة الطفل على التعرف على المشاعر في المواقف</span>
+                <select id="social-emotion" name="socialEmotion" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="social-cooperation">التعاون والتفاعل الاجتماعي</label>
+                <span class="hint">عدد المرات التي شارك فيها أو استجاب لموقف اجتماعي</span>
+                <select id="social-cooperation" name="socialCooperation" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="social-regulation">الضبط الذاتي</label>
+                <span class="hint">عدد المرات التي حافظ فيها على السلوك المناسب</span>
+                <select id="social-regulation" name="socialRegulation" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>🏃 المجال الحركي والحسي</legend>
+              <div class="question">
+                <label for="motor-gross">الحركية الكبرى</label>
+                <span class="hint">مثل التوازن والتنسيق العام في الأنشطة</span>
+                <select id="motor-gross" name="motorGross" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="motor-fine">الحركية الدقيقة</label>
+                <span class="hint">التحكم في الحركات الصغيرة مثل الإمساك واللمس الدقيق</span>
+                <select id="motor-fine" name="motorFine" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="motor-sensory">الاستجابة الحسية</label>
+                <span class="hint">تفاعل الطفل مع المؤثرات البصرية أو السمعية</span>
+                <select id="motor-sensory" name="motorSensory" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>🔢 المهارات الأكاديمية المبكرة</legend>
+              <div class="question">
+                <label for="academic-number">المفاهيم العددية</label>
+                <span class="hint">تمييز الأعداد والأحجام</span>
+                <select id="academic-number" name="academicNumber" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="academic-language">المفاهيم اللغوية</label>
+                <span class="hint">التعرف على الحروف أو الأصوات</span>
+                <select id="academic-language" name="academicLanguage" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="academic-application">القدرة على التطبيق</label>
+                <span class="hint">استخدام المفاهيم في نشاط أو لعبة تعليمية</span>
+                <select id="academic-application" name="academicApplication" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>🧩 الوظائف التنفيذية</legend>
+              <div class="question">
+                <label for="executive-flexibility">المرونة الذهنية</label>
+                <span class="hint">التكيف مع تغير المهمة</span>
+                <select id="executive-flexibility" name="executiveFlexibility" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="executive-inhibition">ضبط الاندفاع</label>
+                <span class="hint">عدد المرات التي التزم فيها بالتعليمات</span>
+                <select id="executive-inhibition" name="executiveInhibition" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label for="executive-persistence">الاستمرار في العمل</label>
+                <span class="hint">مدة استمراره في النشاط دون انقطاع</span>
+                <select id="executive-persistence" name="executivePersistence" required>
+                  <option value="">اختر التقييم (1-5)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <div class="question">
+              <label for="session-notes">ملاحظات المختص</label>
+              <span class="hint">أضف ملخص الجلسة، النقاط القوية ومجالات الدعم المستقبلية.</span>
+              <textarea id="session-notes" name="notes" placeholder="مثال: تجاوب الطفل مع التعليمات بشكل أفضل مقارنة بالجسة السابقة."></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="link" id="reset-form">إعادة تعيين</button>
+              <button type="submit" class="primary">حفظ الجلسة</button>
+            </div>
+          </form>
+        </main>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const authSection = document.getElementById('auth');
+    const dashboardSection = document.getElementById('dashboard');
+    const authForm = document.getElementById('auth-form');
+    const switchModeBtn = document.getElementById('switch-mode');
+    const switchText = document.getElementById('switch-text');
+    const authTitle = document.getElementById('auth-title');
+    const authSubtitle = document.getElementById('auth-subtitle');
+    const authAction = document.getElementById('auth-action');
+    const confirmGroup = document.getElementById('confirm-password-group');
+    const userDisplay = document.getElementById('user-display');
+    const overallScore = document.getElementById('overall-score');
+
+    const clientList = document.getElementById('client-list');
+    const addClientBtn = document.getElementById('add-client');
+    const sessionForm = document.getElementById('session-form');
+    const clientTitle = document.getElementById('client-title');
+    const activeClientInput = document.getElementById('active-client');
+    const resetFormBtn = document.getElementById('reset-form');
+
+    let isSignUp = false;
+    let clients = [
+      { id: 'c1', name: 'ليان الحربي', sessions: [] },
+      { id: 'c2', name: 'سالم الدوسري', sessions: [] },
+      { id: 'c3', name: 'سارة المطيري', sessions: [] }
+    ];
+
+    const scoreFields = [
+      'cognitiveAttention', 'cognitiveProblem', 'cognitiveMemory', 'cognitivePlanning',
+      'languageComprehension', 'languageExpression', 'languageSocial',
+      'socialEmotion', 'socialCooperation', 'socialRegulation',
+      'motorGross', 'motorFine', 'motorSensory',
+      'academicNumber', 'academicLanguage', 'academicApplication',
+      'executiveFlexibility', 'executiveInhibition', 'executivePersistence'
+    ];
+
+    function updateOverallScore() {
+      const client = clients.find((c) => c.id === activeClientInput.value);
+      if (!client || client.sessions.length === 0) {
+        overallScore.textContent = '—';
+        return;
+      }
+      const lastSession = client.sessions[client.sessions.length - 1];
+      const domainScores = [
+        average(lastSession, ['cognitiveAttention', 'cognitiveProblem', 'cognitiveMemory', 'cognitivePlanning']),
+        average(lastSession, ['languageComprehension', 'languageExpression', 'languageSocial']),
+        average(lastSession, ['socialEmotion', 'socialCooperation', 'socialRegulation']),
+        average(lastSession, ['motorGross', 'motorFine', 'motorSensory']),
+        average(lastSession, ['academicNumber', 'academicLanguage', 'academicApplication']),
+        average(lastSession, ['executiveFlexibility', 'executiveInhibition', 'executivePersistence'])
+      ];
+      const overall = domainScores.reduce((acc, v) => acc + v, 0) / domainScores.length;
+      overallScore.textContent = overall.toFixed(2);
+      overallScore.style.color = overall >= 4.5 ? '#22c55e' : overall >= 3 ? '#2563eb' : overall >= 2 ? '#f97316' : '#ef4444';
+    }
+
+    function average(session, keys) {
+      const values = keys.map((key) => Number(session[key] || 0));
+      return values.reduce((acc, val) => acc + val, 0) / values.length;
+    }
+
+    function renderClients() {
+      clientList.innerHTML = '';
+      clients.forEach((client) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'client-btn';
+        button.textContent = client.name;
+        button.dataset.id = client.id;
+        if (activeClientInput.value === client.id) {
+          button.classList.add('active');
+        }
+        button.addEventListener('click', () => selectClient(client.id));
+        clientList.appendChild(button);
+      });
+    }
+
+    function selectClient(clientId) {
+      activeClientInput.value = clientId;
+      const client = clients.find((c) => c.id === clientId);
+      if (client) {
+        clientTitle.textContent = `توثيق جلسة: ${client.name}`;
+        sessionForm.classList.remove('hidden');
+        renderClients();
+        sessionForm.reset();
+        document.getElementById('session-notes').value = '';
+        updateOverallScore();
+      }
+    }
+
+    authForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = authForm.elements['name'].value.trim();
+      if (!name) return;
+      userDisplay.textContent = name;
+      authSection.classList.add('hidden');
+      dashboardSection.classList.remove('hidden');
+      renderClients();
+    });
+
+    switchModeBtn.addEventListener('click', () => {
+      isSignUp = !isSignUp;
+      authTitle.textContent = isSignUp ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
+      authSubtitle.textContent = isSignUp
+        ? 'قم بإنشاء حساب لمتابعة تقدم الأطفال وإدارة الجلسات.'
+        : 'أدخل بيانات الدخول للوصول إلى لوحة المتابعة.';
+      authAction.textContent = isSignUp ? 'تسجيل' : 'دخول';
+      switchText.textContent = isSignUp ? 'تمتلك حسابًا بالفعل؟' : 'لا تملك حسابًا؟';
+      switchModeBtn.textContent = isSignUp ? 'تسجيل الدخول' : 'إنشاء حساب';
+      confirmGroup.classList.toggle('hidden', !isSignUp);
+      const confirmInput = document.getElementById('auth-confirm');
+      confirmInput.required = isSignUp;
+    });
+
+    addClientBtn.addEventListener('click', () => {
+      const name = prompt('اسم العميل الجديد');
+      if (!name) return;
+      const id = `c${Date.now()}`;
+      clients.push({ id, name, sessions: [] });
+      renderClients();
+    });
+
+    sessionForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const clientId = activeClientInput.value;
+      if (!clientId) return;
+      const formData = new FormData(sessionForm);
+      const sessionData = {};
+      scoreFields.forEach((field) => {
+        sessionData[field] = Number(formData.get(field));
+      });
+      sessionData.notes = formData.get('notes');
+      sessionData.timestamp = new Date().toISOString();
+      const client = clients.find((c) => c.id === clientId);
+      client.sessions.push(sessionData);
+      updateOverallScore();
+      alert('تم حفظ الجلسة بنجاح!');
+    });
+
+    resetFormBtn.addEventListener('click', () => {
+      sessionForm.reset();
+      document.getElementById('session-notes').value = '';
+    });
+  </script>
+</body>
+</html>
