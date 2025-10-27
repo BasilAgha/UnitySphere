@@ -70,6 +70,7 @@ if (isDashboardPage) {
   const breadcrumb = document.getElementById('breadcrumb');
   const userDisplay = document.getElementById('user-display');
   const overallScore = document.getElementById('overall-score');
+  const backHomeBtn = document.getElementById('back-home');
 
   // Sidebar & nav
   const clientList = document.getElementById('client-list');
@@ -87,10 +88,12 @@ if (isDashboardPage) {
   const sessionForm = document.getElementById('session-form');
   const activeClientInput = document.getElementById('active-client');
   const resetFormBtn = document.getElementById('reset-form');
+  const backToClientsBtn = document.getElementById('back-to-clients');
   const goNewSessionBtn = document.getElementById('go-new-session');
   const goHistoryBtn = document.getElementById('go-history');
   const progressCanvas = document.getElementById('progress-canvas');
   const sessionsHistory = document.getElementById('sessions-history');
+  const clientSummaryBox = document.getElementById('client-summary');
 
   // Pager
   const prevPageBtn = document.getElementById('prev-page');
@@ -103,8 +106,60 @@ if (isDashboardPage) {
   // ===== Demo data (same as before) =====
   // ...(keep your same clients array here)...
   const DEMO_CLIENTS = window.__clients || [];
+  function createSession(values, meta = {}) {
+    const fields = ['cognitiveAttention','cognitiveProblem','cognitiveMemory','cognitivePlanning','languageComprehension','languageExpression','languageSocial','socialEmotion','socialCooperation','socialRegulation','motorGross','motorFine','motorSensory','academicNumber','academicLanguage','academicApplication','executiveFlexibility','executiveInhibition','executivePersistence'];
+    const base = Object.fromEntries(fields.map((field, idx) => [field, values[idx] ?? 0]));
+    return { ...base, ...meta };
+  }
+
   let clients = DEMO_CLIENTS.length ? DEMO_CLIENTS : [
-    // (paste your same seed data from the previous file here)
+    {
+      id: 'c1',
+      name: 'خالد العتيبي',
+      sessions: [
+        createSession(
+          [3,3,2,3,2,3,2,2,3,2,3,3,2,2,2,2,3,2,3],
+          {
+            title: 'جلسة تقييم أولي',
+            timestamp: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+            notes: 'تم تقييم مهارات التركيز والتفاعل مع التعليمات البسيطة.',
+            focus: 'بناء خط أساس للمهارات المعرفية',
+            location: 'مقر المركز'
+          }
+        ),
+        createSession(
+          [4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3],
+          {
+            title: 'جلسة تدريب تركيز',
+            timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            notes: 'تحسن ملحوظ في المشاركة والاستجابة للمهام البصرية.',
+            focus: 'تنمية الانتباه البصري والسمعي',
+            location: 'عن بعد'
+          }
+        )
+      ]
+    },
+    {
+      id: 'c2',
+      name: 'ندى السعيد',
+      sessions: [
+        createSession(
+          [3,4,3,4,4,3,4,4,4,3,3,4,3,3,4,3,4,3,4],
+          {
+            title: 'جلسة لغة تفاعلية',
+            timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+            notes: 'تجاوب مميز مع الألعاب اللغوية، مع حاجة لدعم أكبر في التعبير.',
+            focus: 'تطوير التعبير اللغوي',
+            location: 'مقر المركز'
+          }
+        )
+      ]
+    },
+    {
+      id: 'c3',
+      name: 'سالم الغامدي',
+      sessions: []
+    }
   ];
 
   // -- helpers and computations (same as before) --
@@ -131,7 +186,11 @@ if (isDashboardPage) {
   }
   function updateOverallScore() {
     const client = clients.find((c) => c.id === activeClientInput.value);
-    if (!client || client.sessions.length === 0) { overallScore.textContent = '—'; return; }
+    if (!client || client.sessions.length === 0) {
+      overallScore.textContent = '—';
+      renderClientSummary(client || null);
+      return;
+    }
     const lastSession = client.sessions[client.sessions.length - 1];
     const domainScores = [
       average(lastSession, domainGroups.cognitive),
@@ -144,6 +203,7 @@ if (isDashboardPage) {
     const overall = domainScores.reduce((acc, v) => acc + v, 0) / domainScores.length;
     overallScore.textContent = overall.toFixed(2);
     overallScore.style.color = overall >= 4.5 ? '#22c55e' : overall >= 3 ? '#2563eb' : overall >= 2 ? '#f97316' : '#ef4444';
+    renderClientSummary(client);
   }
 
   // ===== Router (hash-based) – same behaviour as before =====
@@ -162,6 +222,12 @@ if (isDashboardPage) {
   // Quick actions
   document.getElementById('go-new-session')?.addEventListener('click', () => { location.hash = '#new'; });
   document.getElementById('go-history')?.addEventListener('click', () => { location.hash = '#history'; });
+  backHomeBtn?.addEventListener('click', () => {
+    sessionStorage.removeItem('us_name');
+    sessionStorage.removeItem('us_email');
+    window.location.href = 'index.html';
+  });
+  backToClientsBtn?.addEventListener('click', () => { location.hash = '#clients'; });
 
   // ===== Clients rendering =====
   function renderClients() {
@@ -178,22 +244,70 @@ if (isDashboardPage) {
     });
   }
   function selectClient(clientId) {
-    activeClientInput.value = clientId;
     const client = clients.find((c) => c.id === clientId);
     if (!client) return;
+    if (sessionForm) sessionForm.reset();
+    if (activeClientInput) activeClientInput.value = clientId;
     clientTitle.textContent = client.name;
     renderClients();
-    sessionForm?.reset();
     const notes = document.getElementById('session-notes'); if (notes) notes.value = '';
     updateOverallScore();
     const latestIdx = client.sessions.length - 1;
     if (latestIdx >= 0) showSessionDetails(latestIdx);
     location.hash = '#clients';
+    renderSessionHistory();
+    drawProgressChart();
   }
   addClientBtn.addEventListener('click', () => {
     const name = prompt('اسم العميل الجديد'); if (!name) return;
     const id = `c${Date.now()}`; clients.push({ id, name, sessions: [] }); renderClients();
+    renderClientSummary(null);
   });
+
+  function renderClientSummary(client) {
+    if (!clientSummaryBox) return;
+    if (!client) {
+      clientSummaryBox.innerHTML = '<div class="hint">اختر عميلًا لعرض المؤشرات.</div>';
+      clientSummaryBox.classList.add('hint');
+      return;
+    }
+    if (!client.sessions.length) {
+      clientSummaryBox.innerHTML = '<div class="hint">لا توجد جلسات بعد لهذا العميل.</div>';
+      clientSummaryBox.classList.add('hint');
+      return;
+    }
+    clientSummaryBox.classList.remove('hint');
+    const lastSession = client.sessions[client.sessions.length - 1];
+    const dom = computeDomainAverages(lastSession);
+    const lastDate = new Date(lastSession.timestamp).toLocaleDateString();
+    const labels = {
+      cognitive: 'المعرفي',
+      language: 'اللغة',
+      social: 'الاجتماعي',
+      motor: 'الحركي',
+      academic: 'الأكاديمي',
+      executive: 'التنفيذي'
+    };
+    clientSummaryBox.innerHTML = `
+      <div class="stat-card">
+        <span class="hint">عدد الجلسات</span>
+        <strong>${client.sessions.length}</strong>
+        <span class="trend-up">آخر تحديث: ${lastDate}</span>
+      </div>
+      ${Object.entries(labels).map(([key, label]) => `
+        <div class="stat-card">
+          <span class="hint">${label}</span>
+          <strong>${dom[key].toFixed(2)}</strong>
+          <span class="trend-up">${dom[key] >= 3 ? 'في المسار الصحيح' : 'بحاجة لمتابعة'}</span>
+        </div>
+      `).join('')}
+      <div class="stat-card">
+        <span class="hint">المتوسط العام</span>
+        <strong>${dom.overall.toFixed(2)}</strong>
+        <span class="trend-up">${dom.overall >= 3.5 ? 'نتائج إيجابية' : 'استمر بالدعم'}</span>
+      </div>
+    `;
+  }
 
   // ===== History (with pagination) =====
   const PAGE_SIZE = 5;
@@ -203,7 +317,12 @@ if (isDashboardPage) {
 
   function renderSessionHistory() {
     const client = getActiveClient();
-    if (!client || client.sessions.length === 0) {
+    if (!client) {
+      sessionsHistory.innerHTML = '<div class="hint">اختر عميلًا لعرض السجل.</div>';
+      pageInfo.textContent = 'صفحة 1';
+      return;
+    }
+    if (client.sessions.length === 0) {
       sessionsHistory.innerHTML = '<div class="hint">لا توجد جلسات بعد.</div>';
       pageInfo.textContent = 'صفحة 1';
       return;
@@ -258,6 +377,8 @@ if (isDashboardPage) {
       <div class="hint">التقييم العام: ${dom.overall.toFixed(2)}</div>
       <div>المعرفي: ${dom.cognitive.toFixed(2)} | اللغة: ${dom.language.toFixed(2)} | الاجتماعي: ${dom.social.toFixed(2)}</div>
       <div>الحركي: ${dom.motor.toFixed(2)} | الأكاديمي: ${dom.academic.toFixed(2)} | التنفيذي: ${dom.executive.toFixed(2)}</div>
+      ${s.focus ? `<div><strong>محور الجلسة:</strong> ${s.focus}</div>` : ''}
+      ${s.location ? `<div><strong>المكان:</strong> ${s.location}</div>` : ''}
       <div><strong>الملاحظات:</strong><br>${(s.notes||'—').replace(/</g,'&lt;')}</div>
     </div>`;
   }
@@ -268,20 +389,31 @@ if (isDashboardPage) {
     const clientId = activeClientInput.value; if (!clientId) { alert('اختر عميلًا أولاً.'); return; }
     const formData = new FormData(sessionForm);
     const sessionData = {};
-    scoreFields.forEach((field) => { sessionData[field] = Number(formData.get(field)); });
+    scoreFields.forEach((field) => {
+      const value = Number(formData.get(field));
+      sessionData[field] = Number.isFinite(value) && value > 0 ? value : 0;
+    });
     sessionData.notes = formData.get('notes');
     sessionData.title = formData.get('sessionTitle') || `جلسة ${new Date().toLocaleDateString()}`;
-    sessionData.timestamp = new Date().toISOString();
+    const providedDate = formData.get('sessionDate');
+    sessionData.timestamp = providedDate ? new Date(providedDate).toISOString() : new Date().toISOString();
+    sessionData.focus = formData.get('focus');
+    sessionData.location = formData.get('location');
     const client = clients.find((c) => c.id === clientId);
     client.sessions.push(sessionData);
     updateOverallScore();
     alert('تم حفظ الجلسة بنجاح!');
     sessionForm.reset();
+    if (activeClientInput) activeClientInput.value = clientId;
     showSessionDetails(client.sessions.length - 1);
     location.hash = '#history';
+    renderSessionHistory();
+    drawProgressChart();
   });
   resetFormBtn?.addEventListener('click', () => {
+    const currentClient = activeClientInput?.value || '';
     sessionForm.reset();
+    if (activeClientInput) activeClientInput.value = currentClient;
     const notes = document.getElementById('session-notes'); if (notes) notes.value = '';
   });
 
@@ -334,12 +466,14 @@ if (isDashboardPage) {
     // seed sample clients if none
     if (!Array.isArray(clients) || !clients.length) {
       clients = [
-        { id:'c1', name:'خالد العتيبي', sessions:[] },
-        { id:'c2', name:'ندى السعيد', sessions:[] },
+        { id:'c1', name:'عميل جديد', sessions:[] }
       ];
     }
     renderClients();
     setActivePage(location.hash || '#clients');
+    if (clients[0]) {
+      selectClient(clients[0].id);
+    }
   }
   init();
 }

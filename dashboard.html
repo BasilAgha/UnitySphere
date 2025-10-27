@@ -17,9 +17,12 @@
           <span class="hint">أهلاً بعودتك</span>
           <h1 id="user-display">—</h1>
         </div>
-        <div class="status-pill">
-          <span>المتوسط العام</span>
-          <strong id="overall-score">—</strong>
+        <div class="header-actions">
+          <div class="status-pill">
+            <span>المتوسط العام</span>
+            <strong id="overall-score">—</strong>
+          </div>
+          <button type="button" class="back-btn" id="back-home">⬅️ العودة</button>
         </div>
       </div>
       <div id="breadcrumb" class="breadcrumb"></div>
@@ -45,7 +48,7 @@
         <section id="page-clients" class="page">
           <h2>نظرة عامة</h2>
           <div class="cards">
-            <div class="card">
+            <div class="card highlight">
               <div class="card-title">العميل الحالي</div>
               <div class="card-body">
                 <div id="client-title" class="big">— اختر عميلًا من القائمة</div>
@@ -56,6 +59,10 @@
                 <button type="button" class="link" id="go-history">عرض السجل</button>
               </div>
             </div>
+            <div class="card" id="client-overview">
+              <div class="card-title">نظرة سريعة على الأداء</div>
+              <div id="client-summary" class="stat-grid hint">اختر عميلًا لعرض المؤشرات.</div>
+            </div>
             <div class="card">
               <div class="card-title">تفاصيل آخر جلسة</div>
               <div id="session-details" class="card-body hint">لا توجد بيانات بعد.</div>
@@ -65,10 +72,183 @@
 
         <section id="page-new" class="page">
           <h2>جلسة جديدة</h2>
+          <p class="hint">املأ تفاصيل الجلسة الجديدة، وجميع الحقول اختيارية ولكن تساعد في بناء تقارير دقيقة.</p>
           <form id="session-form">
             <input type="hidden" id="active-client" />
-            <!-- keep the same fields from your current file -->
-            <!-- … (نفس الحقول كما هي في ملفك الحالي) … -->
+
+            <div class="grid-2">
+              <div class="question">
+                <label for="session-title">اسم الجلسة</label>
+                <input type="text" id="session-title" name="sessionTitle" placeholder="مثال: تقييم نصف سنوي">
+              </div>
+              <div class="question">
+                <label for="session-date">تاريخ الجلسة</label>
+                <input type="date" id="session-date" name="sessionDate">
+              </div>
+            </div>
+
+            <fieldset class="grid-2">
+              <legend>معلومات عامة</legend>
+              <div class="question">
+                <label for="session-focus">محور الجلسة</label>
+                <input type="text" id="session-focus" name="focus" placeholder="مثال: تعزيز الانتباه السمعي">
+              </div>
+              <div class="question">
+                <label for="session-location">مكان الجلسة</label>
+                <input type="text" id="session-location" name="location" placeholder="المركز / عن بعد">
+              </div>
+            </fieldset>
+
+            <fieldset class="grid-3">
+              <legend>المجال المعرفي</legend>
+              <div class="question">
+                <label>الانتباه</label>
+                <select name="cognitiveAttention">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>حل المشكلات</label>
+                <select name="cognitiveProblem">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>الذاكرة</label>
+                <select name="cognitiveMemory">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>التخطيط</label>
+                <select name="cognitivePlanning">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset class="grid-3">
+              <legend>اللغة والتواصل</legend>
+              <div class="question">
+                <label>الاستيعاب</label>
+                <select name="languageComprehension">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>التعبير</label>
+                <select name="languageExpression">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>المهارات الاجتماعية</label>
+                <select name="languageSocial">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset class="grid-3">
+              <legend>الجانب الاجتماعي والسلوكي</legend>
+              <div class="question">
+                <label>التنظيم الانفعالي</label>
+                <select name="socialEmotion">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>التعاون</label>
+                <select name="socialCooperation">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>ضبط السلوك</label>
+                <select name="socialRegulation">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset class="grid-3">
+              <legend>المهارات الحركية</legend>
+              <div class="question">
+                <label>الحركية الكبرى</label>
+                <select name="motorGross">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>الحركية الدقيقة</label>
+                <select name="motorFine">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>المعالجة الحسية</label>
+                <select name="motorSensory">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset class="grid-3">
+              <legend>المجال الأكاديمي</legend>
+              <div class="question">
+                <label>الرياضيات</label>
+                <select name="academicNumber">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>اللغة</label>
+                <select name="academicLanguage">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>التطبيقات</label>
+                <select name="academicApplication">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset class="grid-3">
+              <legend>المهارات التنفيذية</legend>
+              <div class="question">
+                <label>المرونة</label>
+                <select name="executiveFlexibility">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>الكف</label>
+                <select name="executiveInhibition">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+              <div class="question">
+                <label>المثابرة</label>
+                <select name="executivePersistence">
+                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <div class="question">
+              <label for="session-notes">ملاحظات الجلسة</label>
+              <textarea id="session-notes" name="notes" placeholder="تفاصيل عامة، مستوى التفاعل، الواجب المنزلي..."></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="link" id="reset-form">مسح الحقول</button>
+              <div class="form-actions-right">
+                <button type="button" class="link" id="back-to-clients">⬅️ الرجوع للقائمة</button>
+                <button type="submit" class="primary">حفظ الجلسة</button>
+              </div>
+            </div>
           </form>
         </section>
 
@@ -80,7 +260,7 @@
           </section>
           <section id="history-section">
             <h3 class="sub">سجل الجلسات</h3>
-            <div id="sessions-history" class="card"></div>
+            <div id="sessions-history" class="card"><div class="hint">اختر عميلًا أولًا لعرض السجل.</div></div>
             <div class="pager">
               <button class="link" id="prev-page">⟵ السابق</button>
               <span id="page-info" class="hint">صفحة 1</span>
