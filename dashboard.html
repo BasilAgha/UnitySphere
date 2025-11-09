@@ -59,47 +59,64 @@
       <main>
         <!-- Overview -->
         <section id="section-overview" class="section active">
-          <div class="stats-grid">
+          <div class="overview-grid">
             <div class="stat-card">
-              <header><span>Centers</span><span class="chip">live</span></header>
+              <header><span>Centers</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-centers">0</div>
-              <div class="trend neutral">Updated now</div>
+              <div class="trend neutral">▲ 12.8%</div>
             </div>
             <div class="stat-card">
-              <header><span>Specialists</span><span class="chip">live</span></header>
+              <header><span>Specialists</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-specialists">0</div>
-              <div class="trend neutral">Updated now</div>
+              <div class="trend neutral">▲ 8.2%</div>
             </div>
             <div class="stat-card">
-              <header><span>VR Modules</span><span class="chip">live</span></header>
+              <header><span>VR Modules</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-modules">0</div>
-              <div class="trend neutral">Updated now</div>
+              <div class="trend neutral">▲ 5.4%</div>
             </div>
             <div class="stat-card">
-              <header><span>Assessments</span><span class="chip">live</span></header>
+              <header><span>Assessments</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-assessments">0</div>
-              <div class="trend neutral">Updated now</div>
+              <div class="trend neutral">▲ 3.1%</div>
             </div>
-          </div>
-        </section>
-
-        <!-- Centers (matches your style) -->
-        <section id="section-centers" class="section">
-          <div class="card full">
-            <div class="card-header">
-              <div>
-                <h2>Centers</h2>
-                <p class="hint">Smart distribution across regions</p>
+            <div class="card chart-card">
+              <div class="card-header">
+                <div>
+                  <h2>VR Minutes per Month</h2>
+                  <p class="hint">Visualize headset usage across the network</p>
+                </div>
+                <div class="chart-badges">
+                  <span class="chip">2024</span>
+                  <span class="chip">Monthly</span>
+                </div>
               </div>
-              <div>
-                <button id="btn-toggle-add-center" class="primary">Add new center</button>
-                <button id="btn-export-centers" class="primary ghost">Export</button>
+              <div class="chart multi-line">
+                <div class="chart-lines">
+                  <span class="line line-one"></span>
+                  <span class="line line-two"></span>
+                </div>
+                <div class="chart-axis">
+                  <span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Sep</span><span>Nov</span>
+                </div>
               </div>
             </div>
-
-            <div class="centers-map">
-              <div class="map-pins" id="map-pins"></div>
-              <small class="muted">Pins are positioned with X/Y (0–100).</small>
+            <div class="card donut-card">
+              <div class="card-header">
+                <div>
+                  <h2>Sessions by Device</h2>
+                  <p class="hint">Headset mix</p>
+                </div>
+              </div>
+              <div class="donut-wrapper">
+                <div class="donut"></div>
+                <ul class="chart-legend">
+                  <li><span class="legend-color legend-one"></span> Centers: 38.4%</li>
+                  <li><span class="legend-color legend-two"></span> Assessments: 26.1%</li>
+                  <li><span class="legend-color legend-three"></span> Specialists: 20.5%</li>
+                  <li><span class="legend-color legend-four"></span> VR Modules: 15.0%</li>
+                </ul>
+              </div>
             </div>
 
             <div id="add-center-panel" class="card collapsible">
@@ -108,21 +125,49 @@
                   <label for="center-name">Center name</label>
                   <input id="center-name" required placeholder="Cogniplay City Center">
                 </div>
-                <div class="input-group">
-                  <label for="center-location">Location</label>
-                  <input id="center-location" placeholder="Riyadh, KSA">
+              </div>
+              <div class="progress-circle" style="--progress-value:85;">
+                <div class="progress-center">
+                  <strong>85%</strong>
+                  <span class="hint">Target completion</span>
                 </div>
-                <div class="input-group">
-                  <label for="center-image">Cover image URL</label>
-                  <input id="center-image" placeholder="https://.../cover.jpg">
+              </div>
+            </div>
+            <div class="card progress-list">
+              <div class="card-header">
+                <div>
+                  <h2>Progress Rate by Center</h2>
+                  <p class="hint">Trailing 30 days</p>
                 </div>
-                <div class="input-group">
-                  <label for="center-desc">Short description</label>
-                  <input id="center-desc" placeholder="Immersive neurodevelopmental therapy">
+              </div>
+              <div class="progress-item">
+                <strong>NeuroConnect Center</strong>
+                <div class="progress-bar"><span style="width: 78%"></span></div>
+                <span class="score">78%</span>
+              </div>
+              <div class="progress-item">
+                <strong>Innovate Minds Center</strong>
+                <div class="progress-bar"><span style="width: 64%"></span></div>
+                <span class="score">64%</span>
+              </div>
+              <div class="progress-item">
+                <strong>Cogniplay Center</strong>
+                <div class="progress-bar"><span style="width: 91%"></span></div>
+                <span class="score">91%</span>
+              </div>
+            </div>
+            <div class="card recommendations">
+              <div class="card-header">
+                <div>
+                  <h2>AI Recommendations</h2>
+                  <p class="hint">Surface insights for each unit</p>
                 </div>
-                <div class="input-group">
-                  <label for="center-tags">Capabilities (comma separated)</label>
-                  <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
+              </div>
+              <div class="recommendation">
+                <div class="recommendation-icon">⚡</div>
+                <div>
+                  <strong>Increase sensory modules</strong>
+                  <p class="hint">Add 3 new sessions to Innovate Minds to match demand.</p>
                 </div>
                 <div class="form-divider">
                   <h3>Center login</h3>
@@ -140,16 +185,29 @@
                   <label for="center-posx">Map X (0–100)</label>
                   <input id="center-posx" type="number" min="0" max="100" placeholder="28">
                 </div>
-                <div class="input-group">
-                  <label for="center-posy">Map Y (0–100)</label>
-                  <input id="center-posy" type="number" min="0" max="100" placeholder="52">
-                </div>
-                <div style="display:flex; gap:.6rem; align-items:end;">
-                  <button class="primary" type="submit">Add Center</button>
-                  <button type="button" id="btn-cancel-center" class="primary ghost">Cancel</button>
-                </div>
-              </form>
+              </div>
             </div>
+          </div>
+        </section>
+
+        <!-- Centers (matches your style) -->
+        <section id="section-centers" class="section">
+            <div class="card full">
+              <div class="card-header">
+                <div>
+                  <h2>Centers</h2>
+                  <p class="hint">Smart distribution across regions</p>
+                </div>
+                <div class="card-actions">
+                  <button id="btn-export-centers" class="primary ghost">Export</button>
+                  <button id="btn-toggle-add-center" class="primary">Add New Center</button>
+                </div>
+              </div>
+
+              <div class="centers-map">
+                <div class="map-pins" id="map-pins"></div>
+                <small class="muted">Pins are positioned with X/Y (0–100).</small>
+              </div>
 
             <div class="card-grid" id="centers-grid"></div>
           </div>
@@ -255,6 +313,64 @@
           </div>
         </section>
       </main>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="add-center-modal" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Add New Center</h2>
+        <button type="button" class="icon-button" id="close-center-modal" aria-label="Close">✕</button>
+      </div>
+      <p class="modal-subtitle">Provide the new center details and the login credentials for its administrator.</p>
+      <form id="form-center" autocomplete="off">
+        <div class="input-group">
+          <label for="center-name">Center name</label>
+          <input id="center-name" required placeholder="Cogniplay City Center">
+        </div>
+        <div class="input-group">
+          <label for="center-location">Location</label>
+          <input id="center-location" placeholder="Riyadh, KSA">
+        </div>
+        <div class="input-group">
+          <label for="center-image">Cover image URL</label>
+          <input id="center-image" placeholder="https://.../cover.jpg">
+        </div>
+        <div class="input-group">
+          <label for="center-desc">Short description</label>
+          <input id="center-desc" placeholder="Immersive neurodevelopmental therapy">
+        </div>
+        <div class="input-group">
+          <label for="center-tags">Capabilities (comma separated)</label>
+          <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
+        </div>
+        <div class="form-divider">
+          <h3>Center login</h3>
+          <p class="hint">Admins should share these credentials securely with the center.</p>
+        </div>
+        <div class="input-group">
+          <label for="center-username">Center username</label>
+          <input id="center-username" required placeholder="center-riyadh">
+        </div>
+        <div class="input-group">
+          <label for="center-password">Center password</label>
+          <input id="center-password" type="password" required placeholder="StrongPass!123">
+        </div>
+        <div class="grid-inline">
+          <div class="input-group">
+            <label for="center-posx">Map X (0–100)</label>
+            <input id="center-posx" type="number" min="0" max="100" placeholder="28">
+          </div>
+          <div class="input-group">
+            <label for="center-posy">Map Y (0–100)</label>
+            <input id="center-posy" type="number" min="0" max="100" placeholder="52">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="ghost" id="cancel-center-modal">Cancel</button>
+          <button class="primary" type="submit">Save</button>
+        </div>
+      </form>
     </div>
   </div>
 

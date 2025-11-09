@@ -180,7 +180,7 @@ if (isDashboardPage()) {
     URL.revokeObjectURL(url);
   });
 
-  qi('form-center').addEventListener('submit', e=>{
+  centerForm.addEventListener('submit', e=>{
     e.preventDefault();
     const name = qi('center-name').value.trim();
     const location = qi('center-location').value.trim();
@@ -222,9 +222,9 @@ if (isDashboardPage()) {
       const img = el('img', {src: c.image || 'https://images.unsplash.com/photo-1526948128573-703ee1aeb6fa?q=80&w=1600&auto=format&fit=crop', alt:c.name});
       const body = el('div', {class:'card-body'},
         el('div', {class:'title'}, c.name),
-        el('div', {class:'place muted'}, c.location || '—'),
-        el('div', {class:'desc muted'}, c.desc || '—'),
-        el('div', {},
+        el('div', {class:'place muted'}, `📍 ${c.location || 'Not specified'}`),
+        el('div', {class:'desc muted'}, c.desc || 'Awaiting description'),
+        el('div', {class:'tag-row'},
           ...(c.tags && c.tags.length ? c.tags : ['General']).map(t=> el('span', {class:'tag'}, t))
         )
       );
