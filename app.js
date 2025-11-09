@@ -161,38 +161,23 @@ if (isDashboardPage()) {
   if (initialNav) setSectionTitle(initialNav);
 
   // ---------- Centers ----------
-  const centerModal = qi('add-center-modal');
-  const openCenterModalBtn = qi('btn-toggle-add-center');
-  const closeCenterModalBtn = qi('close-center-modal');
-  const cancelCenterModalBtn = qi('cancel-center-modal');
-  const centerForm = qi('form-center');
-
-  openCenterModalBtn.setAttribute('aria-expanded', 'false');
-
-  function openCenterModal(){
-    centerModal.classList.add('active');
-    centerModal.setAttribute('aria-hidden', 'false');
-    openCenterModalBtn.setAttribute('aria-expanded', 'true');
-    const firstInput = centerForm.querySelector('input');
-    if (firstInput) setTimeout(()=>firstInput.focus(), 60);
-  }
-  function closeCenterModal(){
-    centerModal.classList.remove('active');
-    centerModal.setAttribute('aria-hidden', 'true');
-    openCenterModalBtn.setAttribute('aria-expanded', 'false');
-  }
-
-  openCenterModalBtn.addEventListener('click', openCenterModal);
-  [closeCenterModalBtn, cancelCenterModalBtn].forEach(btn=>{
-    if (btn) btn.addEventListener('click', closeCenterModal);
-  });
-  centerModal.addEventListener('click', (e)=>{
-    if (e.target === centerModal) closeCenterModal();
-  });
-  document.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape' && centerModal.classList.contains('active')) {
-      closeCenterModal();
+  const addPanel = qi('add-center-panel');
+  const toggleBtn = qi('btn-toggle-add-center');
+  const cancelBtn = qi('btn-cancel-center');
+  const toggleLabel = toggleBtn.textContent.trim();
+  toggleBtn.setAttribute('aria-expanded', 'false');
+  toggleBtn.addEventListener('click', ()=>{
+    const isOpen = addPanel.classList.toggle('active');
+    toggleBtn.setAttribute('aria-expanded', String(isOpen));
+    toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
+    if (isOpen) {
+      addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  });
+  cancelBtn.addEventListener('click', ()=>{
+    addPanel.classList.remove('active');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.textContent = toggleLabel;
   });
 
   qi('btn-export-centers').addEventListener('click', ()=>{
@@ -223,7 +208,9 @@ if (isDashboardPage()) {
     });
     persistAndRender();
     e.target.reset();
-    closeCenterModal();
+    addPanel.classList.remove('active');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.textContent = toggleLabel;
   });
 
   function renderCenters(){
@@ -293,10 +280,10 @@ if (isDashboardPage()) {
       );
       const login = c.login || { username: c.centerUsername, password: c.centerPassword } || {};
       const credentials = el('div',{class:'center-credentials'},
-        el('span',{class:'badge badge-soft'}, login && login.username ? `Username: ${login.username}` : 'Login pending')
+        el('span',{class:'badge badge-soft'}, login && login.username ? `Login: ${login.username}` : 'Login pending')
       );
       if (login && login.password) {
-        credentials.append(el('span',{class:'pill'}, `Password: ${login.password}`));
+        credentials.append(el('span',{class:'pill'}, login.password));
       }
       const footer = el('footer', {class:'center-footer'},
         credentials,
