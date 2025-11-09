@@ -3,59 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UnitySphere | Sign In</title>
+  <title>UnitySphere | Admin Sign In</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
 <body class="auth-page">
   <section id="auth" class="auth-wrapper auth-only">
     <div class="auth-hero">
       <div>
-        <h1>UnitySphere Platform</h1>
-        <p>Coordinate immersive therapy journeys, monitor progress, and keep every family in sync.</p>
+        <h1>UnitySphere Admin</h1>
+        <p>Secure access to Centers, Specialists, VR Modules, and Assessments.</p>
       </div>
       <div class="chart-placeholder">
-        <strong>Insight Highlights</strong>
-        <span>Generate blended analytics and smart summaries instantly.</span>
+        <strong>Activity snapshot</strong>
+        <small>Sign in to see live data</small>
       </div>
     </div>
 
     <form id="auth-form" class="auth-form" autocomplete="off">
       <div>
         <h2 id="auth-title">Sign in</h2>
-        <p id="auth-subtitle" class="hint">Use your UnitySphere credentials to access the dashboard.</p>
+        <p id="auth-subtitle" class="hint">Use your admin credentials.</p>
       </div>
 
       <div class="input-group">
-        <label for="auth-name">Full name</label>
-        <input type="text" id="auth-name" name="name" placeholder="e.g. Dr. Amina Al-Otaibi" required>
-      </div>
-      <div class="input-group">
-        <label for="auth-email">Email address</label>
-        <input type="email" id="auth-email" name="email" placeholder="example@email.com" required>
+        <label for="auth-username">Username</label>
+        <input type="text" id="auth-username" name="username" placeholder="unity-admin" required>
       </div>
       <div class="input-group">
         <label for="auth-password">Password</label>
         <input type="password" id="auth-password" name="password" placeholder="••••••••" required>
       </div>
-      <div id="confirm-password-group" class="input-group hidden">
-        <label for="auth-confirm">Confirm password</label>
-        <input type="password" id="auth-confirm" name="confirm" placeholder="••••••••">
-      </div>
 
       <button type="submit" class="primary" id="auth-action">Sign in</button>
 
-      <div class="switch-auth demo-row">
-        <button type="button" class="link" id="demo-login">Use demo account</button>
-        <span class="hint">Email: demo@unitysphere.test · Password: Demo123!</span>
-      </div>
-
-      <p class="switch-auth">
-        <span id="switch-text">Don't have an account?</span>
-        <button type="button" id="switch-mode">Create one</button>
-      </p>
+      <p class="switch-auth hint">Need access? Contact the site owner.</p>
     </form>
   </section>
 
