@@ -118,11 +118,12 @@
                 </ul>
               </div>
             </div>
-            <div class="card progress-card">
-              <div class="card-header">
-                <div>
-                  <h2>Learning Progress</h2>
-                  <p class="hint">Goal completion by cohort</p>
+
+            <div id="add-center-panel" class="card collapsible">
+              <form id="form-center" class="grid-2-col" autocomplete="off">
+                <div class="input-group">
+                  <label for="center-name">Center name</label>
+                  <input id="center-name" required placeholder="Cogniplay City Center">
                 </div>
               </div>
               <div class="progress-circle" style="--progress-value:85;">
@@ -168,12 +169,21 @@
                   <strong>Increase sensory modules</strong>
                   <p class="hint">Add 3 new sessions to Innovate Minds to match demand.</p>
                 </div>
-              </div>
-              <div class="recommendation">
-                <div class="recommendation-icon">🎯</div>
-                <div>
-                  <strong>Align center goals</strong>
-                  <p class="hint">Cortex Meadow is 12% behind target. Schedule a sync.</p>
+                <div class="form-divider">
+                  <h3>Center login</h3>
+                  <p class="hint">Set credentials to share securely with the center manager.</p>
+                </div>
+                <div class="input-group">
+                  <label for="center-username">Center username</label>
+                  <input id="center-username" required placeholder="center-riyadh">
+                </div>
+                <div class="input-group">
+                  <label for="center-password">Center password</label>
+                  <input id="center-password" type="password" required placeholder="StrongPass!123">
+                </div>
+                <div class="input-group">
+                  <label for="center-posx">Map X (0–100)</label>
+                  <input id="center-posx" type="number" min="0" max="100" placeholder="28">
                 </div>
               </div>
             </div>
@@ -182,87 +192,22 @@
 
         <!-- Centers (matches your style) -->
         <section id="section-centers" class="section">
-          <div class="card full">
-            <div class="card-header">
-              <div>
-                <h2>Centers</h2>
-                <p class="hint">Smart distribution across regions</p>
-              </div>
-              <div class="card-actions">
-                <button id="btn-export-centers" class="primary ghost">Export</button>
-                <button id="btn-toggle-add-center" class="primary">Add New Center</button>
-              </div>
-            </div>
-
-            <div class="centers-layout">
-              <div class="centers-primary">
-                <div class="centers-map">
-                  <div class="map-pins" id="map-pins"></div>
-                  <small class="muted">Pins are positioned with X/Y (0–100).</small>
+            <div class="card full">
+              <div class="card-header">
+                <div>
+                  <h2>Centers</h2>
+                  <p class="hint">Smart distribution across regions</p>
                 </div>
-
-                <div class="center-highlights">
-                  <div class="insight-card">
-                    <span class="insight-label">Active centers</span>
-                    <strong id="centers-total">0</strong>
-                    <span class="hint">Operating across the network</span>
-                  </div>
-                  <div class="insight-card">
-                    <span class="insight-label">Credentials ready</span>
-                    <strong id="center-login-ready">0</strong>
-                    <span class="hint">Centers with usernames &amp; passwords</span>
-                  </div>
-                  <div class="insight-card">
-                    <span class="insight-label">Capabilities tracked</span>
-                    <strong id="center-capability-count">0</strong>
-                    <span class="hint">Unique service offerings</span>
-                  </div>
+                <div class="card-actions">
+                  <button id="btn-export-centers" class="primary ghost">Export</button>
+                  <button id="btn-toggle-add-center" class="primary">Add New Center</button>
                 </div>
               </div>
 
-              <aside class="centers-sidebar">
-                <div class="panel">
-                  <div class="panel-header">
-                    <h3>Regional coverage</h3>
-                    <span class="chip subtle">Live</span>
-                  </div>
-                  <p class="hint">Monitor the spread of centers and the diversity of services they deliver.</p>
-                  <div class="panel-stat">
-                    <strong id="center-location-count">0</strong>
-                    <span class="hint">Cities represented</span>
-                  </div>
-                  <div class="bubble-list" id="center-capability-pills"></div>
-                </div>
-                <div class="panel">
-                  <div class="panel-header">
-                    <h3>Implementation timeline</h3>
-                  </div>
-                  <ul class="timeline">
-                    <li>
-                      <span class="timeline-dot"></span>
-                      <div>
-                        <strong>Discovery</strong>
-                        <p class="hint">Assess readiness &amp; infrastructure</p>
-                      </div>
-                    </li>
-                    <li>
-                      <span class="timeline-dot"></span>
-                      <div>
-                        <strong>Deployment</strong>
-                        <p class="hint">Stage headsets and enroll specialists</p>
-                      </div>
-                    </li>
-                    <li>
-                      <span class="timeline-dot"></span>
-                      <div>
-                        <strong>Launch</strong>
-                        <p class="hint">Go live with training cohorts</p>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </aside>
-            </div>
+              <div class="centers-map">
+                <div class="map-pins" id="map-pins"></div>
+                <small class="muted">Pins are positioned with X/Y (0–100).</small>
+              </div>
 
             <div class="center-directory">
               <div class="directory-header">
