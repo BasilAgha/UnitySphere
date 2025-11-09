@@ -139,6 +139,11 @@ if (isDashboardPage()) {
   });
 
   // nav
+  const setSectionTitle = (btn)=>{
+    const label = btn.querySelector('span')?.textContent.trim() || btn.textContent.trim();
+    qi('section-title').textContent = label;
+  };
+
   qsa('.sidebar-nav .nav-link').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       qsa('.sidebar-nav .nav-link').forEach(b=>b.classList.remove('active'));
@@ -146,11 +151,14 @@ if (isDashboardPage()) {
       const key = btn.dataset.section;
       qsa('main .section').forEach(sec=>sec.classList.remove('active'));
       qi(`section-${key}`).classList.add('active');
-      qi('section-title').textContent = btn.textContent.trim();
+      setSectionTitle(btn);
       if (key === 'specialists' || key === 'assessments') refreshSelectors();
       refreshStats();
     });
   });
+
+  const initialNav = qs('.sidebar-nav .nav-link.active');
+  if (initialNav) setSectionTitle(initialNav);
 
   // ---------- Centers ----------
   const addPanel = qi('add-center-panel');
