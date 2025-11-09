@@ -209,7 +209,15 @@
                 <small class="muted">Pins are positioned with X/Y (0–100).</small>
               </div>
 
-            <div class="card-grid" id="centers-grid"></div>
+            <div class="center-directory">
+              <div class="directory-header">
+                <div>
+                  <h3>Center directory</h3>
+                  <p class="hint">Each card highlights the shared login credentials and focus areas.</p>
+                </div>
+              </div>
+              <div class="card-grid" id="centers-grid"></div>
+            </div>
           </div>
         </section>
 
@@ -222,27 +230,71 @@
                 <p class="hint">Link specialists to a center and set their focus.</p>
               </div>
             </div>
-            <form id="form-specialist" class="grid-2-col">
-              <div class="input-group">
-                <label for="spec-name">Name</label>
-                <input id="spec-name" required placeholder="Dr. Noor Al-Fahad">
-              </div>
-              <div class="input-group">
-                <label for="spec-skill">Focus/Discipline</label>
-                <input id="spec-skill" placeholder="PT / OT / Vision Rehab">
-              </div>
-              <div class="input-group">
-                <label for="spec-center">Center</label>
-                <select id="spec-center"></select>
-              </div>
-              <div class="input-group">
-                <label for="spec-avatar">Avatar URL (optional)</label>
-                <input id="spec-avatar" placeholder="https://.../photo.jpg">
-              </div>
-              <button class="primary" type="submit">Add Specialist</button>
-            </form>
 
-            <div class="specialists-grid" id="specialists-grid"></div>
+            <div class="split-layout">
+              <aside class="summary-column">
+                <div class="insight-card">
+                  <span class="insight-label">Total specialists</span>
+                  <strong id="specialists-total">0</strong>
+                  <span class="hint">Active in the network</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Assigned to centers</span>
+                  <strong id="specialists-assigned">0</strong>
+                  <span class="hint" id="specialists-coverage">Center coverage — 0%</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Awaiting placement</span>
+                  <strong id="specialists-unassigned">0</strong>
+                  <span class="hint">Ready to be matched</span>
+                </div>
+                <div class="panel">
+                  <div class="panel-header">
+                    <h3>Focus mix</h3>
+                  </div>
+                  <p class="hint">Top disciplines represented by your team.</p>
+                  <div class="bubble-list" id="specialist-focus-pills"></div>
+                </div>
+              </aside>
+
+              <div class="content-column">
+                <div class="form-panel">
+                  <div>
+                    <h3>Register specialist</h3>
+                    <p class="hint">Capture their focus and connect them with a center.</p>
+                  </div>
+                  <form id="form-specialist" class="grid-2-col">
+                    <div class="input-group">
+                      <label for="spec-name">Name</label>
+                      <input id="spec-name" required placeholder="Dr. Noor Al-Fahad">
+                    </div>
+                    <div class="input-group">
+                      <label for="spec-skill">Focus/Discipline</label>
+                      <input id="spec-skill" placeholder="PT / OT / Vision Rehab">
+                    </div>
+                    <div class="input-group">
+                      <label for="spec-center">Center</label>
+                      <select id="spec-center"></select>
+                    </div>
+                    <div class="input-group">
+                      <label for="spec-avatar">Avatar URL (optional)</label>
+                      <input id="spec-avatar" placeholder="https://.../photo.jpg">
+                    </div>
+                    <button class="primary" type="submit">Add Specialist</button>
+                  </form>
+                </div>
+
+                <div class="card-subsection">
+                  <div class="directory-header">
+                    <div>
+                      <h3>Team roster</h3>
+                      <p class="hint">Review each specialist profile and assigned location.</p>
+                    </div>
+                  </div>
+                  <div class="specialists-grid" id="specialists-grid"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -255,23 +307,67 @@
                 <p class="hint">Catalog of modules (category + duration).</p>
               </div>
             </div>
-            <form id="form-module" class="grid-2-col">
-              <div class="input-group">
-                <label for="mod-title">Title</label>
-                <input id="mod-title" required placeholder="Balance Training 1">
-              </div>
-              <div class="input-group">
-                <label for="mod-category">Category</label>
-                <input id="mod-category" placeholder="Rehab / Education / Assessment">
-              </div>
-              <div class="input-group">
-                <label for="mod-duration">Duration (min)</label>
-                <input id="mod-duration" type="number" min="1" step="1" placeholder="15">
-              </div>
-              <button class="primary" type="submit">Add Module</button>
-            </form>
 
-            <div class="modules-grid" id="modules-grid"></div>
+            <div class="split-layout modules">
+              <aside class="summary-column">
+                <div class="insight-card">
+                  <span class="insight-label">Modules live</span>
+                  <strong id="modules-total">0</strong>
+                  <span class="hint">Currently available to centers</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Avg. duration</span>
+                  <strong id="modules-avg-duration">—</strong>
+                  <span class="hint">Based on configured runtimes</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Distinct categories</span>
+                  <strong id="modules-category-count">0</strong>
+                  <span class="hint">Spread across learning paths</span>
+                </div>
+                <div class="panel">
+                  <div class="panel-header">
+                    <h3>Category mix</h3>
+                  </div>
+                  <p class="hint">Quick glance at the content balance.</p>
+                  <div class="bubble-list" id="module-category-pills"></div>
+                </div>
+              </aside>
+
+              <div class="content-column">
+                <div class="form-panel">
+                  <div>
+                    <h3>Add VR module</h3>
+                    <p class="hint">Track the session duration to assist scheduling.</p>
+                  </div>
+                  <form id="form-module" class="grid-2-col">
+                    <div class="input-group">
+                      <label for="mod-title">Title</label>
+                      <input id="mod-title" required placeholder="Balance Training 1">
+                    </div>
+                    <div class="input-group">
+                      <label for="mod-category">Category</label>
+                      <input id="mod-category" placeholder="Rehab / Education / Assessment">
+                    </div>
+                    <div class="input-group">
+                      <label for="mod-duration">Duration (min)</label>
+                      <input id="mod-duration" type="number" min="1" step="1" placeholder="15">
+                    </div>
+                    <button class="primary" type="submit">Add Module</button>
+                  </form>
+                </div>
+
+                <div class="card-subsection">
+                  <div class="directory-header">
+                    <div>
+                      <h3>Module library</h3>
+                      <p class="hint">Manage the immersive content available to centers.</p>
+                    </div>
+                  </div>
+                  <div class="modules-grid" id="modules-grid"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -285,31 +381,77 @@
               </div>
             </div>
 
-            <form id="form-assessment" class="grid-2-col">
-              <div class="input-group">
-                <label for="ass-trainee">Trainee/Client</label>
-                <input id="ass-trainee" required placeholder="Ahmed S.">
-              </div>
-              <div class="input-group">
-                <label for="ass-module">Module</label>
-                <select id="ass-module" required></select>
-              </div>
-              <div class="input-group">
-                <label for="ass-specialist">Specialist</label>
-                <select id="ass-specialist" required></select>
-              </div>
-              <div class="input-group">
-                <label for="ass-score">Score</label>
-                <input id="ass-score" type="number" min="0" max="100" placeholder="85">
-              </div>
-              <div class="input-group">
-                <label for="ass-date">Date</label>
-                <input id="ass-date" type="date">
-              </div>
-              <button class="primary" type="submit">Add Assessment</button>
-            </form>
+            <div class="split-layout assessments">
+              <aside class="summary-column">
+                <div class="insight-card">
+                  <span class="insight-label">Assessments logged</span>
+                  <strong id="assessments-total">0</strong>
+                  <span class="hint">Completed check-ins</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Average score</span>
+                  <strong id="assessments-average">—</strong>
+                  <span class="hint">Across recorded assessments</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Latest session</span>
+                  <strong id="assessments-last-date">—</strong>
+                  <span class="hint">Most recent log entry</span>
+                </div>
+                <div class="panel">
+                  <div class="panel-header">
+                    <h3>Top module</h3>
+                  </div>
+                  <p class="hint">Most frequently assessed experience.</p>
+                  <div class="panel-stat">
+                    <strong id="assessments-top-module">—</strong>
+                    <span class="hint">Stay aligned with demand</span>
+                  </div>
+                </div>
+              </aside>
 
-            <div class="stacked-list" id="assessments-list"></div>
+              <div class="content-column">
+                <div class="form-panel">
+                  <div>
+                    <h3>Log new assessment</h3>
+                    <p class="hint">Pair a trainee with a module and specialist, then track their outcome.</p>
+                  </div>
+                  <form id="form-assessment" class="grid-2-col">
+                    <div class="input-group">
+                      <label for="ass-trainee">Trainee/Client</label>
+                      <input id="ass-trainee" required placeholder="Ahmed S.">
+                    </div>
+                    <div class="input-group">
+                      <label for="ass-module">Module</label>
+                      <select id="ass-module" required></select>
+                    </div>
+                    <div class="input-group">
+                      <label for="ass-specialist">Specialist</label>
+                      <select id="ass-specialist" required></select>
+                    </div>
+                    <div class="input-group">
+                      <label for="ass-score">Score</label>
+                      <input id="ass-score" type="number" min="0" max="100" placeholder="85">
+                    </div>
+                    <div class="input-group">
+                      <label for="ass-date">Date</label>
+                      <input id="ass-date" type="date">
+                    </div>
+                    <button class="primary" type="submit">Add Assessment</button>
+                  </form>
+                </div>
+
+                <div class="card-subsection">
+                  <div class="directory-header">
+                    <div>
+                      <h3>Recent assessments</h3>
+                      <p class="hint">Track outcomes and follow-up dates across the network.</p>
+                    </div>
+                  </div>
+                  <div class="stacked-list" id="assessments-list"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>

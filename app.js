@@ -206,6 +206,48 @@ if (isDashboardPage()) {
   });
 
   function renderCenters(){
+    const totalCenters = db.centers.length;
+    const loginReady = db.centers.filter(c=>{
+      const login = c.login || {};
+      return Boolean((login.username || c.centerUsername) && (login.password || c.centerPassword));
+    }).length;
+    const capabilityCounts = new Map();
+    const locationSet = new Set();
+
+    db.centers.forEach(c=>{
+      (c.tags || []).forEach(tag=>{
+        const clean = tag && tag.trim();
+        if (!clean) return;
+        const key = clean.toLowerCase();
+        const existing = capabilityCounts.get(key);
+        if (existing) existing.count += 1;
+        else capabilityCounts.set(key, { label: clean, count: 1 });
+      });
+      const loc = c.location && c.location.trim();
+      if (loc) locationSet.add(loc);
+    });
+
+    const totalEl = qi('centers-total'); if (totalEl) totalEl.textContent = totalCenters;
+    const readyEl = qi('center-login-ready'); if (readyEl) readyEl.textContent = totalCenters ? `${loginReady}/${totalCenters}` : loginReady;
+    const capabilityCountEl = qi('center-capability-count'); if (capabilityCountEl) capabilityCountEl.textContent = capabilityCounts.size;
+    const locationCountEl = qi('center-location-count'); if (locationCountEl) locationCountEl.textContent = locationSet.size;
+
+    const capPills = qi('center-capability-pills');
+    if (capPills) {
+      capPills.innerHTML = '';
+      const caps = [...capabilityCounts.values()];
+      if (caps.length === 0) {
+        capPills.append(el('span', { class: 'pill small' }, 'No capabilities logged yet'));
+      } else {
+        caps
+          .sort((a,b)=> b.count - a.count || a.label.localeCompare(b.label))
+          .slice(0,6)
+          .forEach(({label,count})=>{
+            capPills.append(el('span', { class: 'pill small' }, `${label} (${count})`));
+          });
+      }
+    }
+
     // map pins
     const map = qi('map-pins'); map.innerHTML = '';
     db.centers.forEach(c=>{
@@ -242,6 +284,10 @@ if (isDashboardPage()) {
       card.append(img, body, footer);
       grid.append(card);
     });
+
+    if (!db.centers.length) {
+      grid.append(el('div', { class: 'empty-state' }, 'No centers yet. Use “Add New Center” to start your network.'));
+    }
   }
 
   // ---------- Specialists ----------
@@ -259,8 +305,14 @@ if (isDashboardPage()) {
 
   function renderSpecialists(){
     const grid = qi('specialists-grid'); grid.innerHTML='';
+    let assigned = 0;
+    const focusCounts = new Map();
+
     db.specialists.forEach(s=>{
       const centerName = db.centers.find(c=>c.id===s.centerId)?.name || '—';
+      if (s.centerId) assigned += 1;
+      const focusKey = (s.skill && s.skill.trim()) ? s.skill.trim() : 'Generalist';
+      focusCounts.set(focusKey, (focusCounts.get(focusKey) || 0) + 1);
       const card = el('div',{class:'specialist-card'},
         (()=>{const a=el('div',{class:'avatar'}); if (s.avatar){ a.style.backgroundImage=`url(${s.avatar})`; a.style.backgroundSize='cover'; a.style.backgroundPosition='center'; } return a; })(),
         el('strong',{}, s.name),
@@ -270,6 +322,34 @@ if (isDashboardPage()) {
       );
       grid.append(card);
     });
+
+    if (!db.specialists.length) {
+      grid.append(el('div', { class: 'empty-state' }, 'No specialists registered yet. Add your first expert above.'));
+    }
+
+    const total = db.specialists.length;
+    const totalEl = qi('specialists-total'); if (totalEl) totalEl.textContent = total;
+    const assignedEl = qi('specialists-assigned'); if (assignedEl) assignedEl.textContent = assigned;
+    const unassignedEl = qi('specialists-unassigned'); if (unassignedEl) unassignedEl.textContent = Math.max(total - assigned, 0);
+    const coverageEl = qi('specialists-coverage'); if (coverageEl) {
+      const coverage = total ? Math.round((assigned / total) * 100) : 0;
+      coverageEl.textContent = total ? `Center coverage — ${coverage}% (${assigned}/${total})` : 'Center coverage — 0%';
+    }
+
+    const focusWrap = qi('specialist-focus-pills');
+    if (focusWrap) {
+      focusWrap.innerHTML = '';
+      if (!focusCounts.size) {
+        focusWrap.append(el('span', { class: 'pill small' }, 'No focus areas yet'));
+      } else {
+        [...focusCounts.entries()]
+          .sort((a,b)=>b[1]-a[1])
+          .slice(0,6)
+          .forEach(([label,count])=>{
+            focusWrap.append(el('span', { class: 'pill small' }, `${label} (${count})`));
+          });
+      }
+    }
   }
 
   // ---------- Modules ----------
@@ -286,6 +366,9 @@ if (isDashboardPage()) {
 
   function renderModules(){
     const grid = qi('modules-grid'); grid.innerHTML='';
+    const categoryCounts = new Map();
+    const durations = [];
+
     db.modules.forEach(m=>{
       const card = el('div',{class:'module-card'},
         el('header',{}, el('strong',{}, m.title), el('span',{class:'tag'}, m.category || '—')),
@@ -295,7 +378,42 @@ if (isDashboardPage()) {
         (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.modules = db.modules.filter(x=>x.id!==m.id); db.assessments = db.assessments.filter(a=>a.moduleId!==m.id); persistAndRender(); }); return b; })()
       );
       grid.append(card);
+
+      const cleanCategory = (m.category && m.category.trim()) ? m.category.trim() : 'Uncategorized';
+      const catKey = cleanCategory.toLowerCase();
+      const existing = categoryCounts.get(catKey);
+      if (existing) existing.count += 1;
+      else categoryCounts.set(catKey, { label: cleanCategory, count: 1 });
+      if (typeof m.durationMin === 'number' && !isNaN(m.durationMin) && m.durationMin > 0) {
+        durations.push(m.durationMin);
+      }
     });
+
+    if (!db.modules.length) {
+      grid.append(el('div', { class: 'empty-state' }, 'No modules yet. Add immersive content to build your library.'));
+    }
+
+    const total = db.modules.length;
+    const totalEl = qi('modules-total'); if (totalEl) totalEl.textContent = total;
+    const avgEl = qi('modules-avg-duration'); if (avgEl) {
+      avgEl.textContent = durations.length ? `${Math.round(durations.reduce((a,b)=>a+b,0)/durations.length)} min` : '—';
+    }
+    const catCountEl = qi('modules-category-count'); if (catCountEl) catCountEl.textContent = categoryCounts.size;
+
+    const catWrap = qi('module-category-pills');
+    if (catWrap) {
+      catWrap.innerHTML = '';
+      if (!categoryCounts.size) {
+        catWrap.append(el('span', { class: 'pill small' }, 'No categories yet'));
+      } else {
+        [...categoryCounts.values()]
+          .sort((a,b)=>b.count - a.count || a.label.localeCompare(b.label))
+          .slice(0,6)
+          .forEach(({label,count})=>{
+            catWrap.append(el('span', { class: 'pill small' }, `${label} (${count})`));
+          });
+      }
+    }
   }
 
   // ---------- Assessments ----------
@@ -314,20 +432,58 @@ if (isDashboardPage()) {
 
   function renderAssessments(){
     const list = qi('assessments-list'); list.innerHTML='';
+    const scoreValues = [];
+    const moduleHitMap = new Map();
+    let latestDate = '';
+    const formatDate = (value)=>{
+      if (!value) return '—';
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return value;
+      return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
     db.assessments.forEach(a=>{
       const m = db.modules.find(x=>x.id===a.moduleId);
       const s = db.specialists.find(x=>x.id===a.specialistId);
+      if (!isNaN(a.score)) scoreValues.push(a.score);
+      if (a.date) {
+        if (!latestDate || a.date > latestDate) latestDate = a.date;
+      }
+      if (a.moduleId) {
+        moduleHitMap.set(a.moduleId, (moduleHitMap.get(a.moduleId) || 0) + 1);
+      }
       const row = el('div',{class:'recommendation'},
         el('div',{}, '👤'),
         el('div',{},
           el('strong',{}, a.trainee),
           el('div',{class:'hint'}, (m? m.title:'—') + ' • ' + (s? s.name:'—')),
-          el('div',{}, el('span',{class:'pill'}, 'Score: '+(isNaN(a.score)?'—':a.score)), ' ', el('span',{class:'pill'}, a.date || '—'))
+          el('div',{}, el('span',{class:'pill'}, 'Score: '+(isNaN(a.score)?'—':`${a.score}%`)), ' ', el('span',{class:'pill'}, formatDate(a.date)))
         ),
         (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.assessments = db.assessments.filter(x=>x.id!==a.id); persistAndRender(); }); return b; })()
       );
       list.append(row);
     });
+
+    if (!db.assessments.length) {
+      list.append(el('div', { class: 'empty-state' }, 'No assessments logged yet. Capture the first outcome above.'));
+    }
+
+    const total = db.assessments.length;
+    const totalEl = qi('assessments-total'); if (totalEl) totalEl.textContent = total;
+    const avgEl = qi('assessments-average'); if (avgEl) {
+      avgEl.textContent = scoreValues.length ? `${Math.round(scoreValues.reduce((a,b)=>a+b,0)/scoreValues.length)}%` : '—';
+    }
+    const lastEl = qi('assessments-last-date'); if (lastEl) lastEl.textContent = formatDate(latestDate);
+    const topModuleEl = qi('assessments-top-module');
+    if (topModuleEl) {
+      if (!moduleHitMap.size) {
+        topModuleEl.textContent = '—';
+      } else {
+        const [moduleId] = [...moduleHitMap.entries()].sort((a,b)=>b[1]-a[1])[0];
+        const moduleName = db.modules.find(m=>m.id===moduleId)?.title || '—';
+        topModuleEl.textContent = moduleName;
+      }
+    }
   }
 
   // selectors + stats
