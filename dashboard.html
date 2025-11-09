@@ -59,26 +59,123 @@
       <main>
         <!-- Overview -->
         <section id="section-overview" class="section active">
-          <div class="stats-grid">
+          <div class="overview-grid">
             <div class="stat-card">
-              <header><span>Centers</span><span class="chip">live</span></header>
+              <header><span>Centers</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-centers">0</div>
-              <div class="trend neutral">Updated now</div>
+              <div class="trend neutral">▲ 12.8%</div>
             </div>
             <div class="stat-card">
-              <header><span>Specialists</span><span class="chip">live</span></header>
+              <header><span>Specialists</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-specialists">0</div>
-              <div class="trend neutral">Updated now</div>
+              <div class="trend neutral">▲ 8.2%</div>
             </div>
             <div class="stat-card">
-              <header><span>VR Modules</span><span class="chip">live</span></header>
+              <header><span>VR Modules</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-modules">0</div>
-              <div class="trend neutral">Updated now</div>
+              <div class="trend neutral">▲ 5.4%</div>
             </div>
             <div class="stat-card">
-              <header><span>Assessments</span><span class="chip">live</span></header>
+              <header><span>Assessments</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-assessments">0</div>
-              <div class="trend neutral">Updated now</div>
+              <div class="trend neutral">▲ 3.1%</div>
+            </div>
+            <div class="card chart-card">
+              <div class="card-header">
+                <div>
+                  <h2>VR Minutes per Month</h2>
+                  <p class="hint">Visualize headset usage across the network</p>
+                </div>
+                <div class="chart-badges">
+                  <span class="chip">2024</span>
+                  <span class="chip">Monthly</span>
+                </div>
+              </div>
+              <div class="chart multi-line">
+                <div class="chart-lines">
+                  <span class="line line-one"></span>
+                  <span class="line line-two"></span>
+                </div>
+                <div class="chart-axis">
+                  <span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Sep</span><span>Nov</span>
+                </div>
+              </div>
+            </div>
+            <div class="card donut-card">
+              <div class="card-header">
+                <div>
+                  <h2>Sessions by Device</h2>
+                  <p class="hint">Headset mix</p>
+                </div>
+              </div>
+              <div class="donut-wrapper">
+                <div class="donut"></div>
+                <ul class="chart-legend">
+                  <li><span class="legend-color legend-one"></span> Centers: 38.4%</li>
+                  <li><span class="legend-color legend-two"></span> Assessments: 26.1%</li>
+                  <li><span class="legend-color legend-three"></span> Specialists: 20.5%</li>
+                  <li><span class="legend-color legend-four"></span> VR Modules: 15.0%</li>
+                </ul>
+              </div>
+            </div>
+            <div class="card progress-card">
+              <div class="card-header">
+                <div>
+                  <h2>Learning Progress</h2>
+                  <p class="hint">Goal completion by cohort</p>
+                </div>
+              </div>
+              <div class="progress-circle" style="--progress-value:85;">
+                <div class="progress-center">
+                  <strong>85%</strong>
+                  <span class="hint">Target completion</span>
+                </div>
+              </div>
+            </div>
+            <div class="card progress-list">
+              <div class="card-header">
+                <div>
+                  <h2>Progress Rate by Center</h2>
+                  <p class="hint">Trailing 30 days</p>
+                </div>
+              </div>
+              <div class="progress-item">
+                <strong>NeuroConnect Center</strong>
+                <div class="progress-bar"><span style="width: 78%"></span></div>
+                <span class="score">78%</span>
+              </div>
+              <div class="progress-item">
+                <strong>Innovate Minds Center</strong>
+                <div class="progress-bar"><span style="width: 64%"></span></div>
+                <span class="score">64%</span>
+              </div>
+              <div class="progress-item">
+                <strong>Cogniplay Center</strong>
+                <div class="progress-bar"><span style="width: 91%"></span></div>
+                <span class="score">91%</span>
+              </div>
+            </div>
+            <div class="card recommendations">
+              <div class="card-header">
+                <div>
+                  <h2>AI Recommendations</h2>
+                  <p class="hint">Surface insights for each unit</p>
+                </div>
+              </div>
+              <div class="recommendation">
+                <div class="recommendation-icon">⚡</div>
+                <div>
+                  <strong>Increase sensory modules</strong>
+                  <p class="hint">Add 3 new sessions to Innovate Minds to match demand.</p>
+                </div>
+              </div>
+              <div class="recommendation">
+                <div class="recommendation-icon">🎯</div>
+                <div>
+                  <strong>Align center goals</strong>
+                  <p class="hint">Cortex Meadow is 12% behind target. Schedule a sync.</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -91,55 +188,91 @@
                 <h2>Centers</h2>
                 <p class="hint">Smart distribution across regions</p>
               </div>
-              <div>
-                <button id="btn-toggle-add-center" class="primary">Add new center</button>
+              <div class="card-actions">
                 <button id="btn-export-centers" class="primary ghost">Export</button>
+                <button id="btn-toggle-add-center" class="primary">Add New Center</button>
               </div>
             </div>
 
-            <div class="centers-map">
-              <div class="map-pins" id="map-pins"></div>
-              <small class="muted">Pins are positioned with X/Y (0–100).</small>
+            <div class="centers-layout">
+              <div class="centers-primary">
+                <div class="centers-map">
+                  <div class="map-pins" id="map-pins"></div>
+                  <small class="muted">Pins are positioned with X/Y (0–100).</small>
+                </div>
+
+                <div class="center-highlights">
+                  <div class="insight-card">
+                    <span class="insight-label">Active centers</span>
+                    <strong id="centers-total">0</strong>
+                    <span class="hint">Operating across the network</span>
+                  </div>
+                  <div class="insight-card">
+                    <span class="insight-label">Credentials ready</span>
+                    <strong id="center-login-ready">0</strong>
+                    <span class="hint">Centers with usernames &amp; passwords</span>
+                  </div>
+                  <div class="insight-card">
+                    <span class="insight-label">Capabilities tracked</span>
+                    <strong id="center-capability-count">0</strong>
+                    <span class="hint">Unique service offerings</span>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="centers-sidebar">
+                <div class="panel">
+                  <div class="panel-header">
+                    <h3>Regional coverage</h3>
+                    <span class="chip subtle">Live</span>
+                  </div>
+                  <p class="hint">Monitor the spread of centers and the diversity of services they deliver.</p>
+                  <div class="panel-stat">
+                    <strong id="center-location-count">0</strong>
+                    <span class="hint">Cities represented</span>
+                  </div>
+                  <div class="bubble-list" id="center-capability-pills"></div>
+                </div>
+                <div class="panel">
+                  <div class="panel-header">
+                    <h3>Implementation timeline</h3>
+                  </div>
+                  <ul class="timeline">
+                    <li>
+                      <span class="timeline-dot"></span>
+                      <div>
+                        <strong>Discovery</strong>
+                        <p class="hint">Assess readiness &amp; infrastructure</p>
+                      </div>
+                    </li>
+                    <li>
+                      <span class="timeline-dot"></span>
+                      <div>
+                        <strong>Deployment</strong>
+                        <p class="hint">Stage headsets and enroll specialists</p>
+                      </div>
+                    </li>
+                    <li>
+                      <span class="timeline-dot"></span>
+                      <div>
+                        <strong>Launch</strong>
+                        <p class="hint">Go live with training cohorts</p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </aside>
             </div>
 
-            <div id="add-center-panel" class="card reveal">
-              <form id="form-center" class="grid-2-col">
-                <div class="input-group">
-                  <label for="center-name">Center name</label>
-                  <input id="center-name" required placeholder="Cogniplay City Center">
+            <div class="center-directory">
+              <div class="directory-header">
+                <div>
+                  <h3>Center directory</h3>
+                  <p class="hint">Each card highlights the shared login credentials and focus areas.</p>
                 </div>
-                <div class="input-group">
-                  <label for="center-location">Location</label>
-                  <input id="center-location" placeholder="Riyadh, KSA">
-                </div>
-                <div class="input-group">
-                  <label for="center-image">Cover image URL</label>
-                  <input id="center-image" placeholder="https://.../cover.jpg">
-                </div>
-                <div class="input-group">
-                  <label for="center-desc">Short description</label>
-                  <input id="center-desc" placeholder="Immersive neurodevelopmental therapy">
-                </div>
-                <div class="input-group">
-                  <label for="center-tags">Capabilities (comma separated)</label>
-                  <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
-                </div>
-                <div class="input-group">
-                  <label for="center-posx">Map X (0–100)</label>
-                  <input id="center-posx" type="number" min="0" max="100" placeholder="28">
-                </div>
-                <div class="input-group">
-                  <label for="center-posy">Map Y (0–100)</label>
-                  <input id="center-posy" type="number" min="0" max="100" placeholder="52">
-                </div>
-                <div style="display:flex; gap:.6rem; align-items:end;">
-                  <button class="primary" type="submit">Add Center</button>
-                  <button type="button" id="btn-cancel-center" class="primary ghost">Cancel</button>
-                </div>
-              </form>
+              </div>
+              <div class="card-grid" id="centers-grid"></div>
             </div>
-
-            <div class="card-grid" id="centers-grid"></div>
           </div>
         </section>
 
@@ -152,27 +285,71 @@
                 <p class="hint">Link specialists to a center and set their focus.</p>
               </div>
             </div>
-            <form id="form-specialist" class="grid-2-col">
-              <div class="input-group">
-                <label for="spec-name">Name</label>
-                <input id="spec-name" required placeholder="Dr. Noor Al-Fahad">
-              </div>
-              <div class="input-group">
-                <label for="spec-skill">Focus/Discipline</label>
-                <input id="spec-skill" placeholder="PT / OT / Vision Rehab">
-              </div>
-              <div class="input-group">
-                <label for="spec-center">Center</label>
-                <select id="spec-center"></select>
-              </div>
-              <div class="input-group">
-                <label for="spec-avatar">Avatar URL (optional)</label>
-                <input id="spec-avatar" placeholder="https://.../photo.jpg">
-              </div>
-              <button class="primary" type="submit">Add Specialist</button>
-            </form>
 
-            <div class="specialists-grid" id="specialists-grid"></div>
+            <div class="split-layout">
+              <aside class="summary-column">
+                <div class="insight-card">
+                  <span class="insight-label">Total specialists</span>
+                  <strong id="specialists-total">0</strong>
+                  <span class="hint">Active in the network</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Assigned to centers</span>
+                  <strong id="specialists-assigned">0</strong>
+                  <span class="hint" id="specialists-coverage">Center coverage — 0%</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Awaiting placement</span>
+                  <strong id="specialists-unassigned">0</strong>
+                  <span class="hint">Ready to be matched</span>
+                </div>
+                <div class="panel">
+                  <div class="panel-header">
+                    <h3>Focus mix</h3>
+                  </div>
+                  <p class="hint">Top disciplines represented by your team.</p>
+                  <div class="bubble-list" id="specialist-focus-pills"></div>
+                </div>
+              </aside>
+
+              <div class="content-column">
+                <div class="form-panel">
+                  <div>
+                    <h3>Register specialist</h3>
+                    <p class="hint">Capture their focus and connect them with a center.</p>
+                  </div>
+                  <form id="form-specialist" class="grid-2-col">
+                    <div class="input-group">
+                      <label for="spec-name">Name</label>
+                      <input id="spec-name" required placeholder="Dr. Noor Al-Fahad">
+                    </div>
+                    <div class="input-group">
+                      <label for="spec-skill">Focus/Discipline</label>
+                      <input id="spec-skill" placeholder="PT / OT / Vision Rehab">
+                    </div>
+                    <div class="input-group">
+                      <label for="spec-center">Center</label>
+                      <select id="spec-center"></select>
+                    </div>
+                    <div class="input-group">
+                      <label for="spec-avatar">Avatar URL (optional)</label>
+                      <input id="spec-avatar" placeholder="https://.../photo.jpg">
+                    </div>
+                    <button class="primary" type="submit">Add Specialist</button>
+                  </form>
+                </div>
+
+                <div class="card-subsection">
+                  <div class="directory-header">
+                    <div>
+                      <h3>Team roster</h3>
+                      <p class="hint">Review each specialist profile and assigned location.</p>
+                    </div>
+                  </div>
+                  <div class="specialists-grid" id="specialists-grid"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -185,23 +362,67 @@
                 <p class="hint">Catalog of modules (category + duration).</p>
               </div>
             </div>
-            <form id="form-module" class="grid-2-col">
-              <div class="input-group">
-                <label for="mod-title">Title</label>
-                <input id="mod-title" required placeholder="Balance Training 1">
-              </div>
-              <div class="input-group">
-                <label for="mod-category">Category</label>
-                <input id="mod-category" placeholder="Rehab / Education / Assessment">
-              </div>
-              <div class="input-group">
-                <label for="mod-duration">Duration (min)</label>
-                <input id="mod-duration" type="number" min="1" step="1" placeholder="15">
-              </div>
-              <button class="primary" type="submit">Add Module</button>
-            </form>
 
-            <div class="modules-grid" id="modules-grid"></div>
+            <div class="split-layout modules">
+              <aside class="summary-column">
+                <div class="insight-card">
+                  <span class="insight-label">Modules live</span>
+                  <strong id="modules-total">0</strong>
+                  <span class="hint">Currently available to centers</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Avg. duration</span>
+                  <strong id="modules-avg-duration">—</strong>
+                  <span class="hint">Based on configured runtimes</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Distinct categories</span>
+                  <strong id="modules-category-count">0</strong>
+                  <span class="hint">Spread across learning paths</span>
+                </div>
+                <div class="panel">
+                  <div class="panel-header">
+                    <h3>Category mix</h3>
+                  </div>
+                  <p class="hint">Quick glance at the content balance.</p>
+                  <div class="bubble-list" id="module-category-pills"></div>
+                </div>
+              </aside>
+
+              <div class="content-column">
+                <div class="form-panel">
+                  <div>
+                    <h3>Add VR module</h3>
+                    <p class="hint">Track the session duration to assist scheduling.</p>
+                  </div>
+                  <form id="form-module" class="grid-2-col">
+                    <div class="input-group">
+                      <label for="mod-title">Title</label>
+                      <input id="mod-title" required placeholder="Balance Training 1">
+                    </div>
+                    <div class="input-group">
+                      <label for="mod-category">Category</label>
+                      <input id="mod-category" placeholder="Rehab / Education / Assessment">
+                    </div>
+                    <div class="input-group">
+                      <label for="mod-duration">Duration (min)</label>
+                      <input id="mod-duration" type="number" min="1" step="1" placeholder="15">
+                    </div>
+                    <button class="primary" type="submit">Add Module</button>
+                  </form>
+                </div>
+
+                <div class="card-subsection">
+                  <div class="directory-header">
+                    <div>
+                      <h3>Module library</h3>
+                      <p class="hint">Manage the immersive content available to centers.</p>
+                    </div>
+                  </div>
+                  <div class="modules-grid" id="modules-grid"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -215,34 +436,138 @@
               </div>
             </div>
 
-            <form id="form-assessment" class="grid-2-col">
-              <div class="input-group">
-                <label for="ass-trainee">Trainee/Client</label>
-                <input id="ass-trainee" required placeholder="Ahmed S.">
-              </div>
-              <div class="input-group">
-                <label for="ass-module">Module</label>
-                <select id="ass-module" required></select>
-              </div>
-              <div class="input-group">
-                <label for="ass-specialist">Specialist</label>
-                <select id="ass-specialist" required></select>
-              </div>
-              <div class="input-group">
-                <label for="ass-score">Score</label>
-                <input id="ass-score" type="number" min="0" max="100" placeholder="85">
-              </div>
-              <div class="input-group">
-                <label for="ass-date">Date</label>
-                <input id="ass-date" type="date">
-              </div>
-              <button class="primary" type="submit">Add Assessment</button>
-            </form>
+            <div class="split-layout assessments">
+              <aside class="summary-column">
+                <div class="insight-card">
+                  <span class="insight-label">Assessments logged</span>
+                  <strong id="assessments-total">0</strong>
+                  <span class="hint">Completed check-ins</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Average score</span>
+                  <strong id="assessments-average">—</strong>
+                  <span class="hint">Across recorded assessments</span>
+                </div>
+                <div class="insight-card">
+                  <span class="insight-label">Latest session</span>
+                  <strong id="assessments-last-date">—</strong>
+                  <span class="hint">Most recent log entry</span>
+                </div>
+                <div class="panel">
+                  <div class="panel-header">
+                    <h3>Top module</h3>
+                  </div>
+                  <p class="hint">Most frequently assessed experience.</p>
+                  <div class="panel-stat">
+                    <strong id="assessments-top-module">—</strong>
+                    <span class="hint">Stay aligned with demand</span>
+                  </div>
+                </div>
+              </aside>
 
-            <div class="stacked-list" id="assessments-list"></div>
+              <div class="content-column">
+                <div class="form-panel">
+                  <div>
+                    <h3>Log new assessment</h3>
+                    <p class="hint">Pair a trainee with a module and specialist, then track their outcome.</p>
+                  </div>
+                  <form id="form-assessment" class="grid-2-col">
+                    <div class="input-group">
+                      <label for="ass-trainee">Trainee/Client</label>
+                      <input id="ass-trainee" required placeholder="Ahmed S.">
+                    </div>
+                    <div class="input-group">
+                      <label for="ass-module">Module</label>
+                      <select id="ass-module" required></select>
+                    </div>
+                    <div class="input-group">
+                      <label for="ass-specialist">Specialist</label>
+                      <select id="ass-specialist" required></select>
+                    </div>
+                    <div class="input-group">
+                      <label for="ass-score">Score</label>
+                      <input id="ass-score" type="number" min="0" max="100" placeholder="85">
+                    </div>
+                    <div class="input-group">
+                      <label for="ass-date">Date</label>
+                      <input id="ass-date" type="date">
+                    </div>
+                    <button class="primary" type="submit">Add Assessment</button>
+                  </form>
+                </div>
+
+                <div class="card-subsection">
+                  <div class="directory-header">
+                    <div>
+                      <h3>Recent assessments</h3>
+                      <p class="hint">Track outcomes and follow-up dates across the network.</p>
+                    </div>
+                  </div>
+                  <div class="stacked-list" id="assessments-list"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="add-center-modal" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Add New Center</h2>
+        <button type="button" class="icon-button" id="close-center-modal" aria-label="Close">✕</button>
+      </div>
+      <p class="modal-subtitle">Provide the new center details and the login credentials for its administrator.</p>
+      <form id="form-center" autocomplete="off">
+        <div class="input-group">
+          <label for="center-name">Center name</label>
+          <input id="center-name" required placeholder="Cogniplay City Center">
+        </div>
+        <div class="input-group">
+          <label for="center-location">Location</label>
+          <input id="center-location" placeholder="Riyadh, KSA">
+        </div>
+        <div class="input-group">
+          <label for="center-image">Cover image URL</label>
+          <input id="center-image" placeholder="https://.../cover.jpg">
+        </div>
+        <div class="input-group">
+          <label for="center-desc">Short description</label>
+          <input id="center-desc" placeholder="Immersive neurodevelopmental therapy">
+        </div>
+        <div class="input-group">
+          <label for="center-tags">Capabilities (comma separated)</label>
+          <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
+        </div>
+        <div class="form-divider">
+          <h3>Center login</h3>
+          <p class="hint">Admins should share these credentials securely with the center.</p>
+        </div>
+        <div class="input-group">
+          <label for="center-username">Center username</label>
+          <input id="center-username" required placeholder="center-riyadh">
+        </div>
+        <div class="input-group">
+          <label for="center-password">Center password</label>
+          <input id="center-password" type="password" required placeholder="StrongPass!123">
+        </div>
+        <div class="grid-inline">
+          <div class="input-group">
+            <label for="center-posx">Map X (0–100)</label>
+            <input id="center-posx" type="number" min="0" max="100" placeholder="28">
+          </div>
+          <div class="input-group">
+            <label for="center-posy">Map Y (0–100)</label>
+            <input id="center-posy" type="number" min="0" max="100" placeholder="52">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="ghost" id="cancel-center-modal">Cancel</button>
+          <button class="primary" type="submit">Save</button>
+        </div>
+      </form>
     </div>
   </div>
 
