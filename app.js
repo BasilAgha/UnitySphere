@@ -164,21 +164,49 @@ if (isDashboardPage()) {
   const addPanel = qi('add-center-panel');
   const toggleBtn = qi('btn-toggle-add-center');
   const cancelBtn = qi('btn-cancel-center');
-  const toggleLabel = toggleBtn.textContent.trim();
-  toggleBtn.setAttribute('aria-expanded', 'false');
-  toggleBtn.addEventListener('click', ()=>{
-    const isOpen = addPanel.classList.toggle('active');
-    toggleBtn.setAttribute('aria-expanded', String(isOpen));
-    toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
-    if (isOpen) {
-      addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
-  cancelBtn.addEventListener('click', ()=>{
-    addPanel.classList.remove('active');
+  const centerForm = qi('form-center');
+  if (addPanel && toggleBtn) {
+    const toggleLabel = toggleBtn.textContent.trim();
     toggleBtn.setAttribute('aria-expanded', 'false');
-    toggleBtn.textContent = toggleLabel;
-  });
+    toggleBtn.addEventListener('click', ()=>{
+      const isOpen = addPanel.classList.toggle('active');
+      toggleBtn.setAttribute('aria-expanded', String(isOpen));
+      toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
+      if (isOpen) {
+        addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+    cancelBtn?.addEventListener('click', ()=>{
+      addPanel.classList.remove('active');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      toggleBtn.textContent = toggleLabel;
+    });
+
+    centerForm?.addEventListener('submit', e=>{
+      e.preventDefault();
+      const name = qi('center-name').value.trim();
+      const location = qi('center-location').value.trim();
+      const image = qi('center-image').value.trim();
+      const desc = qi('center-desc').value.trim();
+      const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const loginUsername = qi('center-username').value.trim();
+      const loginPassword = qi('center-password').value.trim();
+      const posX = parseFloat(qi('center-posx').value);
+      const posY = parseFloat(qi('center-posy').value);
+      if (!name || !loginUsername || !loginPassword) return;
+      db.centers.push({
+        id: uid(), name, location, image, desc, tags,
+        login: { username: loginUsername, password: loginPassword },
+        posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
+        posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
+      });
+      persistAndRender();
+      e.target.reset();
+      addPanel.classList.remove('active');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      toggleBtn.textContent = toggleLabel;
+    });
+  }
 
   qi('btn-export-centers').addEventListener('click', ()=>{
     const out = db.centers.map(({id, ...rest})=>rest);
@@ -186,31 +214,6 @@ if (isDashboardPage()) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href=url; a.download='centers.json'; a.click();
     URL.revokeObjectURL(url);
-  });
-
-  centerForm.addEventListener('submit', e=>{
-    e.preventDefault();
-    const name = qi('center-name').value.trim();
-    const location = qi('center-location').value.trim();
-    const image = qi('center-image').value.trim();
-    const desc = qi('center-desc').value.trim();
-    const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
-    const loginUsername = qi('center-username').value.trim();
-    const loginPassword = qi('center-password').value.trim();
-    const posX = parseFloat(qi('center-posx').value);
-    const posY = parseFloat(qi('center-posy').value);
-    if (!name || !loginUsername || !loginPassword) return;
-    db.centers.push({
-      id: uid(), name, location, image, desc, tags,
-      login: { username: loginUsername, password: loginPassword },
-      posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
-      posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
-    });
-    persistAndRender();
-    e.target.reset();
-    addPanel.classList.remove('active');
-    toggleBtn.setAttribute('aria-expanded', 'false');
-    toggleBtn.textContent = toggleLabel;
   });
 
   function renderCenters(){
