@@ -15,25 +15,29 @@ const DEFAULT_DATA = {
       desc: 'Immersive neurodevelopmental therapy',
       tags: ['Cognitive Focus','Sensory Regulation'],
       image: 'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?q=80&w=1600&auto=format&fit=crop',
-      posX: 28, posY: 52
+      posX: 28, posY: 52,
+      login: { username: 'center-riyadh', password: 'Center123!' }
     },
     { id: uid(), name: 'NeuroConnect Hub', location: 'Jeddah, KSA',
       desc: 'Executive function and language',
       tags: ['Executive Function','Language Labs'],
       image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop',
-      posX: 58, posY: 68
+      posX: 58, posY: 68,
+      login: { username: 'center-jeddah', password: 'Connect@2024' }
     },
     { id: uid(), name: 'Innovata Wellness Center', location: 'Dubai, UAE',
       desc: 'Sensory integration & family coaching',
       tags: ['Sensory Gym','Family Coaching'],
       image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop',
-      posX: 74, posY: 45
+      posX: 74, posY: 45,
+      login: { username: 'center-dubai', password: 'Innovata!9' }
     },
     { id: uid(), name: 'Cortex Meadow Clinic', location: 'Doha, Qatar',
       desc: 'Motor planning & regulation',
       tags: ['Motor Metrics','Calm Transitions'],
       image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1600&auto=format&fit=crop',
-      posX: 82, posY: 40
+      posX: 82, posY: 40,
+      login: { username: 'center-doha', password: 'Cortex!2024' }
     }
   ],
   specialists: [
@@ -149,11 +153,39 @@ if (isDashboardPage()) {
   });
 
   // ---------- Centers ----------
-  const addPanel = qi('add-center-panel');
-  const toggleBtn = qi('btn-toggle-add-center');
-  const cancelBtn = qi('btn-cancel-center');
-  toggleBtn.addEventListener('click', ()=> addPanel.classList.toggle('active') || addPanel.classList.toggle('reveal'));
-  cancelBtn.addEventListener('click', ()=> addPanel.classList.remove('active','reveal'));
+  const centerModal = qi('add-center-modal');
+  const openCenterModalBtn = qi('btn-toggle-add-center');
+  const closeCenterModalBtn = qi('close-center-modal');
+  const cancelCenterModalBtn = qi('cancel-center-modal');
+  const centerForm = qi('form-center');
+
+  openCenterModalBtn.setAttribute('aria-expanded', 'false');
+
+  function openCenterModal(){
+    centerModal.classList.add('active');
+    centerModal.setAttribute('aria-hidden', 'false');
+    openCenterModalBtn.setAttribute('aria-expanded', 'true');
+    const firstInput = centerForm.querySelector('input');
+    if (firstInput) setTimeout(()=>firstInput.focus(), 60);
+  }
+  function closeCenterModal(){
+    centerModal.classList.remove('active');
+    centerModal.setAttribute('aria-hidden', 'true');
+    openCenterModalBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  openCenterModalBtn.addEventListener('click', openCenterModal);
+  [closeCenterModalBtn, cancelCenterModalBtn].forEach(btn=>{
+    if (btn) btn.addEventListener('click', closeCenterModal);
+  });
+  centerModal.addEventListener('click', (e)=>{
+    if (e.target === centerModal) closeCenterModal();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape' && centerModal.classList.contains('active')) {
+      closeCenterModal();
+    }
+  });
 
   qi('btn-export-centers').addEventListener('click', ()=>{
     const out = db.centers.map(({id, ...rest})=>rest);
@@ -163,27 +195,72 @@ if (isDashboardPage()) {
     URL.revokeObjectURL(url);
   });
 
-  qi('form-center').addEventListener('submit', e=>{
+  centerForm.addEventListener('submit', e=>{
     e.preventDefault();
     const name = qi('center-name').value.trim();
     const location = qi('center-location').value.trim();
     const image = qi('center-image').value.trim();
     const desc = qi('center-desc').value.trim();
     const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const loginUsername = qi('center-username').value.trim();
+    const loginPassword = qi('center-password').value.trim();
     const posX = parseFloat(qi('center-posx').value);
     const posY = parseFloat(qi('center-posy').value);
-    if (!name) return;
+    if (!name || !loginUsername || !loginPassword) return;
     db.centers.push({
       id: uid(), name, location, image, desc, tags,
+      login: { username: loginUsername, password: loginPassword },
       posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
       posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
     });
     persistAndRender();
     e.target.reset();
-    addPanel.classList.remove('active','reveal');
+    closeCenterModal();
   });
 
   function renderCenters(){
+    const totalCenters = db.centers.length;
+    const loginReady = db.centers.filter(c=>{
+      const login = c.login || {};
+      return Boolean((login.username || c.centerUsername) && (login.password || c.centerPassword));
+    }).length;
+    const capabilityCounts = new Map();
+    const locationSet = new Set();
+
+    db.centers.forEach(c=>{
+      (c.tags || []).forEach(tag=>{
+        const clean = tag && tag.trim();
+        if (!clean) return;
+        const key = clean.toLowerCase();
+        const existing = capabilityCounts.get(key);
+        if (existing) existing.count += 1;
+        else capabilityCounts.set(key, { label: clean, count: 1 });
+      });
+      const loc = c.location && c.location.trim();
+      if (loc) locationSet.add(loc);
+    });
+
+    const totalEl = qi('centers-total'); if (totalEl) totalEl.textContent = totalCenters;
+    const readyEl = qi('center-login-ready'); if (readyEl) readyEl.textContent = totalCenters ? `${loginReady}/${totalCenters}` : loginReady;
+    const capabilityCountEl = qi('center-capability-count'); if (capabilityCountEl) capabilityCountEl.textContent = capabilityCounts.size;
+    const locationCountEl = qi('center-location-count'); if (locationCountEl) locationCountEl.textContent = locationSet.size;
+
+    const capPills = qi('center-capability-pills');
+    if (capPills) {
+      capPills.innerHTML = '';
+      const caps = [...capabilityCounts.values()];
+      if (caps.length === 0) {
+        capPills.append(el('span', { class: 'pill small' }, 'No capabilities logged yet'));
+      } else {
+        caps
+          .sort((a,b)=> b.count - a.count || a.label.localeCompare(b.label))
+          .slice(0,6)
+          .forEach(({label,count})=>{
+            capPills.append(el('span', { class: 'pill small' }, `${label} (${count})`));
+          });
+      }
+    }
+
     // map pins
     const map = qi('map-pins'); map.innerHTML = '';
     db.centers.forEach(c=>{
@@ -200,18 +277,30 @@ if (isDashboardPage()) {
       const img = el('img', {src: c.image || 'https://images.unsplash.com/photo-1526948128573-703ee1aeb6fa?q=80&w=1600&auto=format&fit=crop', alt:c.name});
       const body = el('div', {class:'card-body'},
         el('div', {class:'title'}, c.name),
-        el('div', {class:'place muted'}, c.location || '—'),
-        el('div', {class:'desc muted'}, c.desc || '—'),
-        el('div', {},
+        el('div', {class:'place muted'}, `📍 ${c.location || 'Not specified'}`),
+        el('div', {class:'desc muted'}, c.desc || 'Awaiting description'),
+        el('div', {class:'tag-row'},
           ...(c.tags && c.tags.length ? c.tags : ['General']).map(t=> el('span', {class:'tag'}, t))
         )
       );
-      const footer = el('footer', {},
+      const login = c.login || { username: c.centerUsername, password: c.centerPassword } || {};
+      const credentials = el('div',{class:'center-credentials'},
+        el('span',{class:'badge badge-soft'}, login && login.username ? `Username: ${login.username}` : 'Login pending')
+      );
+      if (login && login.password) {
+        credentials.append(el('span',{class:'pill'}, `Password: ${login.password}`));
+      }
+      const footer = el('footer', {class:'center-footer'},
+        credentials,
         (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.centers = db.centers.filter(x=>x.id!==c.id); persistAndRender(); }); return b; })()
       );
       card.append(img, body, footer);
       grid.append(card);
     });
+
+    if (!db.centers.length) {
+      grid.append(el('div', { class: 'empty-state' }, 'No centers yet. Use “Add New Center” to start your network.'));
+    }
   }
 
   // ---------- Specialists ----------
@@ -229,8 +318,14 @@ if (isDashboardPage()) {
 
   function renderSpecialists(){
     const grid = qi('specialists-grid'); grid.innerHTML='';
+    let assigned = 0;
+    const focusCounts = new Map();
+
     db.specialists.forEach(s=>{
       const centerName = db.centers.find(c=>c.id===s.centerId)?.name || '—';
+      if (s.centerId) assigned += 1;
+      const focusKey = (s.skill && s.skill.trim()) ? s.skill.trim() : 'Generalist';
+      focusCounts.set(focusKey, (focusCounts.get(focusKey) || 0) + 1);
       const card = el('div',{class:'specialist-card'},
         (()=>{const a=el('div',{class:'avatar'}); if (s.avatar){ a.style.backgroundImage=`url(${s.avatar})`; a.style.backgroundSize='cover'; a.style.backgroundPosition='center'; } return a; })(),
         el('strong',{}, s.name),
@@ -240,6 +335,34 @@ if (isDashboardPage()) {
       );
       grid.append(card);
     });
+
+    if (!db.specialists.length) {
+      grid.append(el('div', { class: 'empty-state' }, 'No specialists registered yet. Add your first expert above.'));
+    }
+
+    const total = db.specialists.length;
+    const totalEl = qi('specialists-total'); if (totalEl) totalEl.textContent = total;
+    const assignedEl = qi('specialists-assigned'); if (assignedEl) assignedEl.textContent = assigned;
+    const unassignedEl = qi('specialists-unassigned'); if (unassignedEl) unassignedEl.textContent = Math.max(total - assigned, 0);
+    const coverageEl = qi('specialists-coverage'); if (coverageEl) {
+      const coverage = total ? Math.round((assigned / total) * 100) : 0;
+      coverageEl.textContent = total ? `Center coverage — ${coverage}% (${assigned}/${total})` : 'Center coverage — 0%';
+    }
+
+    const focusWrap = qi('specialist-focus-pills');
+    if (focusWrap) {
+      focusWrap.innerHTML = '';
+      if (!focusCounts.size) {
+        focusWrap.append(el('span', { class: 'pill small' }, 'No focus areas yet'));
+      } else {
+        [...focusCounts.entries()]
+          .sort((a,b)=>b[1]-a[1])
+          .slice(0,6)
+          .forEach(([label,count])=>{
+            focusWrap.append(el('span', { class: 'pill small' }, `${label} (${count})`));
+          });
+      }
+    }
   }
 
   // ---------- Modules ----------
@@ -256,6 +379,9 @@ if (isDashboardPage()) {
 
   function renderModules(){
     const grid = qi('modules-grid'); grid.innerHTML='';
+    const categoryCounts = new Map();
+    const durations = [];
+
     db.modules.forEach(m=>{
       const card = el('div',{class:'module-card'},
         el('header',{}, el('strong',{}, m.title), el('span',{class:'tag'}, m.category || '—')),
@@ -265,7 +391,42 @@ if (isDashboardPage()) {
         (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.modules = db.modules.filter(x=>x.id!==m.id); db.assessments = db.assessments.filter(a=>a.moduleId!==m.id); persistAndRender(); }); return b; })()
       );
       grid.append(card);
+
+      const cleanCategory = (m.category && m.category.trim()) ? m.category.trim() : 'Uncategorized';
+      const catKey = cleanCategory.toLowerCase();
+      const existing = categoryCounts.get(catKey);
+      if (existing) existing.count += 1;
+      else categoryCounts.set(catKey, { label: cleanCategory, count: 1 });
+      if (typeof m.durationMin === 'number' && !isNaN(m.durationMin) && m.durationMin > 0) {
+        durations.push(m.durationMin);
+      }
     });
+
+    if (!db.modules.length) {
+      grid.append(el('div', { class: 'empty-state' }, 'No modules yet. Add immersive content to build your library.'));
+    }
+
+    const total = db.modules.length;
+    const totalEl = qi('modules-total'); if (totalEl) totalEl.textContent = total;
+    const avgEl = qi('modules-avg-duration'); if (avgEl) {
+      avgEl.textContent = durations.length ? `${Math.round(durations.reduce((a,b)=>a+b,0)/durations.length)} min` : '—';
+    }
+    const catCountEl = qi('modules-category-count'); if (catCountEl) catCountEl.textContent = categoryCounts.size;
+
+    const catWrap = qi('module-category-pills');
+    if (catWrap) {
+      catWrap.innerHTML = '';
+      if (!categoryCounts.size) {
+        catWrap.append(el('span', { class: 'pill small' }, 'No categories yet'));
+      } else {
+        [...categoryCounts.values()]
+          .sort((a,b)=>b.count - a.count || a.label.localeCompare(b.label))
+          .slice(0,6)
+          .forEach(({label,count})=>{
+            catWrap.append(el('span', { class: 'pill small' }, `${label} (${count})`));
+          });
+      }
+    }
   }
 
   // ---------- Assessments ----------
@@ -284,20 +445,58 @@ if (isDashboardPage()) {
 
   function renderAssessments(){
     const list = qi('assessments-list'); list.innerHTML='';
+    const scoreValues = [];
+    const moduleHitMap = new Map();
+    let latestDate = '';
+    const formatDate = (value)=>{
+      if (!value) return '—';
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return value;
+      return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
     db.assessments.forEach(a=>{
       const m = db.modules.find(x=>x.id===a.moduleId);
       const s = db.specialists.find(x=>x.id===a.specialistId);
+      if (!isNaN(a.score)) scoreValues.push(a.score);
+      if (a.date) {
+        if (!latestDate || a.date > latestDate) latestDate = a.date;
+      }
+      if (a.moduleId) {
+        moduleHitMap.set(a.moduleId, (moduleHitMap.get(a.moduleId) || 0) + 1);
+      }
       const row = el('div',{class:'recommendation'},
         el('div',{}, '👤'),
         el('div',{},
           el('strong',{}, a.trainee),
           el('div',{class:'hint'}, (m? m.title:'—') + ' • ' + (s? s.name:'—')),
-          el('div',{}, el('span',{class:'pill'}, 'Score: '+(isNaN(a.score)?'—':a.score)), ' ', el('span',{class:'pill'}, a.date || '—'))
+          el('div',{}, el('span',{class:'pill'}, 'Score: '+(isNaN(a.score)?'—':`${a.score}%`)), ' ', el('span',{class:'pill'}, formatDate(a.date)))
         ),
         (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.assessments = db.assessments.filter(x=>x.id!==a.id); persistAndRender(); }); return b; })()
       );
       list.append(row);
     });
+
+    if (!db.assessments.length) {
+      list.append(el('div', { class: 'empty-state' }, 'No assessments logged yet. Capture the first outcome above.'));
+    }
+
+    const total = db.assessments.length;
+    const totalEl = qi('assessments-total'); if (totalEl) totalEl.textContent = total;
+    const avgEl = qi('assessments-average'); if (avgEl) {
+      avgEl.textContent = scoreValues.length ? `${Math.round(scoreValues.reduce((a,b)=>a+b,0)/scoreValues.length)}%` : '—';
+    }
+    const lastEl = qi('assessments-last-date'); if (lastEl) lastEl.textContent = formatDate(latestDate);
+    const topModuleEl = qi('assessments-top-module');
+    if (topModuleEl) {
+      if (!moduleHitMap.size) {
+        topModuleEl.textContent = '—';
+      } else {
+        const [moduleId] = [...moduleHitMap.entries()].sort((a,b)=>b[1]-a[1])[0];
+        const moduleName = db.modules.find(m=>m.id===moduleId)?.title || '—';
+        topModuleEl.textContent = moduleName;
+      }
+    }
   }
 
   // selectors + stats
