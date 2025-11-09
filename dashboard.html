@@ -23,7 +23,6 @@
       <nav class="sidebar-nav">
         <button class="nav-link active" data-section="overview">🏠 <span>Dashboard</span></button>
         <button class="nav-link" data-section="centers">🏙️ <span>Centers</span></button>
-        <button class="nav-link" data-section="accounts">🧾 <span>Accounts</span></button>
         <button class="nav-link" data-section="specialists">👩‍⚕️ <span>Specialists</span></button>
         <button class="nav-link" data-section="modules">🧠 <span>VR Modules</span></button>
         <button class="nav-link" data-section="assessment">📝 <span>Assessment</span></button>
@@ -52,7 +51,7 @@
             <div class="avatar avatar-static" id="header-avatar"></div>
             <div>
               <strong id="user-name">—</strong>
-              <span id="user-role" class="hint">—</span>
+              <span id="user-role" class="hint">Lead Therapist</span>
             </div>
           </div>
         </div>
@@ -79,7 +78,7 @@
             </article>
             <article class="stat-card">
               <header>
-                <span class="label">Children</span>
+                <span class="label">Kids</span>
                 <span class="trend positive" id="kids-trend">+6 enrolled</span>
               </header>
               <div class="stat-value" id="summary-kids">0</div>
@@ -174,7 +173,7 @@
         <section id="section-centers" class="section">
           <header class="section-header">
             <h2>Centers</h2>
-            <button type="button" class="primary ghost" id="add-center">Add new center</button>
+            <button type="button" class="primary ghost">Add new center</button>
           </header>
           <div class="centers-map" id="centers-map">
             <div class="map-pins" id="map-pins"></div>
@@ -183,144 +182,24 @@
           <div class="card-grid" id="centers-grid"></div>
         </section>
 
-        <section id="section-accounts" class="section">
-          <header class="section-header">
-            <h2>Accounts</h2>
-            <span class="muted" id="accounts-subtitle">Create credentials for every center and specialist.</span>
-          </header>
-
-          <div class="grid-2-col" id="account-actions">
-            <article class="card" id="create-center-admin-card">
-              <div class="card-header">
-                <div>
-                  <h3>Create center admin</h3>
-                  <p class="muted">Main admin can add center administrators with dashboard access.</p>
-                </div>
-              </div>
-              <form id="center-admin-form" class="stacked-form">
-                <label>Center name
-                  <input type="text" name="centerName" placeholder="e.g. Riyadh Immersive Hub" required>
-                </label>
-                <label>Location
-                  <input type="text" name="centerLocation" placeholder="City, Country" required>
-                </label>
-                <label>Focus area
-                  <input type="text" name="centerFocus" placeholder="Primary therapy focus" required>
-                </label>
-                <label>Admin display name
-                  <input type="text" name="adminName" placeholder="e.g. Amina Rahman" required>
-                </label>
-                <label>Username
-                  <input type="text" name="username" placeholder="e.g. center-new" required>
-                </label>
-                <label>Password
-                  <input type="password" name="password" placeholder="Temporary password" required>
-                </label>
-                <button type="submit" class="primary">Create center admin</button>
-                <p class="form-feedback" id="center-admin-feedback"></p>
-              </form>
-            </article>
-
-            <article class="card" id="create-specialist-card">
-              <div class="card-header">
-                <div>
-                  <h3>Create specialist</h3>
-                  <p class="muted">Main admin assigns specialists to each center with ready credentials.</p>
-                </div>
-              </div>
-              <form id="specialist-form" class="stacked-form">
-                <label>Full name
-                  <input type="text" name="name" placeholder="e.g. Dr. Khalid Haddad" required>
-                </label>
-                <label>Specialty
-                  <input type="text" name="specialty" placeholder="Clinical specialty" required>
-                </label>
-                <label>Focus description
-                  <textarea name="focus" placeholder="Summary of therapy approach" required></textarea>
-                </label>
-                <label id="specialist-center-field">Assign center
-                  <select name="centerId"></select>
-                </label>
-                <label>Username
-                  <input type="text" name="username" placeholder="e.g. spec-new" required>
-                </label>
-                <label>Password
-                  <input type="password" name="password" placeholder="Temporary password" required>
-                </label>
-                <button type="submit" class="primary">Create specialist</button>
-                <p class="form-feedback" id="specialist-feedback"></p>
-              </form>
-            </article>
-          </div>
-
-          <article class="card full" id="accounts-directory">
-            <div class="card-header">
-              <div>
-                <h3>Account directory</h3>
-                <p class="muted">Track all centers, center admins, and specialists.</p>
-              </div>
-            </div>
-            <div class="stacked-list" id="account-list"></div>
-          </article>
-        </section>
-
         <section id="section-specialists" class="section">
           <header class="section-header">
             <h2>Specialists</h2>
-            <button type="button" class="primary ghost" id="invite-specialist">Invite specialist</button>
+            <button type="button" class="primary ghost">Invite specialist</button>
           </header>
           <div class="specialists-grid" id="specialists-grid"></div>
-          <article class="card full" id="specialist-roster-card">
-            <div class="card-header">
-              <div>
-                <h3>Roster by center</h3>
-                <p class="muted">See which specialists are active at each location.</p>
-              </div>
-            </div>
-            <div class="stacked-list" id="specialist-roster"></div>
-          </article>
         </section>
 
         <section id="section-modules" class="section">
-          <header class="section-header modules-header">
-            <div>
-              <h2>VR Modules</h2>
-              <div class="module-filters">
-                <button type="button" class="chip active">All</button>
-                <button type="button" class="chip">Sensory</button>
-                <button type="button" class="chip">Cognitive</button>
-                <button type="button" class="chip">Motor Skills</button>
-              </div>
+          <header class="section-header">
+            <h2>VR Modules</h2>
+            <div class="module-filters">
+              <button type="button" class="chip active">All</button>
+              <button type="button" class="chip">Sensory</button>
+              <button type="button" class="chip">Cognitive</button>
+              <button type="button" class="chip">Motor Skills</button>
             </div>
-            <button type="button" class="primary ghost" id="toggle-module-form">Add VR module</button>
           </header>
-          <article class="card module-form-card" id="module-form-card">
-            <div class="card-header">
-              <div>
-                <h3>Create a VR module</h3>
-                <p class="muted">Main admin can publish new immersive experiences and share credentials instantly.</p>
-              </div>
-            </div>
-            <form id="module-form" class="stacked-form">
-              <label>Module name
-                <input type="text" name="moduleName" placeholder="e.g. Calm Breathing Orbit" required>
-              </label>
-              <label>Category
-                <input type="text" name="moduleCategory" placeholder="e.g. Regulation" required>
-              </label>
-              <label>Duration
-                <input type="text" name="moduleDuration" placeholder="e.g. 18 min" required>
-              </label>
-              <label>Default session count
-                <input type="number" name="moduleSessions" min="0" placeholder="e.g. 12">
-              </label>
-              <label>Focus description
-                <textarea name="moduleFocus" placeholder="Describe the goals and what the module trains." required></textarea>
-              </label>
-              <button type="submit" class="primary">Save module</button>
-              <p class="form-feedback" id="module-feedback"></p>
-            </form>
-          </article>
           <div class="modules-grid" id="modules-grid"></div>
         </section>
 
@@ -328,31 +207,17 @@
           <header class="section-header">
             <h2>Assessment</h2>
             <div class="assessment-controls">
-              <label for="assessment-center" class="muted">Select center</label>
-              <select id="assessment-center"></select>
               <label for="assessment-child" class="muted">Select child</label>
               <select id="assessment-child"></select>
             </div>
           </header>
-          <article class="card assessment-card">
-            <aside class="assessment-center" id="assessment-center-summary"></aside>
-            <div class="assessment-details">
-              <div class="assessment-summary" id="assessment-summary"></div>
-              <div class="assessment-modules" id="assessment-modules"></div>
-              <footer class="card-footer">
-                <button type="button" class="primary" id="save-assessment">Record outcomes</button>
-                <span class="muted" id="assessment-status">Draft not saved</span>
-              </footer>
-            </div>
-          </article>
-          <article class="card" id="assessment-history-card">
-            <div class="card-header">
-              <div>
-                <h3>Assessment history</h3>
-                <p class="muted">Entries are filtered to the selected center.</p>
-              </div>
-            </div>
-            <div class="assessment-history" id="assessment-history"></div>
+          <article class="card">
+            <div class="assessment-summary" id="assessment-summary"></div>
+            <div class="assessment-modules" id="assessment-modules"></div>
+            <footer class="card-footer">
+              <button type="button" class="primary" id="save-assessment">Record outcomes</button>
+              <span class="muted" id="assessment-status">Draft not saved</span>
+            </footer>
           </article>
         </section>
       </main>
