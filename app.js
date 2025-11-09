@@ -1,694 +1,327 @@
-// Basic router helpers
-const isLoginPage = location.pathname.endsWith('index.html') || !location.pathname.includes('.html');
-const isDashboardPage = location.pathname.endsWith('dashboard.html');
+// ===== UnitySphere Admin (client-side) =====
 
-const STORAGE_KEY = 'unitysphere-data';
+const STORAGE_KEY = 'unitysphere-data-v3';
 const storageAvailable = typeof localStorage !== 'undefined';
 
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function clone(x){ return JSON.parse(JSON.stringify(x)); }
+
 const DEFAULT_DATA = {
+  users: [
+    { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test' }
+  ],
   centers: [
-    {
-      id: 'center-1',
-      name: 'Cogniplay City Center',
-      location: 'Riyadh, KSA',
-      focus: 'Immersive neurodevelopmental therapy',
-      programs: ['Cognitive Focus', 'Sensory Regulation'],
-      image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=60',
-      map: { x: 28, y: 46 }
+    { id: uid(), name: 'Cogniplay City Center', location: 'Riyadh, KSA',
+      desc: 'Immersive neurodevelopmental therapy',
+      tags: ['Cognitive Focus','Sensory Regulation'],
+      image: 'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?q=80&w=1600&auto=format&fit=crop',
+      posX: 28, posY: 52
     },
-    {
-      id: 'center-2',
-      name: 'NeuroConnect Hub',
-      location: 'Jeddah, KSA',
-      focus: 'Executive function and language',
-      programs: ['Executive Function Bridge', 'Language Labs'],
-      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=60',
-      map: { x: 56, y: 58 }
+    { id: uid(), name: 'NeuroConnect Hub', location: 'Jeddah, KSA',
+      desc: 'Executive function and language',
+      tags: ['Executive Function','Language Labs'],
+      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop',
+      posX: 58, posY: 68
     },
-    {
-      id: 'center-3',
-      name: 'Innovata Wellness Center',
-      location: 'Dubai, UAE',
-      focus: 'Sensory integration & family coaching',
-      programs: ['Sensory Symphony', 'Family Coaching'],
-      image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=800&q=60',
-      map: { x: 74, y: 42 }
+    { id: uid(), name: 'Innovata Wellness Center', location: 'Dubai, UAE',
+      desc: 'Sensory integration & family coaching',
+      tags: ['Sensory Gym','Family Coaching'],
+      image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop',
+      posX: 74, posY: 45
     },
-    {
-      id: 'center-4',
-      name: 'Cortex Meadow Clinic',
-      location: 'Doha, Qatar',
-      focus: 'Motor planning & regulation',
-      programs: ['Motor Mastery', 'Calm Transitions'],
-      image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=60',
-      map: { x: 64, y: 32 }
+    { id: uid(), name: 'Cortex Meadow Clinic', location: 'Doha, Qatar',
+      desc: 'Motor planning & regulation',
+      tags: ['Motor Metrics','Calm Transitions'],
+      image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1600&auto=format&fit=crop',
+      posX: 82, posY: 40
     }
   ],
-  users: [
-    { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test' },
-    { username: 'center-riyadh', password: 'Center123!', name: 'Amina Rahman', role: 'center-admin', centerId: 'center-1', email: 'riyadh.admin@unitysphere.test' },
-    { username: 'center-jeddah', password: 'Center123!', name: 'Hassan Al Amiri', role: 'center-admin', centerId: 'center-2', email: 'jeddah.admin@unitysphere.test' },
-    { username: 'center-dubai', password: 'Center123!', name: 'Noor Al Farsi', role: 'center-admin', centerId: 'center-3', email: 'dubai.admin@unitysphere.test' },
-    { username: 'center-doha', password: 'Center123!', name: 'Lina Al Thani', role: 'center-admin', centerId: 'center-4', email: 'doha.admin@unitysphere.test' },
-    { username: 'spec-khalid', password: 'Spec123!', name: 'Dr. Khalid Haddad', role: 'specialist', centerId: 'center-1', specialty: 'Pediatric Neurologist', focus: 'Leads attention calibration pathways and family onboarding.', tenure: '4 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=60' },
-    { username: 'spec-layla', password: 'Spec123!', name: 'Dr. Layla Odeh', role: 'specialist', centerId: 'center-2', specialty: 'Clinical Psychologist', focus: 'Designs social cognition journeys with VR narratives.', tenure: '6 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=60' },
-    { username: 'spec-nourah', password: 'Spec123!', name: 'Dr. Nourah Al-Masri', role: 'specialist', centerId: 'center-1', specialty: 'Speech & Language Pathologist', focus: 'Champions expressive language modules with live coaching.', tenure: '3 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544723795-3fb3729955b8?auto=format&fit=crop&w=300&q=60' },
-    { username: 'spec-sara', password: 'Spec123!', name: 'Dr. Sara Nassar', role: 'specialist', centerId: 'center-3', specialty: 'Occupational Therapist', focus: 'Builds sensory-motor ladders for regulation and planning.', tenure: '5 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=60' },
-    { username: 'spec-ali', password: 'Spec123!', name: 'Dr. Ali Khaled', role: 'specialist', centerId: 'center-2', specialty: 'Behavior Analyst', focus: 'Implements data-driven reinforcement schedules in VR.', tenure: '2 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=60' },
-    { username: 'spec-fatima', password: 'Spec123!', name: 'Dr. Fatima Haddad', role: 'specialist', centerId: 'center-4', specialty: 'Developmental Pediatrician', focus: 'Integrates clinical milestones with immersive analytics.', tenure: '5 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544723795-432537b16ec4?auto=format&fit=crop&w=300&q=60' },
-    { username: 'spec-amal', password: 'Spec123!', name: 'Dr. Amal Nasser', role: 'specialist', centerId: 'center-3', specialty: 'Educational Therapist', focus: 'Bridges VR modules with classroom follow-ups.', tenure: '4 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544723795-3fb2727b1662?auto=format&fit=crop&w=300&q=60' }
-  ],
-  kids: [
-    { id: 'kid-1', name: 'Khalid Al Amran', age: 8, centerId: 'center-1', program: 'Sensory Symphony', streak: 6, progress: 0.84, specialistUsername: 'spec-khalid', moduleIds: ['module-1', 'module-7'] },
-    { id: 'kid-2', name: 'Hessa Al Ruwaili', age: 7, centerId: 'center-2', program: 'Executive Function Bridge', streak: 4, progress: 0.79, specialistUsername: 'spec-layla', moduleIds: ['module-2', 'module-3'] },
-    { id: 'kid-3', name: 'Omar Al Jaber', age: 6, centerId: 'center-1', program: 'Cognitive Maze Runner', streak: 8, progress: 0.91, specialistUsername: 'spec-nourah', moduleIds: ['module-3', 'module-4'] },
-    { id: 'kid-4', name: 'Layla Al Harbi', age: 9, centerId: 'center-3', program: 'Social Story Weaver', streak: 5, progress: 0.88, specialistUsername: 'spec-sara', moduleIds: ['module-2', 'module-6'] },
-    { id: 'kid-5', name: 'Yara Al Salem', age: 10, centerId: 'center-2', program: 'Motor Skills Mountain', streak: 3, progress: 0.72, specialistUsername: 'spec-ali', moduleIds: ['module-5'] },
-    { id: 'kid-6', name: 'Rakan Al Thani', age: 7, centerId: 'center-4', program: 'Executive Function Bridge', streak: 7, progress: 0.86, specialistUsername: 'spec-fatima', moduleIds: ['module-3', 'module-7'] },
-    { id: 'kid-7', name: 'Mariam Al Ghamdi', age: 5, centerId: 'center-3', program: 'Sensory Symphony', streak: 9, progress: 0.93, specialistUsername: 'spec-amal', moduleIds: ['module-1', 'module-6'] },
-    { id: 'kid-8', name: 'Noura Al Qahtani', age: 6, centerId: 'center-4', program: 'Social Story Weaver', streak: 2, progress: 0.68, specialistUsername: 'spec-fatima', moduleIds: ['module-2'] }
+  specialists: [
+    { id: uid(), name: 'Dr. Noor Al-Fahad', skill: 'PT', centerId: null, avatar: '' }
   ],
   modules: [
-    { id: 'module-1', name: 'Sensory Symphony', category: 'Sensory', duration: '20 min', focus: 'Calm multisensory regulation pathways.', sessions: 32 },
-    { id: 'module-2', name: 'Social Story Weaver', category: 'Cognitive', duration: '15 min', focus: 'Guided peer interactions inside VR narratives.', sessions: 28 },
-    { id: 'module-3', name: 'Executive Function Bridge', category: 'Executive', duration: '18 min', focus: 'Plan, sequence, and evaluate challenges.', sessions: 30 },
-    { id: 'module-4', name: 'Cognitive Maze Runner', category: 'Cognitive', duration: '22 min', focus: 'Adaptive problem-solving in spatial mazes.', sessions: 27 },
-    { id: 'module-5', name: 'Motor Skills Mountain', category: 'Motor', duration: '25 min', focus: 'Gross and fine motor coordination tasks.', sessions: 24 },
-    { id: 'module-6', name: 'Sensory Garden Explorers', category: 'Sensory', duration: '18 min', focus: 'Mindful exploration with haptic feedback.', sessions: 26 },
-    { id: 'module-7', name: 'Calm Breathing Orbit', category: 'Regulation', duration: '12 min', focus: 'Biofeedback-led breathing control.', sessions: 33 },
-    { id: 'module-8', name: 'Language Lights Lab', category: 'Language', duration: '16 min', focus: 'Expressive vocabulary through mixed reality prompts.', sessions: 29 }
+    { id: uid(), title: 'Balance Training 1', category: 'Rehab', durationMin: 15 }
   ],
   assessments: []
 };
 
-const DEVICE_USAGE = [
-  { label: 'Meta Quest 3', value: 38, color: '#6366f1' },
-  { label: 'Pico 4 Enterprise', value: 26, color: '#ec4899' },
-  { label: 'HTC Vive Focus', value: 22, color: '#22d3ee' },
-  { label: 'Projection Suite', value: 14, color: '#38bdf8' }
-];
-
-const VR_TIMELINE = [
-  { month: 'Apr', current: 820, previous: 760 },
-  { month: 'May', current: 870, previous: 790 },
-  { month: 'Jun', current: 910, previous: 845 },
-  { month: 'Jul', current: 960, previous: 880 },
-  { month: 'Aug', current: 1020, previous: 910 },
-  { month: 'Sep', current: 1055, previous: 925 }
-];
-
-const RECOMMENDATIONS = [
-  { title: 'Introduce Calm Breathing Orbit', detail: 'Add to Khalid’s pre-session routine to improve regulation.', badge: 'Regulation' },
-  { title: 'Schedule co-treatment block', detail: 'Pair Layla’s social story follow-up with executive coaching.', badge: 'Collaboration' },
-  { title: 'Refresh Motor Skills Mountain cues', detail: 'Upload new tactile prompts for Yara’s next sequence.', badge: 'Motor' },
-  { title: 'Share progress snapshots', detail: 'Send weekly highlights to the Innovata Wellness caregivers.', badge: 'Family' }
-];
-
-function cloneData(data) {
-  return JSON.parse(JSON.stringify(data));
-}
-
+// ---- persistence ----
 function loadData() {
-  if (!storageAvailable) return cloneData(DEFAULT_DATA);
+  if (!storageAvailable) return clone(DEFAULT_DATA);
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      return cloneData(DEFAULT_DATA);
-    }
-    const parsed = JSON.parse(stored);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { saveData(DEFAULT_DATA); return clone(DEFAULT_DATA); }
+    const parsed = JSON.parse(raw);
     return {
-      centers: parsed.centers ? parsed.centers : cloneData(DEFAULT_DATA.centers),
-      users: parsed.users ? parsed.users : cloneData(DEFAULT_DATA.users),
-      kids: parsed.kids ? parsed.kids : cloneData(DEFAULT_DATA.kids),
-      modules: parsed.modules ? parsed.modules : cloneData(DEFAULT_DATA.modules),
-      assessments: parsed.assessments ? parsed.assessments : []
+      users: parsed.users || clone(DEFAULT_DATA.users),
+      centers: parsed.centers || [],
+      specialists: parsed.specialists || [],
+      modules: parsed.modules || [],
+      assessments: parsed.assessments || []
     };
-  } catch (error) {
-    console.warn('Failed to load saved data, using defaults.', error);
-    return cloneData(DEFAULT_DATA);
+  } catch {
+    return clone(DEFAULT_DATA);
   }
 }
-
-function saveData(data) {
+function saveData(data){
   if (!storageAvailable) return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to persist data', error);
-  }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
+const db = loadData();
 
-function formatRole(role) {
-  switch (role) {
-    case 'main-admin': return 'Main admin';
-    case 'center-admin': return 'Center admin';
-    case 'specialist': return 'Specialist';
-    default: return 'Team member';
-  }
-}
+// ---- routing ----
+function isLoginPage(){ return location.pathname.endsWith('index.html') || !location.pathname.includes('.html'); }
+function isDashboardPage(){ return location.pathname.endsWith('dashboard.html'); }
 
-function findUser(users, username) {
-  if (!username) return null;
-  const normalized = username.trim().toLowerCase();
-  return users.find((user) => user.username.toLowerCase() === normalized) || null;
-}
-
-function generateMapPoint() {
-  return { x: Math.round(20 + Math.random() * 60), y: Math.round(25 + Math.random() * 45) };
-}
-
-function ensureAvatar(user) {
-  if (user && !user.avatar) {
-    user.avatar = `https://i.pravatar.cc/150?u=${encodeURIComponent(user.username)}`;
-  }
-  return user;
-}
-
-// ---- Auth page ----
-if (isLoginPage) {
-  const data = loadData();
-  const authForm = document.getElementById('auth-form');
-  const switchModeBtn = document.getElementById('switch-mode');
-  const switchText = document.getElementById('switch-text');
-  const authTitle = document.getElementById('auth-title');
-  const authSubtitle = document.getElementById('auth-subtitle');
-  const authAction = document.getElementById('auth-action');
-  const confirmGroup = document.getElementById('confirm-password-group');
-  const demoLoginBtn = document.getElementById('demo-login');
-
-  const DEMO = { name: 'Demo Specialist', email: 'demo@unitysphere.test', password: 'Demo123!' };
-
-  (function prefillDemo(){
-    try {
-      const nameInput = document.getElementById('auth-name');
-      const emailInput = document.getElementById('auth-email');
-      const passInput = document.getElementById('auth-password');
-      if (nameInput && !nameInput.value) nameInput.value = DEMO.name;
-      if (emailInput && !emailInput.value) emailInput.value = DEMO.email;
-      if (passInput && !passInput.value) passInput.value = DEMO.password;
-    } catch (_) {}
-  })();
-
-  let isSignUp = false;
-  switchModeBtn.addEventListener('click', () => {
-    isSignUp = !isSignUp;
-    authTitle.textContent = isSignUp ? 'Create account' : 'Sign in';
-    authSubtitle.textContent = isSignUp ? 'Register to start coordinating care.' : 'Use your credentials to continue.';
-    authAction.textContent = isSignUp ? 'Register' : 'Sign in';
-    switchText.textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
-    switchModeBtn.textContent = isSignUp ? 'Sign in' : 'Create one';
-    confirmGroup.classList.toggle('hidden', !isSignUp);
+// ---- tiny DOM helpers ----
+const qs = (s)=>document.querySelector(s);
+const qsa = (s)=>[...document.querySelectorAll(s)];
+const qi = (id)=>document.getElementById(id);
+function el(tag, attrs={}, ...kids){
+  const n = document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v])=>{
+    if (k==='class') n.className = v;
+    else if (k==='style') Object.assign(n.style, v);
+    else n.setAttribute(k,v);
   });
+  kids.forEach(k => n.append(k));
+  return n;
+}
+function esc(s){return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
 
-  function completeLogin(name, email){
-    sessionStorage.setItem('us_name', name);
-    sessionStorage.setItem('us_email', email);
-    window.location.href = 'dashboard.html';
-  }
+// ================= AUTH =================
+if (isLoginPage()) {
+  const form = qi('auth-form');
+  const userI = qi('auth-username');
+  const passI = qi('auth-password');
 
-  demoLoginBtn?.addEventListener('click', () => completeLogin(DEMO.name, DEMO.email));
-
-  authForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const name = authForm.elements['name'].value.trim();
-    const email = authForm.elements['email'].value.trim();
-    if (!name || !email) return;
-    completeLogin(name, email);
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const u = (userI.value||'').trim().toLowerCase();
+    const p = passI.value||'';
+    const user = (db.users||[]).find(x=>x.username.toLowerCase()===u && x.password===p);
+    if (!user) { alert('Invalid credentials'); return; }
+    if (user.role !== 'main-admin') { alert('Only main-admin can sign in here.'); return; }
+    sessionStorage.setItem('us_username', user.username);
+    sessionStorage.setItem('us_name', user.name || user.username);
+    sessionStorage.setItem('us_email', user.email || '');
+    location.href = 'dashboard.html';
   });
 }
 
-// ---- Dashboard page ----
-if (isDashboardPage) {
-  const userName = sessionStorage.getItem('us_name');
-  const userEmail = sessionStorage.getItem('us_email');
-  if (!userName) {
-    window.location.href = 'index.html';
-  }
+// ================= DASHBOARD =================
+if (isDashboardPage()) {
+  // guard
+  const username = sessionStorage.getItem('us_username');
+  if (!username) location.href = 'index.html';
 
-  // Elements
-  const sectionTitle = document.getElementById('section-title');
-  const navLinks = Array.from(document.querySelectorAll('.nav-link'));
-  const sections = {
-    overview: document.getElementById('section-overview'),
-    centers: document.getElementById('section-centers'),
-    specialists: document.getElementById('section-specialists'),
-    modules: document.getElementById('section-modules'),
-    assessment: document.getElementById('section-assessment'),
-  };
-
-  const sidebarName = document.getElementById('sidebar-name');
-  const sidebarEmail = document.getElementById('sidebar-email');
-  const userNameTarget = document.getElementById('user-name');
-  const greeting = document.getElementById('greeting');
-  const logoutBtn = document.getElementById('logout');
-  const learningProgress = document.getElementById('learning-progress');
-  const headerAvatar = document.getElementById('header-avatar');
-  const sidebarAvatar = document.getElementById('sidebar-avatar');
-
-  // Summary targets
-  const summaryCenters = document.getElementById('summary-centers');
-  const summarySpecialists = document.getElementById('summary-specialists');
-  const summaryKids = document.getElementById('summary-kids');
-  const summaryModules = document.getElementById('summary-modules');
-  const vrChartContainer = document.getElementById('vr-minutes-chart');
-  const vrMonthTotal = document.getElementById('vr-month-total');
-  const vrMonthChange = document.getElementById('vr-month-change');
-  const deviceDonut = document.getElementById('device-donut');
-  const deviceLeading = document.getElementById('device-leading');
-  const deviceLegend = document.getElementById('device-legend');
-  const centerProgress = document.getElementById('center-progress');
-  const recommendationList = document.getElementById('recommendation-list');
-  const centersGrid = document.getElementById('centers-grid');
-  const mapPins = document.getElementById('map-pins');
-  const specialistsGrid = document.getElementById('specialists-grid');
-  const modulesGrid = document.getElementById('modules-grid');
-  const assessmentChildSelect = document.getElementById('assessment-child');
-  const assessmentSummary = document.getElementById('assessment-summary');
-  const assessmentModules = document.getElementById('assessment-modules');
-  const assessmentStatus = document.getElementById('assessment-status');
-  const saveAssessmentBtn = document.getElementById('save-assessment');
-
-  // Data sources
-  const centers = [
-    {
-      id: 'center-1',
-      name: 'Cogniplay City Center',
-      location: 'Riyadh, KSA',
-      focus: 'Immersive neurodevelopmental therapy',
-      programs: ['Cognitive Focus', 'Sensory Regulation'],
-      image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=60',
-      map: { x: 28, y: 46 },
-    },
-    {
-      id: 'center-2',
-      name: 'NeuroConnect Hub',
-      location: 'Jeddah, KSA',
-      focus: 'Executive function and language',
-      programs: ['Executive Function', 'Language Labs'],
-      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=60',
-      map: { x: 56, y: 58 },
-    },
-    {
-      id: 'center-3',
-      name: 'Innovata Wellness Center',
-      location: 'Dubai, UAE',
-      focus: 'Sensory integration & family coaching',
-      programs: ['Sensory Symphony', 'Family Coaching'],
-      image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=800&q=60',
-      map: { x: 74, y: 42 },
-    },
-    {
-      id: 'center-4',
-      name: 'Cortex Meadow Clinic',
-      location: 'Doha, Qatar',
-      focus: 'Motor planning & regulation',
-      programs: ['Motor Mastery', 'Calm Transitions'],
-      image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=60',
-      map: { x: 64, y: 32 },
-    }
-  ];
-
-  const specialists = [
-    {
-      id: 'spec-1',
-      name: 'Dr. Khalid Haddad',
-      specialty: 'Pediatric Neurologist',
-      focus: 'Leads attention calibration pathways and family onboarding.',
-      avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=60',
-      tenure: '4 yrs in UnitySphere'
-    },
-    {
-      id: 'spec-2',
-      name: 'Dr. Layla Odeh',
-      specialty: 'Clinical Psychologist',
-      focus: 'Designs social cognition journeys with VR narratives.',
-      avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=60',
-      tenure: '6 yrs in UnitySphere'
-    },
-    {
-      id: 'spec-3',
-      name: 'Dr. Nourah Al-Masri',
-      specialty: 'Speech & Language Pathologist',
-      focus: 'Champions expressive language modules with live coaching.',
-      avatar: 'https://images.unsplash.com/photo-1544723795-3fb3729955b8?auto=format&fit=crop&w=300&q=60',
-      tenure: '3 yrs in UnitySphere'
-    },
-    {
-      id: 'spec-4',
-      name: 'Dr. Sara Nassar',
-      specialty: 'Occupational Therapist',
-      focus: 'Builds sensory-motor ladders for regulation and planning.',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=60',
-      tenure: '5 yrs in UnitySphere'
-    },
-    {
-      id: 'spec-5',
-      name: 'Dr. Ali Khaled',
-      specialty: 'Behavior Analyst',
-      focus: 'Implements data-driven reinforcement schedules in VR.',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=60',
-      tenure: '2 yrs in UnitySphere'
-    },
-    {
-      id: 'spec-6',
-      name: 'Dr. Fatima Haddad',
-      specialty: 'Developmental Pediatrician',
-      focus: 'Integrates clinical milestones with immersive analytics.',
-      avatar: 'https://images.unsplash.com/photo-1544723795-432537b16ec4?auto=format&fit=crop&w=300&q=60',
-      tenure: '5 yrs in UnitySphere'
-    },
-    {
-      id: 'spec-7',
-      name: 'Dr. Amal Nasser',
-      specialty: 'Educational Therapist',
-      focus: 'Bridges VR modules with classroom follow-ups.',
-      avatar: 'https://images.unsplash.com/photo-1544723795-3fb2727b1662?auto=format&fit=crop&w=300&q=60',
-      tenure: '4 yrs in UnitySphere'
-    }
-  ];
-
-  const kids = [
-    { id: 'kid-1', name: 'Khalid Al Amran', age: 8, centerId: 'center-1', program: 'Sensory Symphony', streak: 6, progress: 0.84 },
-    { id: 'kid-2', name: 'Hessa Al Ruwaili', age: 7, centerId: 'center-2', program: 'Executive Function Bridge', streak: 4, progress: 0.79 },
-    { id: 'kid-3', name: 'Omar Al Jaber', age: 6, centerId: 'center-1', program: 'Cognitive Maze Runner', streak: 8, progress: 0.91 },
-    { id: 'kid-4', name: 'Layla Al Harbi', age: 9, centerId: 'center-3', program: 'Social Story Weaver', streak: 5, progress: 0.88 },
-    { id: 'kid-5', name: 'Yara Al Salem', age: 10, centerId: 'center-2', program: 'Motor Skills Mountain', streak: 3, progress: 0.72 },
-    { id: 'kid-6', name: 'Rakan Al Thani', age: 7, centerId: 'center-4', program: 'Executive Function Bridge', streak: 7, progress: 0.86 },
-    { id: 'kid-7', name: 'Mariam Al Ghamdi', age: 5, centerId: 'center-3', program: 'Sensory Symphony', streak: 9, progress: 0.93 },
-    { id: 'kid-8', name: 'Noura Al Qahtani', age: 6, centerId: 'center-4', program: 'Social Story Weaver', streak: 2, progress: 0.68 }
-  ];
-
-  const vrModules = [
-    { id: 'module-1', name: 'Sensory Symphony', category: 'Sensory', duration: '20 min', focus: 'Calm multisensory regulation pathways.', sessions: 32 },
-    { id: 'module-2', name: 'Social Story Weaver', category: 'Cognitive', duration: '15 min', focus: 'Guided peer interactions inside VR narratives.', sessions: 28 },
-    { id: 'module-3', name: 'Executive Function Bridge', category: 'Executive', duration: '18 min', focus: 'Plan, sequence, and evaluate challenges.', sessions: 30 },
-    { id: 'module-4', name: 'Cognitive Maze Runner', category: 'Cognitive', duration: '22 min', focus: 'Adaptive problem-solving in spatial mazes.', sessions: 27 },
-    { id: 'module-5', name: 'Motor Skills Mountain', category: 'Motor', duration: '25 min', focus: 'Gross and fine motor coordination tasks.', sessions: 24 },
-    { id: 'module-6', name: 'Sensory Garden Explorers', category: 'Sensory', duration: '18 min', focus: 'Mindful exploration with haptic feedback.', sessions: 26 },
-    { id: 'module-7', name: 'Calm Breathing Orbit', category: 'Regulation', duration: '12 min', focus: 'Biofeedback-led breathing control.', sessions: 33 },
-    { id: 'module-8', name: 'Language Lights Lab', category: 'Language', duration: '16 min', focus: 'Expressive vocabulary through mixed reality prompts.', sessions: 29 }
-  ];
-
-  const recommendations = [
-    { title: 'Introduce Calm Breathing Orbit', detail: 'Add to Khalid’s pre-session routine to improve regulation.', badge: 'Regulation' },
-    { title: 'Schedule co-treatment block', detail: 'Pair Layla’s social story follow-up with executive coaching.', badge: 'Collaboration' },
-    { title: 'Refresh Motor Skills Mountain cues', detail: 'Upload new tactile prompts for Yara’s next sequence.', badge: 'Motor' },
-    { title: 'Share progress snapshots', detail: 'Send weekly highlights to the Innovata Wellness caregivers.', badge: 'Family' }
-  ];
-
-  const deviceUsage = [
-    { label: 'Meta Quest 3', value: 38, color: '#6366f1' },
-    { label: 'Pico 4 Enterprise', value: 26, color: '#ec4899' },
-    { label: 'HTC Vive Focus', value: 22, color: '#22d3ee' },
-    { label: 'Projection Suite', value: 14, color: '#38bdf8' }
-  ];
-
-  const vrTimeline = [
-    { month: 'Apr', current: 820, previous: 760 },
-    { month: 'May', current: 870, previous: 790 },
-    { month: 'Jun', current: 910, previous: 845 },
-    { month: 'Jul', current: 960, previous: 880 },
-    { month: 'Aug', current: 1020, previous: 910 },
-    { month: 'Sep', current: 1055, previous: 925 }
-  ];
-
-  // Helpers
-  const formatNumber = (value) => value.toLocaleString('en-US');
-  const average = (values) => values.reduce((total, value) => total + value, 0) / values.length;
-
-  function setActiveSection(sectionKey) {
-    Object.entries(sections).forEach(([key, element]) => {
-      const isActive = key === sectionKey;
-      element?.classList.toggle('active', isActive);
-    });
-    navLinks.forEach((link) => link.classList.toggle('active', link.dataset.section === sectionKey));
-    const activeLink = navLinks.find((link) => link.dataset.section === sectionKey);
-    sectionTitle.textContent = activeLink ? activeLink.textContent.trim() : 'Dashboard';
-  }
-
-  function renderLineChart(container, dataset) {
-    if (!container) return;
-    const width = 600;
-    const height = 220;
-    const margin = { top: 18, bottom: 32, left: 12, right: 12 };
-    const values = dataset.flatMap(({ current, previous }) => [current, previous]);
-    const max = Math.max(...values) * 1.05;
-    const min = Math.min(...values) * 0.9;
-    const range = max - min || 1;
-
-    const buildPoints = (key) => dataset
-      .map((entry, index) => {
-        const x = margin.left + (index / (dataset.length - 1)) * (width - margin.left - margin.right);
-        const y = height - margin.bottom - ((entry[key] - min) / range) * (height - margin.top - margin.bottom);
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
-
-    const currentPoints = buildPoints('current');
-    const previousPoints = buildPoints('previous');
-
-    const dotElements = dataset.map((entry, index) => {
-      const [x, y] = currentPoints.split(' ')[index].split(',').map(Number);
-      return `<circle cx="${x}" cy="${y}" r="4" fill="#6366f1" />`;
-    }).join('');
-
-    const labels = dataset.map((entry, index) => {
-      const x = margin.left + (index / (dataset.length - 1)) * (width - margin.left - margin.right);
-      const labelY = height - 12;
-      return `<text x="${x}" y="${labelY}" text-anchor="middle" fill="rgba(148,163,184,0.85)" font-size="12">${entry.month}</text>`;
-    }).join('');
-
-    container.innerHTML = `
-      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-        <polyline points="${previousPoints}" fill="none" stroke="rgba(129,140,248,0.6)" stroke-width="2.5" stroke-dasharray="6 6" stroke-linecap="round" />
-        <polyline points="${currentPoints}" fill="none" stroke="#6366f1" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-        ${dotElements}
-        ${labels}
-      </svg>
-    `;
-  }
-
-  function renderDonutChart(container, legendContainer, dataset) {
-    if (!container || !legendContainer) return;
-    const total = dataset.reduce((sum, entry) => sum + entry.value, 0);
-    let offset = 0;
-    const segments = dataset.map((entry) => {
-      const start = offset;
-      offset += (entry.value / total) * 100;
-      return `${entry.color} ${start}% ${offset}%`;
-    });
-    container.style.setProperty('--donut-gradient', `conic-gradient(${segments.join(', ')})`);
-    const topDevice = dataset.reduce((best, entry) => (entry.value > best.value ? entry : best), dataset[0]);
-    deviceLeading.textContent = `${Math.round((topDevice.value / total) * 100)}%`;
-
-    legendContainer.innerHTML = dataset.map((entry) => {
-      const percentage = Math.round((entry.value / total) * 100);
-      return `<li><span style="background:${entry.color}"></span>${entry.label}<strong style="margin-left:auto;">${percentage}%</strong></li>`;
-    }).join('');
-  }
-
-  function renderLearningProgress(element, children) {
-    if (!element) return;
-    const overall = Math.round(average(children.map((child) => child.progress)) * 100);
-    element.style.setProperty('--progress-value', overall);
-    element.querySelector('.progress-value').textContent = `${overall}%`;
-  }
-
-  function renderCenterProgress(container, centersData, childrenData) {
-    if (!container) return;
-    const progressByCenter = centersData.map((center) => {
-      const assigned = childrenData.filter((child) => child.centerId === center.id);
-      const score = assigned.length ? Math.round(average(assigned.map((child) => child.progress)) * 100) : 0;
-      return { name: center.name, score };
-    }).sort((a, b) => b.score - a.score);
-
-    container.innerHTML = progressByCenter.map(({ name, score }) => `
-      <div class="progress-row">
-        <strong>${name}</strong>
-        <div class="progress-bar"><span style="width:${score}%"></span></div>
-        <div class="progress-score">${score}%</div>
-      </div>
-    `).join('');
-  }
-
-  function renderRecommendations(container, items) {
-    if (!container) return;
-    container.innerHTML = items.map((item) => `
-      <div class="recommendation">
-        <div>
-          <strong>${item.title}</strong>
-          <p class="muted">${item.detail}</p>
-        </div>
-        <span class="badge badge-soft">${item.badge}</span>
-      </div>
-    `).join('');
-  }
-
-  function renderCenters(container, centersData) {
-    if (!container) return;
-    container.innerHTML = centersData.map((center) => `
-      <article class="center-card">
-        <img src="${center.image}" alt="${center.name}">
-        <div class="card-body">
-          <strong>${center.name}</strong>
-          <span class="muted">${center.location}</span>
-          <p class="muted">${center.focus}</p>
-          <div class="tag">${center.programs.join(' • ')}</div>
-        </div>
-        <footer>
-          <span class="muted">${center.programs.length} active programs</span>
-        </footer>
-      </article>
-    `).join('');
-  }
-
-  function renderMapPins(container, centersData) {
-    if (!container) return;
-    container.innerHTML = centersData.map((center) => `
-      <div class="map-pin" style="left:${center.map.x}%; top:${center.map.y}%">
-        <span>${center.name}</span>
-      </div>
-    `).join('');
-  }
-
-  function renderSpecialists(container, specialistsData) {
-    if (!container) return;
-    container.innerHTML = specialistsData.map((specialist) => `
-      <article class="specialist-card">
-        <div class="avatar" style="background-image:url(${specialist.avatar}); background-size:cover; background-position:center;"></div>
-        <strong>${specialist.name}</strong>
-        <span class="muted">${specialist.specialty}</span>
-        <p>${specialist.focus}</p>
-        <span class="badge badge-soft">${specialist.tenure}</span>
-      </article>
-    `).join('');
-  }
-
-  function renderModules(container, modulesData) {
-    if (!container) return;
-    container.innerHTML = modulesData.map((module) => `
-      <article class="module-card">
-        <header>
-          <strong>${module.name}</strong>
-          <span class="tag">${module.category}</span>
-        </header>
-        <p class="muted">${module.focus}</p>
-        <div class="module-meta">
-          <span>⏱️ ${module.duration}</span>
-          <span>🧭 ${module.sessions} sessions</span>
-        </div>
-        <button type="button" class="primary ghost">Assign module</button>
-      </article>
-    `).join('');
-  }
-
-  function renderAssessment(childId) {
-    const child = kids.find((item) => item.id === childId) || kids[0];
-    if (!child) return;
-    const center = centers.find((item) => item.id === child.centerId);
-    assessmentSummary.innerHTML = `
-      <strong>${child.name}</strong>
-      <div class="pill">Age ${child.age}</div>
-      <div class="pill">${center ? center.name : '—'}</div>
-      <p class="muted">Current focus: ${child.program}</p>
-      <p class="muted">Streak: ${child.streak} active weeks • Progress ${Math.round(child.progress * 100)}%</p>
-    `;
-
-    assessmentModules.innerHTML = vrModules.slice(0, 4).map((module, index) => `
-      <div class="module-form" data-module="${module.id}">
-        <header>
-          <strong>${module.name}</strong>
-          <span class="muted">${module.duration}</span>
-        </header>
-        <p class="muted">${module.focus}</p>
-        <label>Engagement score: <strong id="score-${module.id}">${70 + index * 5}</strong></label>
-        <input type="range" min="40" max="100" value="${70 + index * 5}" data-target="score-${module.id}">
-        <label>Session notes</label>
-        <textarea placeholder="Observations, cues that worked, next steps..."></textarea>
-      </div>
-    `).join('');
-
-    assessmentModules.querySelectorAll('input[type="range"]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const targetId = input.dataset.target;
-        const target = document.getElementById(targetId);
-        if (target) target.textContent = input.value;
-      });
-    });
-  }
-
-  function populateAssessmentSelector(childrenData) {
-    assessmentChildSelect.innerHTML = childrenData.map((child) => `
-      <option value="${child.id}">${child.name}</option>
-    `).join('');
-    renderAssessment(childrenData[0]?.id);
-  }
-
-  function updateSummary() {
-    summaryCenters.textContent = centers.length;
-    summarySpecialists.textContent = specialists.length;
-    summaryKids.textContent = kids.length;
-    summaryModules.textContent = vrModules.length;
-
-    renderLineChart(vrChartContainer, vrTimeline);
-    const latest = vrTimeline[vrTimeline.length - 1];
-    vrMonthTotal.textContent = `${formatNumber(latest.current)} min`;
-    const delta = latest.previous ? ((latest.current - latest.previous) / latest.previous) * 100 : 0;
-    vrMonthChange.textContent = `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`;
-    vrMonthChange.classList.toggle('positive', delta >= 0);
-
-    renderDonutChart(deviceDonut, deviceLegend, deviceUsage);
-    renderLearningProgress(learningProgress, kids);
-    renderCenterProgress(centerProgress, centers, kids);
-    renderRecommendations(recommendationList, recommendations);
-  }
-
-  // Setup user details
-  sidebarName.textContent = userName || 'UnitySphere Specialist';
-  sidebarEmail.textContent = userEmail || 'demo@unitysphere.test';
-  userNameTarget.textContent = userName || 'UnitySphere Specialist';
-
-  const avatarImage = 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=60';
-  [headerAvatar, sidebarAvatar].forEach((element) => {
-    if (element) {
-      element.style.backgroundImage = `url(${avatarImage})`;
-      element.style.backgroundSize = 'cover';
-      element.style.backgroundPosition = 'center';
-    }
-  });
+  const name = sessionStorage.getItem('us_name');
+  const email = sessionStorage.getItem('us_email');
+  qi('sidebar-name').textContent = name || username;
+  qi('sidebar-email').textContent = email || '—';
+  qi('user-name').textContent = name || username;
 
   const hour = new Date().getHours();
-  greeting.textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  qi('greeting').textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  navLinks.forEach((link) => {
-    link.addEventListener('click', () => setActiveSection(link.dataset.section));
+  const avatar = 'https://i.pravatar.cc/150?u=admin';
+  ['header-avatar','sidebar-avatar'].forEach(id=>{
+    const el = qi(id); el.style.backgroundImage = `url(${avatar})`; el.style.backgroundSize='cover'; el.style.backgroundPosition='center';
   });
 
-  logoutBtn?.addEventListener('click', () => {
-    sessionStorage.removeItem('us_name');
-    sessionStorage.removeItem('us_email');
-    window.location.href = 'index.html';
+  qi('logout').addEventListener('click', ()=>{
+    ['us_username','us_name','us_email'].forEach(k=>sessionStorage.removeItem(k));
+    location.href = 'index.html';
   });
 
-  assessmentChildSelect.addEventListener('change', (event) => {
-    renderAssessment(event.target.value);
+  // nav
+  qsa('.sidebar-nav .nav-link').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      qsa('.sidebar-nav .nav-link').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const key = btn.dataset.section;
+      qsa('main .section').forEach(sec=>sec.classList.remove('active'));
+      qi(`section-${key}`).classList.add('active');
+      qi('section-title').textContent = btn.textContent.trim();
+      if (key === 'specialists' || key === 'assessments') refreshSelectors();
+      refreshStats();
+    });
   });
 
-  saveAssessmentBtn.addEventListener('click', () => {
-    assessmentStatus.textContent = 'Outcomes saved to timeline';
-    assessmentStatus.style.color = 'var(--color-positive)';
-    setTimeout(() => {
-      assessmentStatus.textContent = 'Draft not saved';
-      assessmentStatus.style.color = '';
-    }, 3200);
+  // ---------- Centers ----------
+  const addPanel = qi('add-center-panel');
+  const toggleBtn = qi('btn-toggle-add-center');
+  const cancelBtn = qi('btn-cancel-center');
+  toggleBtn.addEventListener('click', ()=> addPanel.classList.toggle('active') || addPanel.classList.toggle('reveal'));
+  cancelBtn.addEventListener('click', ()=> addPanel.classList.remove('active','reveal'));
+
+  qi('btn-export-centers').addEventListener('click', ()=>{
+    const out = db.centers.map(({id, ...rest})=>rest);
+    const blob = new Blob([JSON.stringify(out,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='centers.json'; a.click();
+    URL.revokeObjectURL(url);
   });
 
-  // Initial render
-  updateSummary();
-  renderCenters(centersGrid, centers);
-  renderMapPins(mapPins, centers);
-  renderSpecialists(specialistsGrid, specialists);
-  renderModules(modulesGrid, vrModules);
-  populateAssessmentSelector(kids);
+  qi('form-center').addEventListener('submit', e=>{
+    e.preventDefault();
+    const name = qi('center-name').value.trim();
+    const location = qi('center-location').value.trim();
+    const image = qi('center-image').value.trim();
+    const desc = qi('center-desc').value.trim();
+    const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const posX = parseFloat(qi('center-posx').value);
+    const posY = parseFloat(qi('center-posy').value);
+    if (!name) return;
+    db.centers.push({
+      id: uid(), name, location, image, desc, tags,
+      posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
+      posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
+    });
+    persistAndRender();
+    e.target.reset();
+    addPanel.classList.remove('active','reveal');
+  });
+
+  function renderCenters(){
+    // map pins
+    const map = qi('map-pins'); map.innerHTML = '';
+    db.centers.forEach(c=>{
+      const pin = el('div', { class:'map-pin', style:{ left:c.posX+'%', top:c.posY+'%' } },
+        el('span', {}, c.name)
+      );
+      map.append(pin);
+    });
+
+    // cards
+    const grid = qi('centers-grid'); grid.innerHTML = '';
+    db.centers.forEach(c=>{
+      const card = el('article', {class:'center-card'});
+      const img = el('img', {src: c.image || 'https://images.unsplash.com/photo-1526948128573-703ee1aeb6fa?q=80&w=1600&auto=format&fit=crop', alt:c.name});
+      const body = el('div', {class:'card-body'},
+        el('div', {class:'title'}, c.name),
+        el('div', {class:'place muted'}, c.location || '—'),
+        el('div', {class:'desc muted'}, c.desc || '—'),
+        el('div', {},
+          ...(c.tags && c.tags.length ? c.tags : ['General']).map(t=> el('span', {class:'tag'}, t))
+        )
+      );
+      const footer = el('footer', {},
+        (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.centers = db.centers.filter(x=>x.id!==c.id); persistAndRender(); }); return b; })()
+      );
+      card.append(img, body, footer);
+      grid.append(card);
+    });
+  }
+
+  // ---------- Specialists ----------
+  qi('form-specialist').addEventListener('submit', e=>{
+    e.preventDefault();
+    const name = qi('spec-name').value.trim();
+    const skill = qi('spec-skill').value.trim();
+    const centerId = qi('spec-center').value || null;
+    const avatar = qi('spec-avatar').value.trim();
+    if (!name) return;
+    db.specialists.push({ id: uid(), name, skill, centerId, avatar });
+    persistAndRender();
+    e.target.reset();
+  });
+
+  function renderSpecialists(){
+    const grid = qi('specialists-grid'); grid.innerHTML='';
+    db.specialists.forEach(s=>{
+      const centerName = db.centers.find(c=>c.id===s.centerId)?.name || '—';
+      const card = el('div',{class:'specialist-card'},
+        (()=>{const a=el('div',{class:'avatar'}); if (s.avatar){ a.style.backgroundImage=`url(${s.avatar})`; a.style.backgroundSize='cover'; a.style.backgroundPosition='center'; } return a; })(),
+        el('strong',{}, s.name),
+        el('p',{}, s.skill || '—'),
+        el('span',{class:'badge badge-soft'}, centerName),
+        (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.specialists = db.specialists.filter(x=>x.id!==s.id); db.assessments = db.assessments.filter(a=>a.specialistId!==s.id); persistAndRender(); }); return b; })()
+      );
+      grid.append(card);
+    });
+  }
+
+  // ---------- Modules ----------
+  qi('form-module').addEventListener('submit', e=>{
+    e.preventDefault();
+    const title = qi('mod-title').value.trim();
+    const category = qi('mod-category').value.trim();
+    const dur = parseInt(qi('mod-duration').value||'0',10) || null;
+    if (!title) return;
+    db.modules.push({ id: uid(), title, category, durationMin: dur });
+    persistAndRender();
+    e.target.reset();
+  });
+
+  function renderModules(){
+    const grid = qi('modules-grid'); grid.innerHTML='';
+    db.modules.forEach(m=>{
+      const card = el('div',{class:'module-card'},
+        el('header',{}, el('strong',{}, m.title), el('span',{class:'tag'}, m.category || '—')),
+        el('div',{class:'module-meta'},
+          el('span',{}, '⏱ ', (m.durationMin? `${m.durationMin} min`:'—'))
+        ),
+        (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.modules = db.modules.filter(x=>x.id!==m.id); db.assessments = db.assessments.filter(a=>a.moduleId!==m.id); persistAndRender(); }); return b; })()
+      );
+      grid.append(card);
+    });
+  }
+
+  // ---------- Assessments ----------
+  qi('form-assessment').addEventListener('submit', e=>{
+    e.preventDefault();
+    const trainee = qi('ass-trainee').value.trim();
+    const moduleId = qi('ass-module').value;
+    const specialistId = qi('ass-specialist').value;
+    const score = parseFloat(qi('ass-score').value || '0');
+    const date = qi('ass-date').value || new Date().toISOString().slice(0,10);
+    if (!trainee || !moduleId || !specialistId) return;
+    db.assessments.push({ id: uid(), trainee, moduleId, specialistId, score, date });
+    persistAndRender();
+    e.target.reset();
+  });
+
+  function renderAssessments(){
+    const list = qi('assessments-list'); list.innerHTML='';
+    db.assessments.forEach(a=>{
+      const m = db.modules.find(x=>x.id===a.moduleId);
+      const s = db.specialists.find(x=>x.id===a.specialistId);
+      const row = el('div',{class:'recommendation'},
+        el('div',{}, '👤'),
+        el('div',{},
+          el('strong',{}, a.trainee),
+          el('div',{class:'hint'}, (m? m.title:'—') + ' • ' + (s? s.name:'—')),
+          el('div',{}, el('span',{class:'pill'}, 'Score: '+(isNaN(a.score)?'—':a.score)), ' ', el('span',{class:'pill'}, a.date || '—'))
+        ),
+        (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.assessments = db.assessments.filter(x=>x.id!==a.id); persistAndRender(); }); return b; })()
+      );
+      list.append(row);
+    });
+  }
+
+  // selectors + stats
+  function refreshSelectors(){
+    qi('spec-center').innerHTML = `<option value="">— No center —</option>` + db.centers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    qi('ass-module').innerHTML = db.modules.map(m=>`<option value="${m.id}">${esc(m.title)}</option>`).join('');
+    qi('ass-specialist').innerHTML = db.specialists.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  }
+  function refreshStats(){
+    qi('stat-centers').textContent = db.centers.length;
+    qi('stat-specialists').textContent = db.specialists.length;
+    qi('stat-modules').textContent = db.modules.length;
+    qi('stat-assessments').textContent = db.assessments.length;
+  }
+
+  function renderAll(){
+    renderCenters();
+    renderSpecialists();
+    renderModules();
+    renderAssessments();
+    refreshSelectors();
+    refreshStats();
+  }
+  function persistAndRender(){ saveData(db); renderAll(); }
+
+  renderAll();
 }
-
