@@ -1,4 +1,4 @@
-// Small router helpers
+// Basic router helpers
 const isLoginPage = location.pathname.endsWith('index.html') || !location.pathname.includes('.html');
 const isDashboardPage = location.pathname.endsWith('dashboard.html');
 
@@ -13,9 +13,8 @@ if (isLoginPage) {
   const confirmGroup = document.getElementById('confirm-password-group');
   const demoLoginBtn = document.getElementById('demo-login');
 
-  const DEMO = { name: 'Demo User', email: 'demo@unitysphere.test', password: 'Demo123!' };
+  const DEMO = { name: 'Demo Specialist', email: 'demo@unitysphere.test', password: 'Demo123!' };
 
-  // Prefill (optional)
   (function prefillDemo(){
     try {
       const nameInput = document.getElementById('auth-name');
@@ -30,450 +29,502 @@ if (isLoginPage) {
   let isSignUp = false;
   switchModeBtn.addEventListener('click', () => {
     isSignUp = !isSignUp;
-    authTitle.textContent = isSignUp ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
-    authSubtitle.textContent = isSignUp ? 'أنشئ حسابًا لبدء المتابعة.' : 'أدخل بيانات الدخول.';
-    authAction.textContent = isSignUp ? 'تسجيل' : 'دخول';
-    switchText.textContent = isSignUp ? 'تمتلك حسابًا؟' : 'لا تملك حسابًا؟';
-    switchModeBtn.textContent = isSignUp ? 'تسجيل الدخول' : 'إنشاء حساب';
+    authTitle.textContent = isSignUp ? 'Create account' : 'Sign in';
+    authSubtitle.textContent = isSignUp ? 'Register to start coordinating care.' : 'Use your credentials to continue.';
+    authAction.textContent = isSignUp ? 'Register' : 'Sign in';
+    switchText.textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
+    switchModeBtn.textContent = isSignUp ? 'Sign in' : 'Create one';
     confirmGroup.classList.toggle('hidden', !isSignUp);
   });
 
   function completeLogin(name, email){
     sessionStorage.setItem('us_name', name);
     sessionStorage.setItem('us_email', email);
-    // real page change (no scrolling hack)
     window.location.href = 'dashboard.html';
   }
 
-  demoLoginBtn?.addEventListener('click', () => {
-    completeLogin(DEMO.name, DEMO.email);
-  });
+  demoLoginBtn?.addEventListener('click', () => completeLogin(DEMO.name, DEMO.email));
 
-  authForm.addEventListener('submit', (e) => {
-    e.preventDefault();
+  authForm.addEventListener('submit', (event) => {
+    event.preventDefault();
     const name = authForm.elements['name'].value.trim();
     const email = authForm.elements['email'].value.trim();
     if (!name || !email) return;
-    // (Here you would normally verify credentials against a backend.)
     completeLogin(name, email);
   });
 }
 
 // === Dashboard page logic ===
 if (isDashboardPage) {
-  // Guard: if no session, go back to login
   const userName = sessionStorage.getItem('us_name');
-  if (!userName) { window.location.href = 'index.html'; }
-
-  // DOM
-  const dashboardSection = document.getElementById('dashboard');
-  const breadcrumb = document.getElementById('breadcrumb');
-  const userDisplay = document.getElementById('user-display');
-  const overallScore = document.getElementById('overall-score');
-  const backHomeBtn = document.getElementById('back-home');
-
-  // Sidebar & nav
-  const clientList = document.getElementById('client-list');
-  const addClientBtn = document.getElementById('add-client');
-
-  // Page sections
-  const pageClients = document.getElementById('page-clients');
-  const pageNew = document.getElementById('page-new');
-  const pageHistory = document.getElementById('page-history');
-  const pageSettings = document.getElementById('page-settings');
-  const pages = { '#clients': pageClients, '#new': pageNew, '#history': pageHistory, '#settings': pageSettings };
-
-  // Elements inside pages
-  const clientTitle = document.getElementById('client-title');
-  const sessionForm = document.getElementById('session-form');
-  const activeClientInput = document.getElementById('active-client');
-  const resetFormBtn = document.getElementById('reset-form');
-  const backToClientsBtn = document.getElementById('back-to-clients');
-  const goNewSessionBtn = document.getElementById('go-new-session');
-  const goHistoryBtn = document.getElementById('go-history');
-  const progressCanvas = document.getElementById('progress-canvas');
-  const sessionsHistory = document.getElementById('sessions-history');
-  const clientSummaryBox = document.getElementById('client-summary');
-
-  // Pager
-  const prevPageBtn = document.getElementById('prev-page');
-  const nextPageBtn = document.getElementById('next-page');
-  const pageInfo = document.getElementById('page-info');
-
-  // Show user
-  userDisplay.textContent = userName || '—';
-
-  // ===== Demo data (same as before) =====
-  // ...(keep your same clients array here)...
-  const DEMO_CLIENTS = window.__clients || [];
-  function createSession(values, meta = {}) {
-    const fields = ['cognitiveAttention','cognitiveProblem','cognitiveMemory','cognitivePlanning','languageComprehension','languageExpression','languageSocial','socialEmotion','socialCooperation','socialRegulation','motorGross','motorFine','motorSensory','academicNumber','academicLanguage','academicApplication','executiveFlexibility','executiveInhibition','executivePersistence'];
-    const base = Object.fromEntries(fields.map((field, idx) => [field, values[idx] ?? 0]));
-    return { ...base, ...meta };
+  const userEmail = sessionStorage.getItem('us_email');
+  if (!userName) {
+    window.location.href = 'index.html';
   }
 
-  let clients = DEMO_CLIENTS.length ? DEMO_CLIENTS : [
+  // Elements
+  const sectionTitle = document.getElementById('section-title');
+  const navLinks = Array.from(document.querySelectorAll('.nav-link'));
+  const sections = {
+    overview: document.getElementById('section-overview'),
+    centers: document.getElementById('section-centers'),
+    specialists: document.getElementById('section-specialists'),
+    modules: document.getElementById('section-modules'),
+    assessment: document.getElementById('section-assessment'),
+  };
+
+  const sidebarName = document.getElementById('sidebar-name');
+  const sidebarEmail = document.getElementById('sidebar-email');
+  const userNameTarget = document.getElementById('user-name');
+  const greeting = document.getElementById('greeting');
+  const logoutBtn = document.getElementById('logout');
+  const learningProgress = document.getElementById('learning-progress');
+  const headerAvatar = document.getElementById('header-avatar');
+  const sidebarAvatar = document.getElementById('sidebar-avatar');
+
+  // Summary targets
+  const summaryCenters = document.getElementById('summary-centers');
+  const summarySpecialists = document.getElementById('summary-specialists');
+  const summaryKids = document.getElementById('summary-kids');
+  const summaryModules = document.getElementById('summary-modules');
+  const vrChartContainer = document.getElementById('vr-minutes-chart');
+  const vrMonthTotal = document.getElementById('vr-month-total');
+  const vrMonthChange = document.getElementById('vr-month-change');
+  const deviceDonut = document.getElementById('device-donut');
+  const deviceLeading = document.getElementById('device-leading');
+  const deviceLegend = document.getElementById('device-legend');
+  const centerProgress = document.getElementById('center-progress');
+  const recommendationList = document.getElementById('recommendation-list');
+  const centersGrid = document.getElementById('centers-grid');
+  const mapPins = document.getElementById('map-pins');
+  const specialistsGrid = document.getElementById('specialists-grid');
+  const modulesGrid = document.getElementById('modules-grid');
+  const assessmentChildSelect = document.getElementById('assessment-child');
+  const assessmentSummary = document.getElementById('assessment-summary');
+  const assessmentModules = document.getElementById('assessment-modules');
+  const assessmentStatus = document.getElementById('assessment-status');
+  const saveAssessmentBtn = document.getElementById('save-assessment');
+
+  // Data sources
+  const centers = [
     {
-      id: 'c1',
-      name: 'باسل',
-      sessions: [
-        createSession(
-          [3,3,2,3,2,3,2,2,3,2,3,3,2,2,2,2,3,2,3],
-          {
-            title: 'جلسة تقييم أولي',
-            timestamp: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
-            notes: 'تم تقييم مهارات التركيز والتفاعل مع التعليمات البسيطة.',
-            focus: 'بناء خط أساس للمهارات المعرفية',
-            location: 'مقر المركز'
-          }
-        ),
-        createSession(
-          [4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3],
-          {
-            title: 'جلسة تدريب تركيز',
-            timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            notes: 'تحسن ملحوظ في المشاركة والاستجابة للمهام البصرية.',
-            focus: 'تنمية الانتباه البصري والسمعي',
-            location: 'عن بعد'
-          }
-        )
-      ]
+      id: 'center-1',
+      name: 'Cogniplay City Center',
+      location: 'Riyadh, KSA',
+      focus: 'Immersive neurodevelopmental therapy',
+      programs: ['Cognitive Focus', 'Sensory Regulation'],
+      image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=60',
+      map: { x: 28, y: 46 },
     },
     {
-      id: 'c2',
-      name: 'علي',
-      sessions: [
-        createSession(
-          [3,4,3,4,4,3,4,4,4,3,3,4,3,3,4,3,4,3,4],
-          {
-            title: 'جلسة لغة تفاعلية',
-            timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-            notes: 'تجاوب مميز مع الألعاب اللغوية، مع حاجة لدعم أكبر في التعبير.',
-            focus: 'تطوير التعبير اللغوي',
-            location: 'مقر المركز'
-          }
-        )
-      ]
+      id: 'center-2',
+      name: 'NeuroConnect Hub',
+      location: 'Jeddah, KSA',
+      focus: 'Executive function and language',
+      programs: ['Executive Function', 'Language Labs'],
+      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=60',
+      map: { x: 56, y: 58 },
     },
     {
-      id: 'c3',
-      name: 'بشير',
-      sessions: []
+      id: 'center-3',
+      name: 'Innovata Wellness Center',
+      location: 'Dubai, UAE',
+      focus: 'Sensory integration & family coaching',
+      programs: ['Sensory Symphony', 'Family Coaching'],
+      image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=800&q=60',
+      map: { x: 74, y: 42 },
+    },
+    {
+      id: 'center-4',
+      name: 'Cortex Meadow Clinic',
+      location: 'Doha, Qatar',
+      focus: 'Motor planning & regulation',
+      programs: ['Motor Mastery', 'Calm Transitions'],
+      image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=60',
+      map: { x: 64, y: 32 },
     }
   ];
 
-  // -- helpers and computations (same as before) --
-  const scoreFields = [ 'cognitiveAttention','cognitiveProblem','cognitiveMemory','cognitivePlanning','languageComprehension','languageExpression','languageSocial','socialEmotion','socialCooperation','socialRegulation','motorGross','motorFine','motorSensory','academicNumber','academicLanguage','academicApplication','executiveFlexibility','executiveInhibition','executivePersistence' ];
-
-  const domainGroups = {
-    cognitive: ['cognitiveAttention','cognitiveProblem','cognitiveMemory','cognitivePlanning'],
-    language: ['languageComprehension','languageExpression','languageSocial'],
-    social: ['socialEmotion','socialCooperation','socialRegulation'],
-    motor: ['motorGross','motorFine','motorSensory'],
-    academic: ['academicNumber','academicLanguage','academicApplication'],
-    executive: ['executiveFlexibility','executiveInhibition','executivePersistence']
-  };
-
-  function average(session, keys) {
-    const values = keys.map((key) => Number(session[key] || 0));
-    return values.reduce((acc, val) => acc + val, 0) / values.length;
-  }
-  function computeDomainAverages(session) {
-    const out = {};
-    for (const [key, fields] of Object.entries(domainGroups)) out[key] = average(session, fields);
-    out.overall = average(session, Object.values(domainGroups).flat());
-    return out;
-  }
-  function updateOverallScore() {
-    const client = clients.find((c) => c.id === activeClientInput.value);
-    if (!client || client.sessions.length === 0) {
-      overallScore.textContent = '—';
-      renderClientSummary(client || null);
-      return;
+  const specialists = [
+    {
+      id: 'spec-1',
+      name: 'Dr. Khalid Haddad',
+      specialty: 'Pediatric Neurologist',
+      focus: 'Leads attention calibration pathways and family onboarding.',
+      avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=60',
+      tenure: '4 yrs in UnitySphere'
+    },
+    {
+      id: 'spec-2',
+      name: 'Dr. Layla Odeh',
+      specialty: 'Clinical Psychologist',
+      focus: 'Designs social cognition journeys with VR narratives.',
+      avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=60',
+      tenure: '6 yrs in UnitySphere'
+    },
+    {
+      id: 'spec-3',
+      name: 'Dr. Nourah Al-Masri',
+      specialty: 'Speech & Language Pathologist',
+      focus: 'Champions expressive language modules with live coaching.',
+      avatar: 'https://images.unsplash.com/photo-1544723795-3fb3729955b8?auto=format&fit=crop&w=300&q=60',
+      tenure: '3 yrs in UnitySphere'
+    },
+    {
+      id: 'spec-4',
+      name: 'Dr. Sara Nassar',
+      specialty: 'Occupational Therapist',
+      focus: 'Builds sensory-motor ladders for regulation and planning.',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=60',
+      tenure: '5 yrs in UnitySphere'
+    },
+    {
+      id: 'spec-5',
+      name: 'Dr. Ali Khaled',
+      specialty: 'Behavior Analyst',
+      focus: 'Implements data-driven reinforcement schedules in VR.',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=60',
+      tenure: '2 yrs in UnitySphere'
+    },
+    {
+      id: 'spec-6',
+      name: 'Dr. Fatima Haddad',
+      specialty: 'Developmental Pediatrician',
+      focus: 'Integrates clinical milestones with immersive analytics.',
+      avatar: 'https://images.unsplash.com/photo-1544723795-432537b16ec4?auto=format&fit=crop&w=300&q=60',
+      tenure: '5 yrs in UnitySphere'
+    },
+    {
+      id: 'spec-7',
+      name: 'Dr. Amal Nasser',
+      specialty: 'Educational Therapist',
+      focus: 'Bridges VR modules with classroom follow-ups.',
+      avatar: 'https://images.unsplash.com/photo-1544723795-3fb2727b1662?auto=format&fit=crop&w=300&q=60',
+      tenure: '4 yrs in UnitySphere'
     }
-    const lastSession = client.sessions[client.sessions.length - 1];
-    const domainScores = [
-      average(lastSession, domainGroups.cognitive),
-      average(lastSession, domainGroups.language),
-      average(lastSession, domainGroups.social),
-      average(lastSession, domainGroups.motor),
-      average(lastSession, domainGroups.academic),
-      average(lastSession, domainGroups.executive)
-    ];
-    const overall = domainScores.reduce((acc, v) => acc + v, 0) / domainScores.length;
-    overallScore.textContent = overall.toFixed(2);
-    overallScore.style.color = overall >= 4.5 ? '#22c55e' : overall >= 3 ? '#2563eb' : overall >= 2 ? '#f97316' : '#ef4444';
-    renderClientSummary(client);
+  ];
+
+  const kids = [
+    { id: 'kid-1', name: 'Khalid Al Amran', age: 8, centerId: 'center-1', program: 'Sensory Symphony', streak: 6, progress: 0.84 },
+    { id: 'kid-2', name: 'Hessa Al Ruwaili', age: 7, centerId: 'center-2', program: 'Executive Function Bridge', streak: 4, progress: 0.79 },
+    { id: 'kid-3', name: 'Omar Al Jaber', age: 6, centerId: 'center-1', program: 'Cognitive Maze Runner', streak: 8, progress: 0.91 },
+    { id: 'kid-4', name: 'Layla Al Harbi', age: 9, centerId: 'center-3', program: 'Social Story Weaver', streak: 5, progress: 0.88 },
+    { id: 'kid-5', name: 'Yara Al Salem', age: 10, centerId: 'center-2', program: 'Motor Skills Mountain', streak: 3, progress: 0.72 },
+    { id: 'kid-6', name: 'Rakan Al Thani', age: 7, centerId: 'center-4', program: 'Executive Function Bridge', streak: 7, progress: 0.86 },
+    { id: 'kid-7', name: 'Mariam Al Ghamdi', age: 5, centerId: 'center-3', program: 'Sensory Symphony', streak: 9, progress: 0.93 },
+    { id: 'kid-8', name: 'Noura Al Qahtani', age: 6, centerId: 'center-4', program: 'Social Story Weaver', streak: 2, progress: 0.68 }
+  ];
+
+  const vrModules = [
+    { id: 'module-1', name: 'Sensory Symphony', category: 'Sensory', duration: '20 min', focus: 'Calm multisensory regulation pathways.', sessions: 32 },
+    { id: 'module-2', name: 'Social Story Weaver', category: 'Cognitive', duration: '15 min', focus: 'Guided peer interactions inside VR narratives.', sessions: 28 },
+    { id: 'module-3', name: 'Executive Function Bridge', category: 'Executive', duration: '18 min', focus: 'Plan, sequence, and evaluate challenges.', sessions: 30 },
+    { id: 'module-4', name: 'Cognitive Maze Runner', category: 'Cognitive', duration: '22 min', focus: 'Adaptive problem-solving in spatial mazes.', sessions: 27 },
+    { id: 'module-5', name: 'Motor Skills Mountain', category: 'Motor', duration: '25 min', focus: 'Gross and fine motor coordination tasks.', sessions: 24 },
+    { id: 'module-6', name: 'Sensory Garden Explorers', category: 'Sensory', duration: '18 min', focus: 'Mindful exploration with haptic feedback.', sessions: 26 },
+    { id: 'module-7', name: 'Calm Breathing Orbit', category: 'Regulation', duration: '12 min', focus: 'Biofeedback-led breathing control.', sessions: 33 },
+    { id: 'module-8', name: 'Language Lights Lab', category: 'Language', duration: '16 min', focus: 'Expressive vocabulary through mixed reality prompts.', sessions: 29 }
+  ];
+
+  const recommendations = [
+    { title: 'Introduce Calm Breathing Orbit', detail: 'Add to Khalid’s pre-session routine to improve regulation.', badge: 'Regulation' },
+    { title: 'Schedule co-treatment block', detail: 'Pair Layla’s social story follow-up with executive coaching.', badge: 'Collaboration' },
+    { title: 'Refresh Motor Skills Mountain cues', detail: 'Upload new tactile prompts for Yara’s next sequence.', badge: 'Motor' },
+    { title: 'Share progress snapshots', detail: 'Send weekly highlights to the Innovata Wellness caregivers.', badge: 'Family' }
+  ];
+
+  const deviceUsage = [
+    { label: 'Meta Quest 3', value: 38, color: '#6366f1' },
+    { label: 'Pico 4 Enterprise', value: 26, color: '#ec4899' },
+    { label: 'HTC Vive Focus', value: 22, color: '#22d3ee' },
+    { label: 'Projection Suite', value: 14, color: '#38bdf8' }
+  ];
+
+  const vrTimeline = [
+    { month: 'Apr', current: 820, previous: 760 },
+    { month: 'May', current: 870, previous: 790 },
+    { month: 'Jun', current: 910, previous: 845 },
+    { month: 'Jul', current: 960, previous: 880 },
+    { month: 'Aug', current: 1020, previous: 910 },
+    { month: 'Sep', current: 1055, previous: 925 }
+  ];
+
+  // Helpers
+  const formatNumber = (value) => value.toLocaleString('en-US');
+  const average = (values) => values.reduce((total, value) => total + value, 0) / values.length;
+
+  function setActiveSection(sectionKey) {
+    Object.entries(sections).forEach(([key, element]) => {
+      const isActive = key === sectionKey;
+      element?.classList.toggle('active', isActive);
+    });
+    navLinks.forEach((link) => link.classList.toggle('active', link.dataset.section === sectionKey));
+    const activeLink = navLinks.find((link) => link.dataset.section === sectionKey);
+    sectionTitle.textContent = activeLink ? activeLink.textContent.trim() : 'Dashboard';
   }
 
-  // ===== Router (hash-based) – same behaviour as before =====
-  const titles = { '#clients': 'نظرة عامة', '#new': 'جلسة جديدة', '#history': 'السجل والتقدم', '#settings': 'الإعدادات' };
-  function setActivePage(hash) {
-    if (!hash || !pages[hash]) hash = '#clients';
-    Object.values(pages).forEach(p => p.classList.remove('active'));
-    pages[hash].classList.add('active');
-    breadcrumb.textContent = `الصفحة: ${titles[hash]}`;
-    document.querySelectorAll('.menu-link').forEach(btn => btn.classList.toggle('active', btn?.dataset?.route === hash));
-    if (hash === '#history') { renderSessionHistory(); drawProgressChart(); }
-  }
-  window.addEventListener('hashchange', () => setActivePage(location.hash));
-  document.querySelectorAll('.menu-link').forEach(btn => btn.addEventListener('click', () => { location.hash = btn.dataset.route; }));
+  function renderLineChart(container, dataset) {
+    if (!container) return;
+    const width = 600;
+    const height = 220;
+    const margin = { top: 18, bottom: 32, left: 12, right: 12 };
+    const values = dataset.flatMap(({ current, previous }) => [current, previous]);
+    const max = Math.max(...values) * 1.05;
+    const min = Math.min(...values) * 0.9;
+    const range = max - min || 1;
 
-  // Quick actions
-  document.getElementById('go-new-session')?.addEventListener('click', () => { location.hash = '#new'; });
-  document.getElementById('go-history')?.addEventListener('click', () => { location.hash = '#history'; });
-  backHomeBtn?.addEventListener('click', () => {
+    const buildPoints = (key) => dataset
+      .map((entry, index) => {
+        const x = margin.left + (index / (dataset.length - 1)) * (width - margin.left - margin.right);
+        const y = height - margin.bottom - ((entry[key] - min) / range) * (height - margin.top - margin.bottom);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+
+    const currentPoints = buildPoints('current');
+    const previousPoints = buildPoints('previous');
+
+    const dotElements = dataset.map((entry, index) => {
+      const [x, y] = currentPoints.split(' ')[index].split(',').map(Number);
+      return `<circle cx="${x}" cy="${y}" r="4" fill="#6366f1" />`;
+    }).join('');
+
+    const labels = dataset.map((entry, index) => {
+      const x = margin.left + (index / (dataset.length - 1)) * (width - margin.left - margin.right);
+      const labelY = height - 12;
+      return `<text x="${x}" y="${labelY}" text-anchor="middle" fill="rgba(148,163,184,0.85)" font-size="12">${entry.month}</text>`;
+    }).join('');
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <polyline points="${previousPoints}" fill="none" stroke="rgba(129,140,248,0.6)" stroke-width="2.5" stroke-dasharray="6 6" stroke-linecap="round" />
+        <polyline points="${currentPoints}" fill="none" stroke="#6366f1" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+        ${dotElements}
+        ${labels}
+      </svg>
+    `;
+  }
+
+  function renderDonutChart(container, legendContainer, dataset) {
+    if (!container || !legendContainer) return;
+    const total = dataset.reduce((sum, entry) => sum + entry.value, 0);
+    let offset = 0;
+    const segments = dataset.map((entry) => {
+      const start = offset;
+      offset += (entry.value / total) * 100;
+      return `${entry.color} ${start}% ${offset}%`;
+    });
+    container.style.setProperty('--donut-gradient', `conic-gradient(${segments.join(', ')})`);
+    const topDevice = dataset.reduce((best, entry) => (entry.value > best.value ? entry : best), dataset[0]);
+    deviceLeading.textContent = `${Math.round((topDevice.value / total) * 100)}%`;
+
+    legendContainer.innerHTML = dataset.map((entry) => {
+      const percentage = Math.round((entry.value / total) * 100);
+      return `<li><span style="background:${entry.color}"></span>${entry.label}<strong style="margin-left:auto;">${percentage}%</strong></li>`;
+    }).join('');
+  }
+
+  function renderLearningProgress(element, children) {
+    if (!element) return;
+    const overall = Math.round(average(children.map((child) => child.progress)) * 100);
+    element.style.setProperty('--progress-value', overall);
+    element.querySelector('.progress-value').textContent = `${overall}%`;
+  }
+
+  function renderCenterProgress(container, centersData, childrenData) {
+    if (!container) return;
+    const progressByCenter = centersData.map((center) => {
+      const assigned = childrenData.filter((child) => child.centerId === center.id);
+      const score = assigned.length ? Math.round(average(assigned.map((child) => child.progress)) * 100) : 0;
+      return { name: center.name, score };
+    }).sort((a, b) => b.score - a.score);
+
+    container.innerHTML = progressByCenter.map(({ name, score }) => `
+      <div class="progress-row">
+        <strong>${name}</strong>
+        <div class="progress-bar"><span style="width:${score}%"></span></div>
+        <div class="progress-score">${score}%</div>
+      </div>
+    `).join('');
+  }
+
+  function renderRecommendations(container, items) {
+    if (!container) return;
+    container.innerHTML = items.map((item) => `
+      <div class="recommendation">
+        <div>
+          <strong>${item.title}</strong>
+          <p class="muted">${item.detail}</p>
+        </div>
+        <span class="badge badge-soft">${item.badge}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderCenters(container, centersData) {
+    if (!container) return;
+    container.innerHTML = centersData.map((center) => `
+      <article class="center-card">
+        <img src="${center.image}" alt="${center.name}">
+        <div class="card-body">
+          <strong>${center.name}</strong>
+          <span class="muted">${center.location}</span>
+          <p class="muted">${center.focus}</p>
+          <div class="tag">${center.programs.join(' • ')}</div>
+        </div>
+        <footer>
+          <span class="muted">${center.programs.length} active programs</span>
+        </footer>
+      </article>
+    `).join('');
+  }
+
+  function renderMapPins(container, centersData) {
+    if (!container) return;
+    container.innerHTML = centersData.map((center) => `
+      <div class="map-pin" style="left:${center.map.x}%; top:${center.map.y}%">
+        <span>${center.name}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderSpecialists(container, specialistsData) {
+    if (!container) return;
+    container.innerHTML = specialistsData.map((specialist) => `
+      <article class="specialist-card">
+        <div class="avatar" style="background-image:url(${specialist.avatar}); background-size:cover; background-position:center;"></div>
+        <strong>${specialist.name}</strong>
+        <span class="muted">${specialist.specialty}</span>
+        <p>${specialist.focus}</p>
+        <span class="badge badge-soft">${specialist.tenure}</span>
+      </article>
+    `).join('');
+  }
+
+  function renderModules(container, modulesData) {
+    if (!container) return;
+    container.innerHTML = modulesData.map((module) => `
+      <article class="module-card">
+        <header>
+          <strong>${module.name}</strong>
+          <span class="tag">${module.category}</span>
+        </header>
+        <p class="muted">${module.focus}</p>
+        <div class="module-meta">
+          <span>⏱️ ${module.duration}</span>
+          <span>🧭 ${module.sessions} sessions</span>
+        </div>
+        <button type="button" class="primary ghost">Assign module</button>
+      </article>
+    `).join('');
+  }
+
+  function renderAssessment(childId) {
+    const child = kids.find((item) => item.id === childId) || kids[0];
+    if (!child) return;
+    const center = centers.find((item) => item.id === child.centerId);
+    assessmentSummary.innerHTML = `
+      <strong>${child.name}</strong>
+      <div class="pill">Age ${child.age}</div>
+      <div class="pill">${center ? center.name : '—'}</div>
+      <p class="muted">Current focus: ${child.program}</p>
+      <p class="muted">Streak: ${child.streak} active weeks • Progress ${Math.round(child.progress * 100)}%</p>
+    `;
+
+    assessmentModules.innerHTML = vrModules.slice(0, 4).map((module, index) => `
+      <div class="module-form" data-module="${module.id}">
+        <header>
+          <strong>${module.name}</strong>
+          <span class="muted">${module.duration}</span>
+        </header>
+        <p class="muted">${module.focus}</p>
+        <label>Engagement score: <strong id="score-${module.id}">${70 + index * 5}</strong></label>
+        <input type="range" min="40" max="100" value="${70 + index * 5}" data-target="score-${module.id}">
+        <label>Session notes</label>
+        <textarea placeholder="Observations, cues that worked, next steps..."></textarea>
+      </div>
+    `).join('');
+
+    assessmentModules.querySelectorAll('input[type="range"]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const targetId = input.dataset.target;
+        const target = document.getElementById(targetId);
+        if (target) target.textContent = input.value;
+      });
+    });
+  }
+
+  function populateAssessmentSelector(childrenData) {
+    assessmentChildSelect.innerHTML = childrenData.map((child) => `
+      <option value="${child.id}">${child.name}</option>
+    `).join('');
+    renderAssessment(childrenData[0]?.id);
+  }
+
+  function updateSummary() {
+    summaryCenters.textContent = centers.length;
+    summarySpecialists.textContent = specialists.length;
+    summaryKids.textContent = kids.length;
+    summaryModules.textContent = vrModules.length;
+
+    renderLineChart(vrChartContainer, vrTimeline);
+    const latest = vrTimeline[vrTimeline.length - 1];
+    vrMonthTotal.textContent = `${formatNumber(latest.current)} min`;
+    const delta = latest.previous ? ((latest.current - latest.previous) / latest.previous) * 100 : 0;
+    vrMonthChange.textContent = `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`;
+    vrMonthChange.classList.toggle('positive', delta >= 0);
+
+    renderDonutChart(deviceDonut, deviceLegend, deviceUsage);
+    renderLearningProgress(learningProgress, kids);
+    renderCenterProgress(centerProgress, centers, kids);
+    renderRecommendations(recommendationList, recommendations);
+  }
+
+  // Setup user details
+  sidebarName.textContent = userName || 'UnitySphere Specialist';
+  sidebarEmail.textContent = userEmail || 'demo@unitysphere.test';
+  userNameTarget.textContent = userName || 'UnitySphere Specialist';
+
+  const avatarImage = 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=60';
+  [headerAvatar, sidebarAvatar].forEach((element) => {
+    if (element) {
+      element.style.backgroundImage = `url(${avatarImage})`;
+      element.style.backgroundSize = 'cover';
+      element.style.backgroundPosition = 'center';
+    }
+  });
+
+  const hour = new Date().getHours();
+  greeting.textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+  navLinks.forEach((link) => {
+    link.addEventListener('click', () => setActiveSection(link.dataset.section));
+  });
+
+  logoutBtn?.addEventListener('click', () => {
     sessionStorage.removeItem('us_name');
     sessionStorage.removeItem('us_email');
     window.location.href = 'index.html';
   });
-  backToClientsBtn?.addEventListener('click', () => { location.hash = '#clients'; });
 
-  // ===== Clients rendering =====
-  function renderClients() {
-    clientList.innerHTML = '';
-    clients.forEach((client) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'client-btn';
-      button.textContent = client.name;
-      button.dataset.id = client.id;
-      if (activeClientInput.value === client.id) button.classList.add('active');
-      button.addEventListener('click', () => selectClient(client.id));
-      clientList.appendChild(button);
-    });
-  }
-  function selectClient(clientId) {
-    const client = clients.find((c) => c.id === clientId);
-    if (!client) return;
-    if (sessionForm) sessionForm.reset();
-    if (activeClientInput) activeClientInput.value = clientId;
-    clientTitle.textContent = client.name;
-    renderClients();
-    const notes = document.getElementById('session-notes'); if (notes) notes.value = '';
-    updateOverallScore();
-    const latestIdx = client.sessions.length - 1;
-    if (latestIdx >= 0) showSessionDetails(latestIdx);
-    location.hash = '#clients';
-    renderSessionHistory();
-    drawProgressChart();
-  }
-  addClientBtn.addEventListener('click', () => {
-    const name = prompt('اسم العميل الجديد'); if (!name) return;
-    const id = `c${Date.now()}`; clients.push({ id, name, sessions: [] }); renderClients();
-    renderClientSummary(null);
+  assessmentChildSelect.addEventListener('change', (event) => {
+    renderAssessment(event.target.value);
   });
 
-  function renderClientSummary(client) {
-    if (!clientSummaryBox) return;
-    if (!client) {
-      clientSummaryBox.innerHTML = '<div class="hint">اختر عميلًا لعرض المؤشرات.</div>';
-      clientSummaryBox.classList.add('hint');
-      return;
-    }
-    if (!client.sessions.length) {
-      clientSummaryBox.innerHTML = '<div class="hint">لا توجد جلسات بعد لهذا العميل.</div>';
-      clientSummaryBox.classList.add('hint');
-      return;
-    }
-    clientSummaryBox.classList.remove('hint');
-    const lastSession = client.sessions[client.sessions.length - 1];
-    const dom = computeDomainAverages(lastSession);
-    const lastDate = new Date(lastSession.timestamp).toLocaleDateString();
-    const labels = {
-      cognitive: 'المعرفي',
-      language: 'اللغة',
-      social: 'الاجتماعي',
-      motor: 'الحركي',
-      academic: 'الأكاديمي',
-      executive: 'التنفيذي'
-    };
-    clientSummaryBox.innerHTML = `
-      <div class="stat-card">
-        <span class="hint">عدد الجلسات</span>
-        <strong>${client.sessions.length}</strong>
-        <span class="trend-up">آخر تحديث: ${lastDate}</span>
-      </div>
-      ${Object.entries(labels).map(([key, label]) => `
-        <div class="stat-card">
-          <span class="hint">${label}</span>
-          <strong>${dom[key].toFixed(2)}</strong>
-          <span class="trend-up">${dom[key] >= 3 ? 'في المسار الصحيح' : 'بحاجة لمتابعة'}</span>
-        </div>
-      `).join('')}
-      <div class="stat-card">
-        <span class="hint">المتوسط العام</span>
-        <strong>${dom.overall.toFixed(2)}</strong>
-        <span class="trend-up">${dom.overall >= 3.5 ? 'نتائج إيجابية' : 'استمر بالدعم'}</span>
-      </div>
-    `;
-  }
-
-  // ===== History (with pagination) =====
-  const PAGE_SIZE = 5;
-  let historyPage = 1;
-  function getActiveClient(){ return clients.find(c => c.id === activeClientInput.value); }
-  function totalPagesForClient(client){ return Math.max(1, Math.ceil((client?.sessions.length || 0) / PAGE_SIZE)); }
-
-  function renderSessionHistory() {
-    const client = getActiveClient();
-    if (!client) {
-      sessionsHistory.innerHTML = '<div class="hint">اختر عميلًا لعرض السجل.</div>';
-      pageInfo.textContent = 'صفحة 1';
-      return;
-    }
-    if (client.sessions.length === 0) {
-      sessionsHistory.innerHTML = '<div class="hint">لا توجد جلسات بعد.</div>';
-      pageInfo.textContent = 'صفحة 1';
-      return;
-    }
-    historyPage = Math.min(historyPage, totalPagesForClient(client));
-    const start = (historyPage - 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    const slice = client.sessions.slice().reverse().slice(start, end);
-
-    const rows = slice.map((s, idx) => {
-      const originalIndex = client.sessions.length - 1 - (start + idx);
-      const d = new Date(s.timestamp);
-      const dom = computeDomainAverages(s);
-      return `<div class="history-row">
-        <div>
-          <strong>${s.title || 'جلسة بدون اسم'}</strong>
-          <div class="hint">${d.toLocaleDateString()} — عام: ${dom.overall.toFixed(2)}</div>
-        </div>
-        <button type="button" data-idx="${originalIndex}" class="link view-session">عرض</button>
-        <button type="button" data-idx="${originalIndex}" class="link delete-session" style="color:#ef4444;">حذف</button>
-      </div>`;
-    }).join('');
-    sessionsHistory.innerHTML = rows;
-    pageInfo.textContent = `صفحة ${historyPage} من ${totalPagesForClient(client)}`;
-  }
-  sessionsHistory?.addEventListener('click', (e) => {
-    const btn = e.target.closest('button'); if (!btn) return;
-    const idx = Number(btn.getAttribute('data-idx'));
-    const client = getActiveClient(); if (!client) return;
-    if (btn.classList.contains('view-session')) showSessionDetails(idx);
-    else if (btn.classList.contains('delete-session')) {
-      client.sessions.splice(idx,1); renderSessionHistory(); drawProgressChart(); updateOverallScore();
-    }
-  });
-  prevPageBtn?.addEventListener('click', () => {
-    const client = getActiveClient(); if (!client) return;
-    if (historyPage > 1) { historyPage--; renderSessionHistory(); }
-  });
-  nextPageBtn?.addEventListener('click', () => {
-    const client = getActiveClient(); if (!client) return;
-    if (historyPage < totalPagesForClient(client)) { historyPage++; renderSessionHistory(); }
+  saveAssessmentBtn.addEventListener('click', () => {
+    assessmentStatus.textContent = 'Outcomes saved to timeline';
+    assessmentStatus.style.color = 'var(--color-positive)';
+    setTimeout(() => {
+      assessmentStatus.textContent = 'Draft not saved';
+      assessmentStatus.style.color = '';
+    }, 3200);
   });
 
-  function showSessionDetails(index) {
-    const client = getActiveClient(); if (!client) return;
-    const s = client.sessions[index]; if (!s) return;
-    const d = new Date(s.timestamp); const dom = computeDomainAverages(s);
-    const box = document.getElementById('session-details');
-    if (!box) return;
-    box.innerHTML = `<div style="display:grid; gap:6px;">
-      <div><strong>${s.title || 'جلسة'}</strong> — <span class="hint">${d.toLocaleString()}</span></div>
-      <div class="hint">التقييم العام: ${dom.overall.toFixed(2)}</div>
-      <div>المعرفي: ${dom.cognitive.toFixed(2)} | اللغة: ${dom.language.toFixed(2)} | الاجتماعي: ${dom.social.toFixed(2)}</div>
-      <div>الحركي: ${dom.motor.toFixed(2)} | الأكاديمي: ${dom.academic.toFixed(2)} | التنفيذي: ${dom.executive.toFixed(2)}</div>
-      ${s.focus ? `<div><strong>محور الجلسة:</strong> ${s.focus}</div>` : ''}
-      ${s.location ? `<div><strong>المكان:</strong> ${s.location}</div>` : ''}
-      <div><strong>الملاحظات:</strong><br>${(s.notes||'—').replace(/</g,'&lt;')}</div>
-    </div>`;
-  }
-
-  // ===== New Session save/reset =====
-  sessionForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const clientId = activeClientInput.value; if (!clientId) { alert('اختر عميلًا أولاً.'); return; }
-    const formData = new FormData(sessionForm);
-    const sessionData = {};
-    scoreFields.forEach((field) => {
-      const value = Number(formData.get(field));
-      sessionData[field] = Number.isFinite(value) && value > 0 ? value : 0;
-    });
-    sessionData.notes = formData.get('notes');
-    sessionData.title = formData.get('sessionTitle') || `جلسة ${new Date().toLocaleDateString()}`;
-    const providedDate = formData.get('sessionDate');
-    sessionData.timestamp = providedDate ? new Date(providedDate).toISOString() : new Date().toISOString();
-    sessionData.focus = formData.get('focus');
-    sessionData.location = formData.get('location');
-    const client = clients.find((c) => c.id === clientId);
-    client.sessions.push(sessionData);
-    updateOverallScore();
-    alert('تم حفظ الجلسة بنجاح!');
-    sessionForm.reset();
-    if (activeClientInput) activeClientInput.value = clientId;
-    showSessionDetails(client.sessions.length - 1);
-    location.hash = '#history';
-    renderSessionHistory();
-    drawProgressChart();
-  });
-  resetFormBtn?.addEventListener('click', () => {
-    const currentClient = activeClientInput?.value || '';
-    sessionForm.reset();
-    if (activeClientInput) activeClientInput.value = currentClient;
-    const notes = document.getElementById('session-notes'); if (notes) notes.value = '';
-  });
-
-  // ===== Chart =====
-  function drawProgressChart() {
-    if (!progressCanvas) return;
-    const client = getActiveClient();
-    const ctx = progressCanvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const cssW = progressCanvas.clientWidth;
-    const cssH = progressCanvas.clientHeight;
-    progressCanvas.width = Math.max(600, cssW) * dpr;
-    progressCanvas.height = Math.max(200, cssH) * dpr;
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0,0,progressCanvas.width, progressCanvas.height);
-    const width = progressCanvas.width / dpr;
-    const height = progressCanvas.height / dpr;
-    const pad = 40;
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(pad, pad);
-    ctx.lineTo(pad, height - pad);
-    ctx.lineTo(width - pad, height - pad);
-    ctx.stroke();
-    if (!client || client.sessions.length === 0) {
-      ctx.fillStyle = '#6b7280';
-      ctx.fillText('لا توجد بيانات لعرضها', pad + 10, height/2);
-      return;
-    }
-    const points = client.sessions.map((s, i) => ({ x: i, y: computeDomainAverages(s).overall }));
-    const xMax = Math.max(1, points.length - 1);
-    const mapX = (x) => pad + (x / xMax) * (width - 2*pad);
-    const mapY = (y) => (height - pad) - (y / 5) * (height - 2*pad);
-    ctx.strokeStyle = '#f3f4f6';
-    for (let y=1; y<=5; y++){ const yy = mapY(y); ctx.beginPath(); ctx.moveTo(pad, yy); ctx.lineTo(width-pad, yy); ctx.stroke(); }
-    ctx.fillStyle = '#6b7280'; ctx.font = '12px Cairo, sans-serif';
-    for (let y=0; y<=5; y++) ctx.fillText(String(y), 8, mapY(y)+4);
-    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    points.forEach((p, i)=>{ const X = mapX(i), Y = mapY(p.y); if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y); });
-    ctx.stroke();
-    ctx.fillStyle = '#22c55e';
-    points.forEach((p, i) => { const X = mapX(i), Y = mapY(p.y); ctx.beginPath(); ctx.arc(X,Y,3,0,Math.PI*2); ctx.fill(); });
-  }
-
-  // ===== Init =====
-  function init() {
-    // seed sample clients if none
-    if (!Array.isArray(clients) || !clients.length) {
-      clients = [
-        { id:'c1', name:'عميل جديد', sessions:[] }
-      ];
-    }
-    renderClients();
-    setActivePage(location.hash || '#clients');
-    if (clients[0]) {
-      selectClient(clients[0].id);
-    }
-  }
-  init();
+  // Initial render
+  updateSummary();
+  renderCenters(centersGrid, centers);
+  renderMapPins(mapPins, centers);
+  renderSpecialists(specialistsGrid, specialists);
+  renderModules(modulesGrid, vrModules);
+  populateAssessmentSelector(kids);
 }

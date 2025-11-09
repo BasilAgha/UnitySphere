@@ -1,285 +1,228 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UnitySphere | لوحة المتابعة</title>
+  <title>UnitySphere | Experience Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
-<body>
-  <section id="dashboard">
-    <header>
-      <div class="user-meta">
+<body class="dashboard-page">
+  <div class="app-shell" id="dashboard">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">US</div>
         <div>
-          <span class="hint">أهلاً بعودتك</span>
-          <h1 id="user-display">—</h1>
-        </div>
-        <div class="header-actions">
-          <div class="status-pill">
-            <span>المتوسط العام</span>
-            <strong id="overall-score">—</strong>
-          </div>
-          <button type="button" class="back-btn" id="back-home">⬅️ العودة</button>
+          <strong>UnitySphere</strong>
+          <span>Immersive Care</span>
         </div>
       </div>
-      <div id="breadcrumb" class="breadcrumb"></div>
-    </header>
 
-    <div class="layout">
-      <!-- Sidebar -->
-      <nav>
-        <h2>العملاء</h2>
-        <div class="client-list" id="client-list"></div>
-        <button class="primary" id="add-client">➕ إضافة عميل</button>
-        <hr class="divider">
-        <div class="menu">
-          <button class="menu-link" data-route="#clients">👤 العميل</button>
-          <button class="menu-link" data-route="#new">📝 جلسة جديدة</button>
-          <button class="menu-link" data-route="#history">📈 السجل والتقدم</button>
-          <button class="menu-link" data-route="#settings">⚙️ الإعدادات</button>
-        </div>
+      <nav class="sidebar-nav">
+        <button class="nav-link active" data-section="overview">🏠 <span>Dashboard</span></button>
+        <button class="nav-link" data-section="centers">🏙️ <span>Centers</span></button>
+        <button class="nav-link" data-section="specialists">👩‍⚕️ <span>Specialists</span></button>
+        <button class="nav-link" data-section="modules">🧠 <span>VR Modules</span></button>
+        <button class="nav-link" data-section="assessment">📝 <span>Assessment</span></button>
       </nav>
 
-      <!-- Page container -->
+      <div class="sidebar-footer">
+        <div class="current-user">
+          <div class="avatar avatar-static" id="sidebar-avatar"></div>
+          <div>
+            <strong id="sidebar-name">—</strong>
+            <span id="sidebar-email" class="hint">—</span>
+          </div>
+        </div>
+        <button type="button" class="ghost" id="logout">Log out</button>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-header">
+        <div>
+          <p class="hint" id="greeting">Welcome back</p>
+          <h1 id="section-title">Dashboard</h1>
+        </div>
+        <div class="header-actions">
+          <div class="user-chip">
+            <div class="avatar avatar-static" id="header-avatar"></div>
+            <div>
+              <strong id="user-name">—</strong>
+              <span id="user-role" class="hint">Lead Therapist</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
       <main>
-        <section id="page-clients" class="page">
-          <h2>نظرة عامة</h2>
-          <div class="cards">
-            <div class="card highlight">
-              <div class="card-title">العميل الحالي</div>
-              <div class="card-body">
-                <div id="client-title" class="big">— اختر عميلًا من القائمة</div>
-                <div class="hint">استخدم الشريط الجانبي للتبديل بين الصفحات.</div>
-              </div>
-              <div class="card-actions">
-                <button type="button" class="primary" id="go-new-session">بدء جلسة جديدة</button>
-                <button type="button" class="link" id="go-history">عرض السجل</button>
-              </div>
-            </div>
-            <div class="card" id="client-overview">
-              <div class="card-title">نظرة سريعة على الأداء</div>
-              <div id="client-summary" class="stat-grid hint">اختر عميلًا لعرض المؤشرات.</div>
-            </div>
-            <div class="card">
-              <div class="card-title">تفاصيل آخر جلسة</div>
-              <div id="session-details" class="card-body hint">لا توجد بيانات بعد.</div>
-            </div>
+        <section id="section-overview" class="section active">
+          <div class="stats-grid">
+            <article class="stat-card">
+              <header>
+                <span class="label">Centers</span>
+                <span class="trend positive" id="centers-trend">+4.1%</span>
+              </header>
+              <div class="stat-value" id="summary-centers">0</div>
+              <p class="muted">Active across smart therapy hubs</p>
+            </article>
+            <article class="stat-card">
+              <header>
+                <span class="label">Specialists</span>
+                <span class="trend neutral" id="specialists-trend">+0.8%</span>
+              </header>
+              <div class="stat-value" id="summary-specialists">0</div>
+              <p class="muted">Certified immersive therapy experts</p>
+            </article>
+            <article class="stat-card">
+              <header>
+                <span class="label">Kids</span>
+                <span class="trend positive" id="kids-trend">+6 enrolled</span>
+              </header>
+              <div class="stat-value" id="summary-kids">0</div>
+              <p class="muted">Active journeys this month</p>
+            </article>
+            <article class="stat-card">
+              <header>
+                <span class="label">VR Modules</span>
+                <span class="trend neutral" id="modules-trend">Stable</span>
+              </header>
+              <div class="stat-value" id="summary-modules">0</div>
+              <p class="muted">Curated and assigned experiences</p>
+            </article>
           </div>
-        </section>
 
-        <section id="page-new" class="page">
-          <h2>جلسة جديدة</h2>
-          <p class="hint">املأ تفاصيل الجلسة الجديدة، وجميع الحقول اختيارية ولكن تساعد في بناء تقارير دقيقة.</p>
-          <form id="session-form">
-            <input type="hidden" id="active-client" />
+          <div class="grid-2-col">
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <h2>VR minutes per month</h2>
+                  <p class="muted">Comparing last 6 months</p>
+                </div>
+                <span class="badge badge-soft">Live sync</span>
+              </div>
+              <div class="chart" id="vr-minutes-chart"></div>
+              <footer class="card-footer">
+                <div>
+                  <strong id="vr-month-total">—</strong>
+                  <span class="muted">This month</span>
+                </div>
+                <div class="trend positive" id="vr-month-change">+0%</div>
+              </footer>
+            </article>
 
-            <div class="grid-2">
-              <div class="question">
-                <label for="session-title">اسم الجلسة</label>
-                <input type="text" id="session-title" name="sessionTitle" placeholder="مثال: تقييم نصف سنوي">
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Sessions by device</h2>
+                  <p class="muted">Headsets vs projection setups</p>
+                </div>
               </div>
-              <div class="question">
-                <label for="session-date">تاريخ الجلسة</label>
-                <input type="date" id="session-date" name="sessionDate">
+              <div class="donut-wrapper">
+                <div class="donut" id="device-donut">
+                  <div class="donut-center">
+                    <strong id="device-leading">—</strong>
+                    <span class="muted">Top device</span>
+                  </div>
+                </div>
+                <ul class="chart-legend" id="device-legend"></ul>
               </div>
-            </div>
-
-            <fieldset class="grid-2">
-              <legend>معلومات عامة</legend>
-              <div class="question">
-                <label for="session-focus">محور الجلسة</label>
-                <input type="text" id="session-focus" name="focus" placeholder="مثال: تعزيز الانتباه السمعي">
-              </div>
-              <div class="question">
-                <label for="session-location">مكان الجلسة</label>
-                <input type="text" id="session-location" name="location" placeholder="المركز / عن بعد">
-              </div>
-            </fieldset>
-
-            <fieldset class="grid-3">
-              <legend>المجال المعرفي</legend>
-              <div class="question">
-                <label>الانتباه</label>
-                <select name="cognitiveAttention">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>حل المشكلات</label>
-                <select name="cognitiveProblem">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>الذاكرة</label>
-                <select name="cognitiveMemory">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>التخطيط</label>
-                <select name="cognitivePlanning">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-            </fieldset>
-
-            <fieldset class="grid-3">
-              <legend>اللغة والتواصل</legend>
-              <div class="question">
-                <label>الاستيعاب</label>
-                <select name="languageComprehension">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>التعبير</label>
-                <select name="languageExpression">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>المهارات الاجتماعية</label>
-                <select name="languageSocial">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-            </fieldset>
-
-            <fieldset class="grid-3">
-              <legend>الجانب الاجتماعي والسلوكي</legend>
-              <div class="question">
-                <label>التنظيم الانفعالي</label>
-                <select name="socialEmotion">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>التعاون</label>
-                <select name="socialCooperation">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>ضبط السلوك</label>
-                <select name="socialRegulation">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-            </fieldset>
-
-            <fieldset class="grid-3">
-              <legend>المهارات الحركية</legend>
-              <div class="question">
-                <label>الحركية الكبرى</label>
-                <select name="motorGross">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>الحركية الدقيقة</label>
-                <select name="motorFine">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>المعالجة الحسية</label>
-                <select name="motorSensory">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-            </fieldset>
-
-            <fieldset class="grid-3">
-              <legend>المجال الأكاديمي</legend>
-              <div class="question">
-                <label>الرياضيات</label>
-                <select name="academicNumber">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>اللغة</label>
-                <select name="academicLanguage">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>التطبيقات</label>
-                <select name="academicApplication">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-            </fieldset>
-
-            <fieldset class="grid-3">
-              <legend>المهارات التنفيذية</legend>
-              <div class="question">
-                <label>المرونة</label>
-                <select name="executiveFlexibility">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>الكف</label>
-                <select name="executiveInhibition">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-              <div class="question">
-                <label>المثابرة</label>
-                <select name="executivePersistence">
-                  <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                </select>
-              </div>
-            </fieldset>
-
-            <div class="question">
-              <label for="session-notes">ملاحظات الجلسة</label>
-              <textarea id="session-notes" name="notes" placeholder="تفاصيل عامة، مستوى التفاعل، الواجب المنزلي..."></textarea>
-            </div>
-
-            <div class="form-actions">
-              <button type="button" class="link" id="reset-form">مسح الحقول</button>
-              <div class="form-actions-right">
-                <button type="button" class="link" id="back-to-clients">⬅️ الرجوع للقائمة</button>
-                <button type="submit" class="primary">حفظ الجلسة</button>
-              </div>
-            </div>
-          </form>
-        </section>
-
-        <section id="page-history" class="page">
-          <h2>السجل والتقدم</h2>
-          <section id="progress-section">
-            <h3 class="sub">تطور الطفل عبر الجلسات</h3>
-            <canvas id="progress-canvas" class="canvas"></canvas>
-          </section>
-          <section id="history-section">
-            <h3 class="sub">سجل الجلسات</h3>
-            <div id="sessions-history" class="card"><div class="hint">اختر عميلًا أولًا لعرض السجل.</div></div>
-            <div class="pager">
-              <button class="link" id="prev-page">⟵ السابق</button>
-              <span id="page-info" class="hint">صفحة 1</span>
-              <button class="link" id="next-page">التالي ⟶</button>
-            </div>
-          </section>
-        </section>
-
-        <section id="page-settings" class="page">
-          <h2>الإعدادات</h2>
-          <div class="card">
-            <div class="card-title">حفظ محلي (قريبًا)</div>
-            <div class="card-body hint">دعم التخزين المحلي والتصدير إلى CSV/PDF يمكن تفعيله هنا لاحقًا.</div>
+            </article>
           </div>
+
+          <div class="grid-2-col">
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Learning progress</h2>
+                  <p class="muted">Average milestone completion</p>
+                </div>
+              </div>
+              <div class="progress-circle" id="learning-progress">
+                <span class="progress-value">—</span>
+              </div>
+              <footer class="card-footer">
+                <span class="muted">Steady growth compared to last review cycle.</span>
+              </footer>
+            </article>
+
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Progress by center</h2>
+                  <p class="muted">Average engagement scores</p>
+                </div>
+              </div>
+              <div class="stacked-list" id="center-progress"></div>
+            </article>
+          </div>
+
+          <article class="card full">
+            <div class="card-header">
+              <div>
+                <h2>Recommendations</h2>
+                <p class="muted">Adaptive suggestions for the upcoming sessions</p>
+              </div>
+            </div>
+            <div class="recommendations" id="recommendation-list"></div>
+          </article>
+        </section>
+
+        <section id="section-centers" class="section">
+          <header class="section-header">
+            <h2>Centers</h2>
+            <button type="button" class="primary ghost">Add new center</button>
+          </header>
+          <div class="centers-map" id="centers-map">
+            <div class="map-pins" id="map-pins"></div>
+            <span class="muted">Smart distribution across regions</span>
+          </div>
+          <div class="card-grid" id="centers-grid"></div>
+        </section>
+
+        <section id="section-specialists" class="section">
+          <header class="section-header">
+            <h2>Specialists</h2>
+            <button type="button" class="primary ghost">Invite specialist</button>
+          </header>
+          <div class="specialists-grid" id="specialists-grid"></div>
+        </section>
+
+        <section id="section-modules" class="section">
+          <header class="section-header">
+            <h2>VR Modules</h2>
+            <div class="module-filters">
+              <button type="button" class="chip active">All</button>
+              <button type="button" class="chip">Sensory</button>
+              <button type="button" class="chip">Cognitive</button>
+              <button type="button" class="chip">Motor Skills</button>
+            </div>
+          </header>
+          <div class="modules-grid" id="modules-grid"></div>
+        </section>
+
+        <section id="section-assessment" class="section">
+          <header class="section-header">
+            <h2>Assessment</h2>
+            <div class="assessment-controls">
+              <label for="assessment-child" class="muted">Select child</label>
+              <select id="assessment-child"></select>
+            </div>
+          </header>
+          <article class="card">
+            <div class="assessment-summary" id="assessment-summary"></div>
+            <div class="assessment-modules" id="assessment-modules"></div>
+            <footer class="card-footer">
+              <button type="button" class="primary" id="save-assessment">Record outcomes</button>
+              <span class="muted" id="assessment-status">Draft not saved</span>
+            </footer>
+          </article>
         </section>
       </main>
     </div>
-  </section>
-
+  </div>
   <script src="app.js"></script>
 </body>
 </html>
