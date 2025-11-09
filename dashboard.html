@@ -120,18 +120,68 @@
             </div>
 
             <div id="add-center-panel" class="card collapsible">
+              <div class="card-header">
+                <div>
+                  <h2>Register new center</h2>
+                  <p class="hint">Provide credentials and the map position to plot it instantly.</p>
+                </div>
+              </div>
               <form id="form-center" class="grid-2-col" autocomplete="off">
-                <div class="input-group">
-                  <label for="center-name">Center name</label>
-                  <input id="center-name" required placeholder="Cogniplay City Center">
+                <div class="form-panel">
+                  <div class="input-group">
+                    <label for="center-name">Center name</label>
+                    <input id="center-name" required placeholder="Cogniplay City Center">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-location">Location</label>
+                    <input id="center-location" placeholder="Riyadh, KSA">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-image">Cover image URL</label>
+                    <input id="center-image" placeholder="https://.../cover.jpg">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-desc">Short description</label>
+                    <input id="center-desc" placeholder="Immersive neurodevelopmental therapy">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-tags">Capabilities (comma separated)</label>
+                    <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
+                  </div>
+                  <div class="form-divider">
+                    <h3>Center login</h3>
+                    <p class="hint">Share credentials securely with the center lead.</p>
+                  </div>
+                  <div class="input-group">
+                    <label for="center-username">Center username</label>
+                    <input id="center-username" required placeholder="center-riyadh">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-password">Center password</label>
+                    <input id="center-password" type="password" required placeholder="StrongPass!123">
+                  </div>
+                  <div class="grid-inline">
+                    <div class="input-group">
+                      <label for="center-posx">Map X (0–100)</label>
+                      <input id="center-posx" type="number" min="0" max="100" placeholder="28">
+                    </div>
+                    <div class="input-group">
+                      <label for="center-posy">Map Y (0–100)</label>
+                      <input id="center-posy" type="number" min="0" max="100" placeholder="52">
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="ghost" id="btn-cancel-center">Cancel</button>
+                    <button class="primary" type="submit">Save center</button>
+                  </div>
                 </div>
-              </div>
-              <div class="progress-circle" style="--progress-value:85;">
-                <div class="progress-center">
-                  <strong>85%</strong>
-                  <span class="hint">Target completion</span>
+                <div class="progress-circle" style="--progress-value:85;">
+                  <div class="progress-center">
+                    <strong>85%</strong>
+                    <span class="hint">Target completion</span>
+                  </div>
                 </div>
-              </div>
+              </form>
             </div>
             <div class="card progress-list">
               <div class="card-header">
@@ -165,25 +215,14 @@
               </div>
               <div class="recommendation">
                 <div class="recommendation-icon">⚡</div>
-                <div>
+                <div class="recommendation-body">
                   <strong>Increase sensory modules</strong>
                   <p class="hint">Add 3 new sessions to Innovate Minds to match demand.</p>
-                </div>
-                <div class="form-divider">
-                  <h3>Center login</h3>
-                  <p class="hint">Set credentials to share securely with the center manager.</p>
-                </div>
-                <div class="input-group">
-                  <label for="center-username">Center username</label>
-                  <input id="center-username" required placeholder="center-riyadh">
-                </div>
-                <div class="input-group">
-                  <label for="center-password">Center password</label>
-                  <input id="center-password" type="password" required placeholder="StrongPass!123">
-                </div>
-                <div class="input-group">
-                  <label for="center-posx">Map X (0–100)</label>
-                  <input id="center-posx" type="number" min="0" max="100" placeholder="28">
+                  <ul class="recommendation-list">
+                    <li>Prioritize sensory integration content for the Innovate Minds Center.</li>
+                    <li>Pair new sessions with specialists focused on OT and PT.</li>
+                    <li>Track progress through the assessment log after launch.</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -455,64 +494,6 @@
           </div>
         </section>
       </main>
-    </div>
-  </div>
-
-  <div class="modal-backdrop" id="add-center-modal" aria-hidden="true">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>Add New Center</h2>
-        <button type="button" class="icon-button" id="close-center-modal" aria-label="Close">✕</button>
-      </div>
-      <p class="modal-subtitle">Provide the new center details and the login credentials for its administrator.</p>
-      <form id="form-center" autocomplete="off">
-        <div class="input-group">
-          <label for="center-name">Center name</label>
-          <input id="center-name" required placeholder="Cogniplay City Center">
-        </div>
-        <div class="input-group">
-          <label for="center-location">Location</label>
-          <input id="center-location" placeholder="Riyadh, KSA">
-        </div>
-        <div class="input-group">
-          <label for="center-image">Cover image URL</label>
-          <input id="center-image" placeholder="https://.../cover.jpg">
-        </div>
-        <div class="input-group">
-          <label for="center-desc">Short description</label>
-          <input id="center-desc" placeholder="Immersive neurodevelopmental therapy">
-        </div>
-        <div class="input-group">
-          <label for="center-tags">Capabilities (comma separated)</label>
-          <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
-        </div>
-        <div class="form-divider">
-          <h3>Center login</h3>
-          <p class="hint">Admins should share these credentials securely with the center.</p>
-        </div>
-        <div class="input-group">
-          <label for="center-username">Center username</label>
-          <input id="center-username" required placeholder="center-riyadh">
-        </div>
-        <div class="input-group">
-          <label for="center-password">Center password</label>
-          <input id="center-password" type="password" required placeholder="StrongPass!123">
-        </div>
-        <div class="grid-inline">
-          <div class="input-group">
-            <label for="center-posx">Map X (0–100)</label>
-            <input id="center-posx" type="number" min="0" max="100" placeholder="28">
-          </div>
-          <div class="input-group">
-            <label for="center-posy">Map Y (0–100)</label>
-            <input id="center-posy" type="number" min="0" max="100" placeholder="52">
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="ghost" id="cancel-center-modal">Cancel</button>
-          <button class="primary" type="submit">Save</button>
-        </div>
-      </form>
     </div>
   </div>
 
