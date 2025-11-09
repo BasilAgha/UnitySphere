@@ -2,8 +2,171 @@
 const isLoginPage = location.pathname.endsWith('index.html') || !location.pathname.includes('.html');
 const isDashboardPage = location.pathname.endsWith('dashboard.html');
 
-// === Auth page logic ===
+const STORAGE_KEY = 'unitysphere-data';
+const storageAvailable = typeof localStorage !== 'undefined';
+
+const DEFAULT_DATA = {
+  centers: [
+    {
+      id: 'center-1',
+      name: 'Cogniplay City Center',
+      location: 'Riyadh, KSA',
+      focus: 'Immersive neurodevelopmental therapy',
+      programs: ['Cognitive Focus', 'Sensory Regulation'],
+      image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=60',
+      map: { x: 28, y: 46 }
+    },
+    {
+      id: 'center-2',
+      name: 'NeuroConnect Hub',
+      location: 'Jeddah, KSA',
+      focus: 'Executive function and language',
+      programs: ['Executive Function Bridge', 'Language Labs'],
+      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=60',
+      map: { x: 56, y: 58 }
+    },
+    {
+      id: 'center-3',
+      name: 'Innovata Wellness Center',
+      location: 'Dubai, UAE',
+      focus: 'Sensory integration & family coaching',
+      programs: ['Sensory Symphony', 'Family Coaching'],
+      image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=800&q=60',
+      map: { x: 74, y: 42 }
+    },
+    {
+      id: 'center-4',
+      name: 'Cortex Meadow Clinic',
+      location: 'Doha, Qatar',
+      focus: 'Motor planning & regulation',
+      programs: ['Motor Mastery', 'Calm Transitions'],
+      image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=60',
+      map: { x: 64, y: 32 }
+    }
+  ],
+  users: [
+    { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test' },
+    { username: 'center-riyadh', password: 'Center123!', name: 'Amina Rahman', role: 'center-admin', centerId: 'center-1', email: 'riyadh.admin@unitysphere.test' },
+    { username: 'center-jeddah', password: 'Center123!', name: 'Hassan Al Amiri', role: 'center-admin', centerId: 'center-2', email: 'jeddah.admin@unitysphere.test' },
+    { username: 'center-dubai', password: 'Center123!', name: 'Noor Al Farsi', role: 'center-admin', centerId: 'center-3', email: 'dubai.admin@unitysphere.test' },
+    { username: 'center-doha', password: 'Center123!', name: 'Lina Al Thani', role: 'center-admin', centerId: 'center-4', email: 'doha.admin@unitysphere.test' },
+    { username: 'spec-khalid', password: 'Spec123!', name: 'Dr. Khalid Haddad', role: 'specialist', centerId: 'center-1', specialty: 'Pediatric Neurologist', focus: 'Leads attention calibration pathways and family onboarding.', tenure: '4 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=60' },
+    { username: 'spec-layla', password: 'Spec123!', name: 'Dr. Layla Odeh', role: 'specialist', centerId: 'center-2', specialty: 'Clinical Psychologist', focus: 'Designs social cognition journeys with VR narratives.', tenure: '6 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=60' },
+    { username: 'spec-nourah', password: 'Spec123!', name: 'Dr. Nourah Al-Masri', role: 'specialist', centerId: 'center-1', specialty: 'Speech & Language Pathologist', focus: 'Champions expressive language modules with live coaching.', tenure: '3 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544723795-3fb3729955b8?auto=format&fit=crop&w=300&q=60' },
+    { username: 'spec-sara', password: 'Spec123!', name: 'Dr. Sara Nassar', role: 'specialist', centerId: 'center-3', specialty: 'Occupational Therapist', focus: 'Builds sensory-motor ladders for regulation and planning.', tenure: '5 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=60' },
+    { username: 'spec-ali', password: 'Spec123!', name: 'Dr. Ali Khaled', role: 'specialist', centerId: 'center-2', specialty: 'Behavior Analyst', focus: 'Implements data-driven reinforcement schedules in VR.', tenure: '2 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=60' },
+    { username: 'spec-fatima', password: 'Spec123!', name: 'Dr. Fatima Haddad', role: 'specialist', centerId: 'center-4', specialty: 'Developmental Pediatrician', focus: 'Integrates clinical milestones with immersive analytics.', tenure: '5 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544723795-432537b16ec4?auto=format&fit=crop&w=300&q=60' },
+    { username: 'spec-amal', password: 'Spec123!', name: 'Dr. Amal Nasser', role: 'specialist', centerId: 'center-3', specialty: 'Educational Therapist', focus: 'Bridges VR modules with classroom follow-ups.', tenure: '4 yrs in UnitySphere', avatar: 'https://images.unsplash.com/photo-1544723795-3fb2727b1662?auto=format&fit=crop&w=300&q=60' }
+  ],
+  kids: [
+    { id: 'kid-1', name: 'Khalid Al Amran', age: 8, centerId: 'center-1', program: 'Sensory Symphony', streak: 6, progress: 0.84, specialistUsername: 'spec-khalid', moduleIds: ['module-1', 'module-7'] },
+    { id: 'kid-2', name: 'Hessa Al Ruwaili', age: 7, centerId: 'center-2', program: 'Executive Function Bridge', streak: 4, progress: 0.79, specialistUsername: 'spec-layla', moduleIds: ['module-2', 'module-3'] },
+    { id: 'kid-3', name: 'Omar Al Jaber', age: 6, centerId: 'center-1', program: 'Cognitive Maze Runner', streak: 8, progress: 0.91, specialistUsername: 'spec-nourah', moduleIds: ['module-3', 'module-4'] },
+    { id: 'kid-4', name: 'Layla Al Harbi', age: 9, centerId: 'center-3', program: 'Social Story Weaver', streak: 5, progress: 0.88, specialistUsername: 'spec-sara', moduleIds: ['module-2', 'module-6'] },
+    { id: 'kid-5', name: 'Yara Al Salem', age: 10, centerId: 'center-2', program: 'Motor Skills Mountain', streak: 3, progress: 0.72, specialistUsername: 'spec-ali', moduleIds: ['module-5'] },
+    { id: 'kid-6', name: 'Rakan Al Thani', age: 7, centerId: 'center-4', program: 'Executive Function Bridge', streak: 7, progress: 0.86, specialistUsername: 'spec-fatima', moduleIds: ['module-3', 'module-7'] },
+    { id: 'kid-7', name: 'Mariam Al Ghamdi', age: 5, centerId: 'center-3', program: 'Sensory Symphony', streak: 9, progress: 0.93, specialistUsername: 'spec-amal', moduleIds: ['module-1', 'module-6'] },
+    { id: 'kid-8', name: 'Noura Al Qahtani', age: 6, centerId: 'center-4', program: 'Social Story Weaver', streak: 2, progress: 0.68, specialistUsername: 'spec-fatima', moduleIds: ['module-2'] }
+  ],
+  modules: [
+    { id: 'module-1', name: 'Sensory Symphony', category: 'Sensory', duration: '20 min', focus: 'Calm multisensory regulation pathways.', sessions: 32 },
+    { id: 'module-2', name: 'Social Story Weaver', category: 'Cognitive', duration: '15 min', focus: 'Guided peer interactions inside VR narratives.', sessions: 28 },
+    { id: 'module-3', name: 'Executive Function Bridge', category: 'Executive', duration: '18 min', focus: 'Plan, sequence, and evaluate challenges.', sessions: 30 },
+    { id: 'module-4', name: 'Cognitive Maze Runner', category: 'Cognitive', duration: '22 min', focus: 'Adaptive problem-solving in spatial mazes.', sessions: 27 },
+    { id: 'module-5', name: 'Motor Skills Mountain', category: 'Motor', duration: '25 min', focus: 'Gross and fine motor coordination tasks.', sessions: 24 },
+    { id: 'module-6', name: 'Sensory Garden Explorers', category: 'Sensory', duration: '18 min', focus: 'Mindful exploration with haptic feedback.', sessions: 26 },
+    { id: 'module-7', name: 'Calm Breathing Orbit', category: 'Regulation', duration: '12 min', focus: 'Biofeedback-led breathing control.', sessions: 33 },
+    { id: 'module-8', name: 'Language Lights Lab', category: 'Language', duration: '16 min', focus: 'Expressive vocabulary through mixed reality prompts.', sessions: 29 }
+  ],
+  assessments: []
+};
+
+const DEVICE_USAGE = [
+  { label: 'Meta Quest 3', value: 38, color: '#6366f1' },
+  { label: 'Pico 4 Enterprise', value: 26, color: '#ec4899' },
+  { label: 'HTC Vive Focus', value: 22, color: '#22d3ee' },
+  { label: 'Projection Suite', value: 14, color: '#38bdf8' }
+];
+
+const VR_TIMELINE = [
+  { month: 'Apr', current: 820, previous: 760 },
+  { month: 'May', current: 870, previous: 790 },
+  { month: 'Jun', current: 910, previous: 845 },
+  { month: 'Jul', current: 960, previous: 880 },
+  { month: 'Aug', current: 1020, previous: 910 },
+  { month: 'Sep', current: 1055, previous: 925 }
+];
+
+const RECOMMENDATIONS = [
+  { title: 'Introduce Calm Breathing Orbit', detail: 'Add to Khalid’s pre-session routine to improve regulation.', badge: 'Regulation' },
+  { title: 'Schedule co-treatment block', detail: 'Pair Layla’s social story follow-up with executive coaching.', badge: 'Collaboration' },
+  { title: 'Refresh Motor Skills Mountain cues', detail: 'Upload new tactile prompts for Yara’s next sequence.', badge: 'Motor' },
+  { title: 'Share progress snapshots', detail: 'Send weekly highlights to the Innovata Wellness caregivers.', badge: 'Family' }
+];
+
+function cloneData(data) {
+  return JSON.parse(JSON.stringify(data));
+}
+
+function loadData() {
+  if (!storageAvailable) return cloneData(DEFAULT_DATA);
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      return cloneData(DEFAULT_DATA);
+    }
+    const parsed = JSON.parse(stored);
+    return {
+      centers: parsed.centers ? parsed.centers : cloneData(DEFAULT_DATA.centers),
+      users: parsed.users ? parsed.users : cloneData(DEFAULT_DATA.users),
+      kids: parsed.kids ? parsed.kids : cloneData(DEFAULT_DATA.kids),
+      modules: parsed.modules ? parsed.modules : cloneData(DEFAULT_DATA.modules),
+      assessments: parsed.assessments ? parsed.assessments : []
+    };
+  } catch (error) {
+    console.warn('Failed to load saved data, using defaults.', error);
+    return cloneData(DEFAULT_DATA);
+  }
+}
+
+function saveData(data) {
+  if (!storageAvailable) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn('Failed to persist data', error);
+  }
+}
+
+function formatRole(role) {
+  switch (role) {
+    case 'main-admin': return 'Main admin';
+    case 'center-admin': return 'Center admin';
+    case 'specialist': return 'Specialist';
+    default: return 'Team member';
+  }
+}
+
+function findUser(users, username) {
+  if (!username) return null;
+  const normalized = username.trim().toLowerCase();
+  return users.find((user) => user.username.toLowerCase() === normalized) || null;
+}
+
+function generateMapPoint() {
+  return { x: Math.round(20 + Math.random() * 60), y: Math.round(25 + Math.random() * 45) };
+}
+
+function ensureAvatar(user) {
+  if (user && !user.avatar) {
+    user.avatar = `https://i.pravatar.cc/150?u=${encodeURIComponent(user.username)}`;
+  }
+  return user;
+}
+
+// ---- Auth page ----
 if (isLoginPage) {
+  const data = loadData();
   const authForm = document.getElementById('auth-form');
   const switchModeBtn = document.getElementById('switch-mode');
   const switchText = document.getElementById('switch-text');
@@ -54,7 +217,7 @@ if (isLoginPage) {
   });
 }
 
-// === Dashboard page logic ===
+// ---- Dashboard page ----
 if (isDashboardPage) {
   const userName = sessionStorage.getItem('us_name');
   const userEmail = sessionStorage.getItem('us_email');
@@ -528,3 +691,4 @@ if (isDashboardPage) {
   renderModules(modulesGrid, vrModules);
   populateAssessmentSelector(kids);
 }
+
