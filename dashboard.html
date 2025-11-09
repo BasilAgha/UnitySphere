@@ -102,8 +102,8 @@
               <small class="muted">Pins are positioned with X/Y (0–100).</small>
             </div>
 
-            <div id="add-center-panel" class="card reveal">
-              <form id="form-center" class="grid-2-col">
+            <div id="add-center-panel" class="card collapsible">
+              <form id="form-center" class="grid-2-col" autocomplete="off">
                 <div class="input-group">
                   <label for="center-name">Center name</label>
                   <input id="center-name" required placeholder="Cogniplay City Center">
@@ -123,6 +123,18 @@
                 <div class="input-group">
                   <label for="center-tags">Capabilities (comma separated)</label>
                   <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
+                </div>
+                <div class="form-divider">
+                  <h3>Center login</h3>
+                  <p class="hint">Set credentials to share securely with the center manager.</p>
+                </div>
+                <div class="input-group">
+                  <label for="center-username">Center username</label>
+                  <input id="center-username" required placeholder="center-riyadh">
+                </div>
+                <div class="input-group">
+                  <label for="center-password">Center password</label>
+                  <input id="center-password" type="password" required placeholder="StrongPass!123">
                 </div>
                 <div class="input-group">
                   <label for="center-posx">Map X (0–100)</label>

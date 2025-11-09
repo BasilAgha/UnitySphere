@@ -15,25 +15,29 @@ const DEFAULT_DATA = {
       desc: 'Immersive neurodevelopmental therapy',
       tags: ['Cognitive Focus','Sensory Regulation'],
       image: 'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?q=80&w=1600&auto=format&fit=crop',
-      posX: 28, posY: 52
+      posX: 28, posY: 52,
+      login: { username: 'center-riyadh', password: 'Center123!' }
     },
     { id: uid(), name: 'NeuroConnect Hub', location: 'Jeddah, KSA',
       desc: 'Executive function and language',
       tags: ['Executive Function','Language Labs'],
       image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop',
-      posX: 58, posY: 68
+      posX: 58, posY: 68,
+      login: { username: 'center-jeddah', password: 'Connect@2024' }
     },
     { id: uid(), name: 'Innovata Wellness Center', location: 'Dubai, UAE',
       desc: 'Sensory integration & family coaching',
       tags: ['Sensory Gym','Family Coaching'],
       image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop',
-      posX: 74, posY: 45
+      posX: 74, posY: 45,
+      login: { username: 'center-dubai', password: 'Innovata!9' }
     },
     { id: uid(), name: 'Cortex Meadow Clinic', location: 'Doha, Qatar',
       desc: 'Motor planning & regulation',
       tags: ['Motor Metrics','Calm Transitions'],
       image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1600&auto=format&fit=crop',
-      posX: 82, posY: 40
+      posX: 82, posY: 40,
+      login: { username: 'center-doha', password: 'Cortex!2024' }
     }
   ],
   specialists: [
@@ -152,8 +156,21 @@ if (isDashboardPage()) {
   const addPanel = qi('add-center-panel');
   const toggleBtn = qi('btn-toggle-add-center');
   const cancelBtn = qi('btn-cancel-center');
-  toggleBtn.addEventListener('click', ()=> addPanel.classList.toggle('active') || addPanel.classList.toggle('reveal'));
-  cancelBtn.addEventListener('click', ()=> addPanel.classList.remove('active','reveal'));
+  const toggleLabel = toggleBtn.textContent.trim();
+  toggleBtn.setAttribute('aria-expanded', 'false');
+  toggleBtn.addEventListener('click', ()=>{
+    const isOpen = addPanel.classList.toggle('active');
+    toggleBtn.setAttribute('aria-expanded', String(isOpen));
+    toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
+    if (isOpen) {
+      addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+  cancelBtn.addEventListener('click', ()=>{
+    addPanel.classList.remove('active');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.textContent = toggleLabel;
+  });
 
   qi('btn-export-centers').addEventListener('click', ()=>{
     const out = db.centers.map(({id, ...rest})=>rest);
@@ -170,17 +187,22 @@ if (isDashboardPage()) {
     const image = qi('center-image').value.trim();
     const desc = qi('center-desc').value.trim();
     const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const loginUsername = qi('center-username').value.trim();
+    const loginPassword = qi('center-password').value.trim();
     const posX = parseFloat(qi('center-posx').value);
     const posY = parseFloat(qi('center-posy').value);
-    if (!name) return;
+    if (!name || !loginUsername || !loginPassword) return;
     db.centers.push({
       id: uid(), name, location, image, desc, tags,
+      login: { username: loginUsername, password: loginPassword },
       posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
       posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
     });
     persistAndRender();
     e.target.reset();
-    addPanel.classList.remove('active','reveal');
+    addPanel.classList.remove('active');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.textContent = toggleLabel;
   });
 
   function renderCenters(){
@@ -206,7 +228,15 @@ if (isDashboardPage()) {
           ...(c.tags && c.tags.length ? c.tags : ['General']).map(t=> el('span', {class:'tag'}, t))
         )
       );
-      const footer = el('footer', {},
+      const login = c.login || { username: c.centerUsername, password: c.centerPassword } || {};
+      const credentials = el('div',{class:'center-credentials'},
+        el('span',{class:'badge badge-soft'}, login && login.username ? `Login: ${login.username}` : 'Login pending')
+      );
+      if (login && login.password) {
+        credentials.append(el('span',{class:'pill'}, login.password));
+      }
+      const footer = el('footer', {class:'center-footer'},
+        credentials,
         (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.centers = db.centers.filter(x=>x.id!==c.id); persistAndRender(); }); return b; })()
       );
       card.append(img, body, footer);
