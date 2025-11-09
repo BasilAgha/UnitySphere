@@ -1,185 +1,63 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UnitySphere | تسجيل الدخول</title>
+  <title>UnitySphere | Sign In</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
-<body>
+<body class="auth-page">
   <section id="auth" class="auth-wrapper auth-only">
     <div class="auth-hero">
       <div>
-        <h1>منصة UnitySphere</h1>
-        <p>إدارة جلسات الأطفال وتوثيق تقدمهم عبر المجالات المختلفة.</p>
+        <h1>UnitySphere Platform</h1>
+        <p>Coordinate immersive therapy journeys, monitor progress, and keep every family in sync.</p>
       </div>
       <div class="chart-placeholder">
-        <strong>تقارير ذكية</strong>
-        <span>متوسط عام تلقائي مع تلوين دلالي.</span>
+        <strong>Insight Highlights</strong>
+        <span>Generate blended analytics and smart summaries instantly.</span>
       </div>
     </div>
 
     <form id="auth-form" class="auth-form" autocomplete="off">
       <div>
-        <h2 id="auth-title">تسجيل الدخول</h2>
-        <p id="auth-subtitle" class="hint">أدخل بيانات الدخول للوصول إلى اللوحة.</p>
+        <h2 id="auth-title">Sign in</h2>
+        <p id="auth-subtitle" class="hint">Use your UnitySphere credentials to access the dashboard.</p>
       </div>
 
       <div class="input-group">
-        <label for="auth-name">الاسم الكامل</label>
-        <input type="text" id="auth-name" name="name" placeholder="مثلًا: د. آمنة العتيبي" required>
+        <label for="auth-name">Full name</label>
+        <input type="text" id="auth-name" name="name" placeholder="e.g. Dr. Amina Al-Otaibi" required>
       </div>
       <div class="input-group">
-        <label for="auth-email">البريد الإلكتروني</label>
+        <label for="auth-email">Email address</label>
         <input type="email" id="auth-email" name="email" placeholder="example@email.com" required>
       </div>
       <div class="input-group">
-        <label for="auth-password">كلمة المرور</label>
+        <label for="auth-password">Password</label>
         <input type="password" id="auth-password" name="password" placeholder="••••••••" required>
       </div>
       <div id="confirm-password-group" class="input-group hidden">
-        <label for="auth-confirm">تأكيد كلمة المرور</label>
+        <label for="auth-confirm">Confirm password</label>
         <input type="password" id="auth-confirm" name="confirm" placeholder="••••••••">
       </div>
 
-      <button type="submit" class="primary" id="auth-action">دخول</button>
+      <button type="submit" class="primary" id="auth-action">Sign in</button>
 
-      <div class="switch-auth" style="display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;">
-        <button type="button" class="link" id="demo-login">تجربة فورية (Demo)</button>
+      <div class="switch-auth demo-row">
+        <button type="button" class="link" id="demo-login">Use demo account</button>
         <span class="hint">Email: demo@unitysphere.test · Password: Demo123!</span>
       </div>
 
       <p class="switch-auth">
-        <span id="switch-text">لا تملك حسابًا؟</span>
-        <button type="button" id="switch-mode">إنشاء حساب</button>
+        <span id="switch-text">Don't have an account?</span>
+        <button type="button" id="switch-mode">Create one</button>
       </p>
     </form>
   </section>
-
-  <div class="app-shell hidden" id="dashboard">
-    <header>
-      <div class="user-meta">
-        <div>
-          <span class="hint">المتوسط العام</span>
-          <h1 id="user-display">—</h1>
-        </div>
-        <div class="status-pill"><span>التقييم العام:</span> <strong id="overall-score">—</strong></div>
-      </div>
-    </header>
-    <div class="layout">
-      <nav>
-        <h2>العملاء</h2>
-        <div id="client-list" class="client-list"></div>
-        <button class="primary" id="add-client">إضافة عميل</button>
-      </nav>
-      <main>
-        <h2><span id="client-title">اختر عميلًا من القائمة</span><span class="report-pill">بيانات تجريبية جاهزة 📈</span></h2>
-
-        <section id="client-actions" class="card hidden" style="display:flex; gap:12px; align-items:center; margin: 0.5rem 0 1rem;">
-          <button type="button" class="primary" id="go-new-session">إضافة جلسة جديدة</button>
-          <button type="button" class="link" id="go-history">عرض الجلسات السابقة</button>
-        </section>
-
-        <form id="session-form" class="hidden">
-          <input type="hidden" id="active-client" />
-          <div class="input-group">
-            <label for="session-title">اسم الجلسة</label>
-            <input type="text" id="session-title" name="sessionTitle" placeholder="مثال: تقييم أولي - أكتوبر">
-          </div>
-
-          <fieldset class="grid-3">
-            <legend>المجال المعرفي</legend>
-            <div class="question">
-              <label>الانتباه</label>
-              <select name="cognitiveAttention">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-            <div class="question">
-              <label>حل المشكلات</label>
-              <select name="cognitiveProblem">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-            <div class="question">
-              <label>الذاكرة</label>
-              <select name="cognitiveMemory">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-          </fieldset>
-
-          <fieldset class="grid-3">
-            <legend>اللغة</legend>
-            <div class="question">
-              <label>الاستيعاب</label>
-              <select name="languageComprehension">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-            <div class="question">
-              <label>التعبير</label>
-              <select name="languageExpression">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-            <div class="question">
-              <label>المهارات الاجتماعية</label>
-              <select name="languageSocial">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-          </fieldset>
-
-          <fieldset class="grid-3">
-            <legend>تنفيذي وأكاديمي</legend>
-            <div class="question">
-              <label>المرونة</label>
-              <select name="executiveFlexibility">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-            <div class="question">
-              <label>الكف</label>
-              <select name="executiveInhibition">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-            <div class="question">
-              <label>المثابرة</label>
-              <select name="executivePersistence">
-                <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-          </fieldset>
-
-          <div class="question">
-            <label for="session-notes">ملاحظات الجلسة</label>
-            <textarea id="session-notes" name="notes" placeholder="تفاصيل عامة وملخص الجلسة..."></textarea>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="link" id="reset-form">إعادة تعيين</button>
-            <button type="submit" class="primary">حفظ الجلسة</button>
-          </div>
-        </form>
-
-        <section id="progress-section" class="hidden">
-          <h3 class="sub">تطور الطفل عبر الجلسات</h3>
-          <canvas id="progress-canvas" class="canvas"></canvas>
-        </section>
-
-        <section id="history-section" class="hidden">
-          <h3 class="sub">سجل الجلسات</h3>
-          <div id="sessions-history" class="card"><div class="hint">لا توجد جلسات بعد.</div></div>
-          <div id="session-details" class="card" style="margin-top:12px;"><div class="hint">اختر جلسة لعرض تفاصيلها.</div></div>
-        </section>
-      </main>
-    </div>
-  </div>
 
   <script src="app.js"></script>
 </body>
