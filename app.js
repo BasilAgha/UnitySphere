@@ -1,7 +1,12 @@
 // ===== UnitySphere Admin (client-side) =====
 
-const STORAGE_KEY = 'unitysphere-data-v3';
+const STORAGE_VERSION = 4;
+const STORAGE_KEY = `unitysphere-data-v${STORAGE_VERSION}`;
+const LEGACY_STORAGE_KEYS = ['unitysphere-data', 'unitysphere-data-v1', 'unitysphere-data-v2', 'unitysphere-data-v3'];
+const SESSION_VERSION_KEY = 'unitysphere-session-version';
+
 const storageAvailable = typeof localStorage !== 'undefined';
+const sessionAvailable = typeof sessionStorage !== 'undefined';
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
@@ -31,60 +36,56 @@ function seedSpecialist({ name, skill, centerId = null, avatar = '', login = nul
   };
 }
 
-const seedCenters = [
-  seedCenter({
-    name: 'Cogniplay City Center',
-    location: 'Riyadh, KSA',
-    desc: 'Immersive neurodevelopmental therapy',
-    tags: ['Cognitive Focus','Sensory Regulation'],
-    image: 'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?q=80&w=1600&auto=format&fit=crop',
-    posX: 28,
-    posY: 52,
-    login: { username: 'center-riyadh', password: 'Center123!' }
-  }),
-  seedCenter({
-    name: 'NeuroConnect Hub',
-    location: 'Jeddah, KSA',
-    desc: 'Executive function and language',
-    tags: ['Executive Function','Language Labs'],
-    image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop',
-    posX: 58,
-    posY: 68,
-    login: { username: 'center-jeddah', password: 'Connect@2024' }
-  }),
-  seedCenter({
-    name: 'Innovata Wellness Center',
-    location: 'Dubai, UAE',
-    desc: 'Sensory integration & family coaching',
-    tags: ['Sensory Gym','Family Coaching'],
-    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop',
-    posX: 74,
-    posY: 45,
-    login: { username: 'center-dubai', password: 'Innovata!9' }
-  }),
-  seedCenter({
-    name: 'Cortex Meadow Clinic',
-    location: 'Doha, Qatar',
-    desc: 'Motor planning & regulation',
-    tags: ['Motor Metrics','Calm Transitions'],
-    image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1600&auto=format&fit=crop',
-    posX: 82,
-    posY: 40,
-    login: { username: 'center-doha', password: 'Cortex!2024' }
-  })
-];
+const seedCenters = [];
 
-const seedSpecialists = [
-  seedSpecialist({
-    name: 'Dr. Noor Al-Fahad',
-    skill: 'PT',
-    centerId: seedCenters[0]?.id || null,
-    avatar: '',
-    login: { username: 'noor.pt', password: 'Spec123!' }
-  })
-];
+const seedSpecialists = [];
+
+function safeRemoveStorageItem(api, key) {
+  try { api.removeItem(key); } catch {}
+}
+
+function resetSessionAuth() {
+  if (!sessionAvailable) return;
+  try {
+    ['us_username', 'us_name', 'us_email', 'us_role', 'us_center'].forEach(key => sessionStorage.removeItem(key));
+  } catch {}
+}
+
+function initializePersistenceGuards() {
+  if (storageAvailable) {
+    LEGACY_STORAGE_KEYS.forEach(key => {
+      if (key !== STORAGE_KEY) safeRemoveStorageItem(localStorage, key);
+    });
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!parsed || parsed.version !== STORAGE_VERSION) {
+          safeRemoveStorageItem(localStorage, STORAGE_KEY);
+        }
+      }
+    } catch {
+      safeRemoveStorageItem(localStorage, STORAGE_KEY);
+    }
+  }
+
+  if (sessionAvailable) {
+    try {
+      const marker = sessionStorage.getItem(SESSION_VERSION_KEY);
+      if (marker !== String(STORAGE_VERSION)) {
+        resetSessionAuth();
+        sessionStorage.setItem(SESSION_VERSION_KEY, String(STORAGE_VERSION));
+      } else if (storageAvailable && !localStorage.getItem(STORAGE_KEY)) {
+        resetSessionAuth();
+      }
+    } catch {}
+  }
+}
+
+initializePersistenceGuards();
 
 const DEFAULT_DATA = {
+  version: STORAGE_VERSION,
   users: [
     { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test' }
   ],
@@ -101,9 +102,17 @@ function loadData() {
   if (!storageAvailable) return clone(DEFAULT_DATA);
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) { saveData(DEFAULT_DATA); return clone(DEFAULT_DATA); }
+    if (!raw) {
+      saveData(DEFAULT_DATA);
+      return clone(DEFAULT_DATA);
+    }
     const parsed = JSON.parse(raw);
+    if (!parsed || parsed.version !== STORAGE_VERSION) {
+      saveData(DEFAULT_DATA);
+      return clone(DEFAULT_DATA);
+    }
     return {
+      version: STORAGE_VERSION,
       users: parsed.users || clone(DEFAULT_DATA.users),
       centers: parsed.centers || [],
       specialists: parsed.specialists || [],
@@ -111,12 +120,17 @@ function loadData() {
       assessments: parsed.assessments || []
     };
   } catch {
+    saveData(DEFAULT_DATA);
     return clone(DEFAULT_DATA);
   }
 }
 function saveData(data){
   if (!storageAvailable) return;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  try {
+    const payload = clone(data);
+    payload.version = STORAGE_VERSION;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch {}
 }
 function normalizeCenterLogin(center) {
   if (!center) return null;
@@ -383,20 +397,32 @@ if (isDashboardPage()) {
       toggleBtn.classList.add('hidden');
       cancelBtn?.classList.add('hidden');
     } else {
-      const toggleLabel = toggleBtn.textContent.trim();
-      toggleBtn.setAttribute('aria-expanded', 'false');
-      toggleBtn.addEventListener('click', ()=>{
-        const isOpen = addPanel.classList.toggle('active');
+      const defaultOpenLabel = toggleBtn.dataset.labelOpen || toggleBtn.textContent.trim();
+      const defaultCloseLabel = toggleBtn.dataset.labelClose || 'Close form';
+      const labelEl = toggleBtn.querySelector('.label');
+      const updateToggleLabel = (text)=>{
+        if (labelEl) {
+          labelEl.textContent = text;
+        } else {
+          toggleBtn.textContent = text;
+        }
+      };
+      const setToggleState = (isOpen)=>{
+        addPanel.classList.toggle('active', isOpen);
         toggleBtn.setAttribute('aria-expanded', String(isOpen));
-        toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
+        toggleBtn.classList.toggle('is-open', isOpen);
+        updateToggleLabel(isOpen ? defaultCloseLabel : defaultOpenLabel);
+      };
+      setToggleState(false);
+      toggleBtn.addEventListener('click', ()=>{
+        const isOpen = !addPanel.classList.contains('active');
+        setToggleState(isOpen);
         if (isOpen) {
           addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
       cancelBtn?.addEventListener('click', ()=>{
-        addPanel.classList.remove('active');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        toggleBtn.textContent = toggleLabel;
+        setToggleState(false);
       });
 
       centerForm?.addEventListener('submit', e=>{
@@ -429,9 +455,7 @@ if (isDashboardPage()) {
         upsertUser({ username: loginUsername, password: loginPassword, role: 'center-admin', centerId, name: name ? `${name} Admin` : loginUsername });
         persistAndRender();
         e.target.reset();
-        addPanel.classList.remove('active');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        toggleBtn.textContent = toggleLabel;
+        setToggleState(false);
       });
     }
   }
