@@ -252,7 +252,7 @@
               <div class="directory-header">
                 <div>
                   <h3>Center directory</h3>
-                  <p class="hint">Each card highlights the shared login credentials and focus areas.</p>
+                  <p class="hint">Each card highlights center credentials and the specialists assigned there.</p>
                 </div>
               </div>
               <div class="card-grid" id="centers-grid"></div>
@@ -300,7 +300,7 @@
                 <div class="form-panel">
                   <div>
                     <h3>Register specialist</h3>
-                    <p class="hint">Capture their focus and connect them with a center.</p>
+                    <p id="specialist-form-hint" class="hint">Capture their focus, connect them with a center, and issue login credentials.</p>
                   </div>
                   <form id="form-specialist" class="grid-2-col">
                     <div class="input-group">
@@ -314,6 +314,14 @@
                     <div class="input-group">
                       <label for="spec-center">Center</label>
                       <select id="spec-center"></select>
+                    </div>
+                    <div class="input-group">
+                      <label for="spec-username">Login username</label>
+                      <input id="spec-username" required placeholder="noor.pt">
+                    </div>
+                    <div class="input-group">
+                      <label for="spec-password">Temporary password</label>
+                      <input id="spec-password" required placeholder="Spec123!">
                     </div>
                     <div class="input-group">
                       <label for="spec-avatar">Avatar URL (optional)</label>
