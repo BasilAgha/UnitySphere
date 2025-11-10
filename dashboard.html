@@ -119,70 +119,7 @@
               </div>
             </div>
 
-            <div id="add-center-panel" class="card collapsible">
-              <div class="card-header">
-                <div>
-                  <h2>Register new center</h2>
-                  <p class="hint">Provide credentials and the map position to plot it instantly.</p>
-                </div>
-              </div>
-              <form id="form-center" class="grid-2-col" autocomplete="off">
-                <div class="form-panel">
-                  <div class="input-group">
-                    <label for="center-name">Center name</label>
-                    <input id="center-name" required placeholder="Cogniplay City Center">
-                  </div>
-                  <div class="input-group">
-                    <label for="center-location">Location</label>
-                    <input id="center-location" placeholder="Riyadh, KSA">
-                  </div>
-                  <div class="input-group">
-                    <label for="center-image">Cover image URL</label>
-                    <input id="center-image" placeholder="https://.../cover.jpg">
-                  </div>
-                  <div class="input-group">
-                    <label for="center-desc">Short description</label>
-                    <input id="center-desc" placeholder="Immersive neurodevelopmental therapy">
-                  </div>
-                  <div class="input-group">
-                    <label for="center-tags">Capabilities (comma separated)</label>
-                    <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
-                  </div>
-                  <div class="form-divider">
-                    <h3>Center login</h3>
-                    <p class="hint">Share credentials securely with the center lead.</p>
-                  </div>
-                  <div class="input-group">
-                    <label for="center-username">Center username</label>
-                    <input id="center-username" required placeholder="center-riyadh">
-                  </div>
-                  <div class="input-group">
-                    <label for="center-password">Center password</label>
-                    <input id="center-password" type="password" required placeholder="StrongPass!123">
-                  </div>
-                  <div class="grid-inline">
-                    <div class="input-group">
-                      <label for="center-posx">Map X (0–100)</label>
-                      <input id="center-posx" type="number" min="0" max="100" placeholder="28">
-                    </div>
-                    <div class="input-group">
-                      <label for="center-posy">Map Y (0–100)</label>
-                      <input id="center-posy" type="number" min="0" max="100" placeholder="52">
-                    </div>
-                  </div>
-                  <div class="form-actions">
-                    <button type="button" class="ghost" id="btn-cancel-center">Cancel</button>
-                    <button class="primary" type="submit">Save center</button>
-                  </div>
-                </div>
-                <div class="progress-circle" style="--progress-value:85;">
-                  <div class="progress-center">
-                    <strong>85%</strong>
-                    <span class="hint">Target completion</span>
-                  </div>
-                </div>
-              </form>
-            </div>
+            
             <div class="card progress-list">
               <div class="card-header">
                 <div>
@@ -242,7 +179,64 @@
                   <button id="btn-toggle-add-center" class="primary">Add New Center</button>
                 </div>
               </div>
-
+<div id="add-center-panel" class="card collapsible">
+              <div class="card-header">
+                <div>
+                  <h2>Register new center</h2>
+                  <p class="hint">Provide credentials and the map position to plot it instantly.</p>
+                </div>
+              </div>
+              <form id="form-center" class="grid-2-col" autocomplete="off">
+                <div class="form-panel">
+                  <div class="input-group">
+                    <label for="center-name">Center name</label>
+                    <input id="center-name" required placeholder="Cogniplay City Center">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-location">Location</label>
+                    <input id="center-location" placeholder="Riyadh, KSA">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-image">Cover image URL</label>
+                    <input id="center-image" placeholder="https://.../cover.jpg">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-desc">Short description</label>
+                    <input id="center-desc" placeholder="Immersive neurodevelopmental therapy">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-tags">Capabilities (comma separated)</label>
+                    <input id="center-tags" placeholder="Cognitive Rehab, Sensory, Balance">
+                  </div>
+                  <div class="form-divider">
+                    <h3>Center login</h3>
+                    <p class="hint">Share credentials securely with the center lead.</p>
+                  </div>
+                  <div class="input-group">
+                    <label for="center-username">Center username</label>
+                    <input id="center-username" required placeholder="center-riyadh">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-password">Center password</label>
+                    <input id="center-password" type="password" required placeholder="StrongPass!123">
+                  </div>
+                  <div class="grid-inline">
+                    <div class="input-group">
+                      <label for="center-posx">Map X (0–100)</label>
+                      <input id="center-posx" type="number" min="0" max="100" placeholder="28">
+                    </div>
+                    <div class="input-group">
+                      <label for="center-posy">Map Y (0–100)</label>
+                      <input id="center-posy" type="number" min="0" max="100" placeholder="52">
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="ghost" id="btn-cancel-center">Cancel</button>
+                    <button class="primary" type="submit">Save center</button>
+                  </div>
+                </div>
+              </form>
+            </div>
               <div class="centers-map">
                 <div class="map-pins" id="map-pins"></div>
                 <small class="muted">Pins are positioned with X/Y (0–100).</small>
@@ -262,88 +256,102 @@
 
         <!-- Specialists -->
         <section id="section-specialists" class="section">
-          <div class="card full">
-            <div class="card-header">
-              <div>
-                <h2>Specialists</h2>
-                <p class="hint">Link specialists to a center and set their focus.</p>
-              </div>
+  <div class="card full">
+    <div class="card-header">
+      <div>
+        <h2>Specialists</h2>
+        <p class="hint">Link specialists to a center and set their focus.</p>
+      </div>
+    </div>
+
+    <div class="split-layout">
+      <aside class="summary-column">
+        <div class="insight-card">
+          <span class="insight-label">Total specialists</span>
+          <strong id="specialists-total">0</strong>
+          <span class="hint">Active in the network</span>
+        </div>
+        <div class="insight-card">
+          <span class="insight-label">Assigned to centers</span>
+          <strong id="specialists-assigned">0</strong>
+          <span class="hint" id="specialists-coverage">Center coverage — 0%</span>
+        </div>
+        <div class="insight-card">
+          <span class="insight-label">Awaiting placement</span>
+          <strong id="specialists-unassigned">0</strong>
+          <span class="hint">Ready to be matched</span>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Focus mix</h3>
+          </div>
+          <p class="hint">Top disciplines represented by your team.</p>
+          <div class="bubble-list" id="specialist-focus-pills"></div>
+        </div>
+      </aside>
+
+      <div class="content-column">
+        <div class="form-panel">
+          <div>
+            <h3>Register specialist</h3>
+            <p id="specialist-form-hint" class="hint">
+              Capture their focus, connect them with a center, and issue login credentials.
+            </p>
+          </div>
+          <form id="form-specialist" class="grid-2-col">
+            <div class="input-group">
+              <label for="spec-name">Name</label>
+              <input id="spec-name" required placeholder="Dr. Noor Al-Fahad" />
+            </div>
+            <div class="input-group">
+              <label for="spec-skill">Focus/Discipline</label>
+              <input id="spec-skill" placeholder="PT / OT / Vision Rehab" />
+            </div>
+            <div class="input-group">
+              <label for="spec-center">Center</label>
+              <select id="spec-center"></select>
+            </div>
+            <div class="input-group">
+              <label for="spec-username">Login username</label>
+              <input id="spec-username" required placeholder="noor.pt" />
+            </div>
+            <div class="input-group">
+              <label for="spec-password">Temporary password</label>
+              <input id="spec-password" required placeholder="Spec123!" />
+            </div>
+            <div class="input-group">
+              <label for="spec-avatar">Avatar URL (optional)</label>
+              <input id="spec-avatar" placeholder="https://.../photo.jpg" />
+            </div>
+            <button class="primary" type="submit">Add Specialist</button>
+          </form>
+        </div>
+
+        <div class="card-subsection">
+          <div class="directory-header">
+            <div>
+              <h3>Team roster</h3>
+              <p class="hint">Review each specialist profile and assigned location.</p>
             </div>
 
-            <div class="split-layout">
-              <aside class="summary-column">
-                <div class="insight-card">
-                  <span class="insight-label">Total specialists</span>
-                  <strong id="specialists-total">0</strong>
-                  <span class="hint">Active in the network</span>
-                </div>
-                <div class="insight-card">
-                  <span class="insight-label">Assigned to centers</span>
-                  <strong id="specialists-assigned">0</strong>
-                  <span class="hint" id="specialists-coverage">Center coverage — 0%</span>
-                </div>
-                <div class="insight-card">
-                  <span class="insight-label">Awaiting placement</span>
-                  <strong id="specialists-unassigned">0</strong>
-                  <span class="hint">Ready to be matched</span>
-                </div>
-                <div class="panel">
-                  <div class="panel-header">
-                    <h3>Focus mix</h3>
-                  </div>
-                  <p class="hint">Top disciplines represented by your team.</p>
-                  <div class="bubble-list" id="specialist-focus-pills"></div>
-                </div>
-              </aside>
-
-              <div class="content-column">
-                <div class="form-panel">
-                  <div>
-                    <h3>Register specialist</h3>
-                    <p id="specialist-form-hint" class="hint">Capture their focus, connect them with a center, and issue login credentials.</p>
-                  </div>
-                  <form id="form-specialist" class="grid-2-col">
-                    <div class="input-group">
-                      <label for="spec-name">Name</label>
-                      <input id="spec-name" required placeholder="Dr. Noor Al-Fahad">
-                    </div>
-                    <div class="input-group">
-                      <label for="spec-skill">Focus/Discipline</label>
-                      <input id="spec-skill" placeholder="PT / OT / Vision Rehab">
-                    </div>
-                    <div class="input-group">
-                      <label for="spec-center">Center</label>
-                      <select id="spec-center"></select>
-                    </div>
-                    <div class="input-group">
-                      <label for="spec-username">Login username</label>
-                      <input id="spec-username" required placeholder="noor.pt">
-                    </div>
-                    <div class="input-group">
-                      <label for="spec-password">Temporary password</label>
-                      <input id="spec-password" required placeholder="Spec123!">
-                    </div>
-                    <div class="input-group">
-                      <label for="spec-avatar">Avatar URL (optional)</label>
-                      <input id="spec-avatar" placeholder="https://.../photo.jpg">
-                    </div>
-                    <button class="primary" type="submit">Add Specialist</button>
-                  </form>
-                </div>
-
-                <div class="card-subsection">
-                  <div class="directory-header">
-                    <div>
-                      <h3>Team roster</h3>
-                      <p class="hint">Review each specialist profile and assigned location.</p>
-                    </div>
-                  </div>
-                  <div class="specialists-grid" id="specialists-grid"></div>
-                </div>
-              </div>
+            <!-- 🔽 NEW: dropdown menu -->
+            <div class="directory-actions">
+              <select id="specialist-select" aria-label="Choose specialist">
+                <option value="">Select specialist…</option>
+              </select>
             </div>
           </div>
-        </section>
+
+          <!-- 🔽 NEW: collapsible toggle card -->
+          <div id="specialist-details" class="card collapsible" style="display:none; margin-top:12px;"></div>
+
+          <div class="specialists-grid" id="specialists-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 
         <!-- VR Modules -->
         <section id="section-modules" class="section">
