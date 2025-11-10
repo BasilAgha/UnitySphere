@@ -24,78 +24,6 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/pjpe
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
 
-function safeSetItem(store, key, value) {
-  if (!store) return true;
-  try {
-    if (value === null || value === undefined) store.removeItem(key);
-    else store.setItem(key, value);
-    return true;
-  } catch (err) {
-    console.warn(`Failed to persist ${key} in web storage`, err);
-    return false;
-  }
-}
-
-function safeRemoveItem(store, key) {
-  if (!store) return;
-  try {
-    store.removeItem(key);
-  } catch (err) {
-    console.warn(`Failed to remove ${key} from web storage`, err);
-  }
-}
-
-function validateImageFile(file, contextLabel) {
-  if (!file) return;
-  const type = (file.type || '').toLowerCase();
-  const supportedType = !type || ALLOWED_IMAGE_TYPES.includes(type) || type.includes('png') || type.includes('jpeg');
-  if (!supportedType) {
-    const err = new Error('unsupported-image-type');
-    err.code = 'unsupported-image-type';
-    err.context = contextLabel;
-    throw err;
-  }
-  if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    const err = new Error('image-too-large');
-    err.code = 'image-too-large';
-    err.context = contextLabel;
-    err.maxBytes = MAX_IMAGE_SIZE_BYTES;
-    throw err;
-  }
-}
-
-function storageQuotaError(contextLabel) {
-  const err = new Error('storage-quota');
-  err.code = 'storage-quota';
-  err.context = contextLabel;
-  return err;
-}
-
-function imageErrorMessage(err, fallback, contextLabel) {
-  if (!err) return fallback;
-  const context = (err.context || contextLabel || 'image');
-  switch (err.code) {
-    case 'unsupported-image-type':
-      return `Please choose a PNG or JPG ${context}.`;
-    case 'image-too-large':
-      return `The selected ${context} is larger than ${IMAGE_SIZE_LIMIT_LABEL}. Choose a smaller PNG or JPG file.`;
-    case 'storage-quota':
-      return `The selected ${context} couldn't be saved because your browser storage is full. Remove another photo or choose a smaller PNG or JPG (under ${IMAGE_SIZE_LIMIT_LABEL}).`;
-    default:
-      return fallback;
-  }
-}
-
-function readFileAsDataUrl(file) {
-  if (!file) return Promise.resolve(null);
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result || null);
-    reader.onerror = () => reject(reader.error || new Error('file-read-error'));
-    reader.readAsDataURL(file);
-  });
-}
-
 function toNumber(value) {
   if (value === null || value === undefined) return null;
   const num = typeof value === 'string' ? parseFloat(value) : Number(value);
@@ -534,20 +462,20 @@ if (isLoginPage()) {
     const user = (db.users||[]).find(x=>x.username && x.username.toLowerCase()===u && x.password===p);
     if (!user) { alert('Invalid credentials'); return; }
     if (!['main-admin','center-admin'].includes(user.role)) { alert('Access restricted to admin accounts.'); return; }
-      safeSetItem(sessionStore, 'us_username', user.username);
-      safeSetItem(sessionStore, 'us_name', user.name || user.username);
-      safeSetItem(sessionStore, 'us_email', user.email || '');
-      safeSetItem(sessionStore, 'us_role', user.role);
-      if (user.avatar) {
-        safeSetItem(sessionStore, 'us_avatar', user.avatar);
-      } else {
-        safeRemoveItem(sessionStore, 'us_avatar');
-      }
-      if (user.role === 'center-admin' && user.centerId) {
-        safeSetItem(sessionStore, 'us_center', user.centerId);
-      } else {
-        safeRemoveItem(sessionStore, 'us_center');
-      }
+    sessionStorage.setItem('us_username', user.username);
+    sessionStorage.setItem('us_name', user.name || user.username);
+    sessionStorage.setItem('us_email', user.email || '');
+    sessionStorage.setItem('us_role', user.role);
+    if (user.avatar) {
+      sessionStorage.setItem('us_avatar', user.avatar);
+    } else {
+      sessionStorage.removeItem('us_avatar');
+    }
+    if (user.role === 'center-admin' && user.centerId) {
+      sessionStorage.setItem('us_center', user.centerId);
+    } else {
+      sessionStorage.removeItem('us_center');
+    }
     location.href = 'dashboard.html';
   });
 }
@@ -587,7 +515,7 @@ if (isDashboardPage()) {
 
   const userKey = (username || '').toLowerCase();
   const currentUser = (db.users || []).find(u => (u?.username || '').toLowerCase() === userKey) || null;
-  const storedAvatar = sessionStore?.getItem?.('us_avatar');
+  const storedAvatar = sessionStorage.getItem('us_avatar');
   const activeAvatar = storedAvatar || currentUser?.avatar || DEFAULT_ADMIN_AVATAR;
   const applyAvatar = (src)=>{
     const finalSrc = src || DEFAULT_ADMIN_AVATAR;
@@ -601,7 +529,7 @@ if (isDashboardPage()) {
   };
   applyAvatar(activeAvatar);
   if (activeAvatar) {
-    safeSetItem(sessionStore, 'us_avatar', activeAvatar);
+    sessionStorage.setItem('us_avatar', activeAvatar);
   }
 
   const avatarInput = qi('admin-avatar-file');
@@ -611,40 +539,20 @@ if (isDashboardPage()) {
     avatarInput.addEventListener('change', async ()=>{
       const file = avatarInput.files && avatarInput.files[0];
       if (!file) return;
-      const previousSessionAvatar = sessionStore?.getItem?.('us_avatar') || null;
-      const previousUserAvatar = currentUser ? (currentUser.avatar || null) : null;
-      const previousAppliedAvatar = previousSessionAvatar || previousUserAvatar || DEFAULT_ADMIN_AVATAR;
       try {
-        validateImageFile(file, 'profile photo');
         const dataUrl = await readFileAsDataUrl(file);
-        if (!dataUrl) throw new Error('file-read-error');
+        if (!dataUrl) return;
+        applyAvatar(dataUrl);
+        sessionStorage.setItem('us_avatar', dataUrl);
         if (currentUser) {
           currentUser.avatar = dataUrl;
-          if (!saveData(db)) {
-            currentUser.avatar = previousUserAvatar;
-            saveData(db);
-            throw storageQuotaError('profile photo');
-          }
-        }
-        if (!safeSetItem(sessionStore, 'us_avatar', dataUrl)) {
-          if (currentUser) {
-            currentUser.avatar = previousUserAvatar;
-            saveData(db);
-          }
-          safeSetItem(sessionStore, 'us_avatar', previousSessionAvatar);
-          throw storageQuotaError('profile photo');
-        }
-        applyAvatar(dataUrl);
-      } catch (err) {
-        console.error('Unable to process avatar file', err);
-        if (currentUser) {
-          currentUser.avatar = previousUserAvatar;
           saveData(db);
+        } else {
+          console.warn('Unable to locate current user record to save avatar.');
         }
-        safeSetItem(sessionStore, 'us_avatar', previousSessionAvatar);
-        applyAvatar(previousAppliedAvatar);
-        const message = imageErrorMessage(err, 'Unable to read the selected image. Please try another file.', 'profile photo');
-        alert(message);
+      } catch (err) {
+        console.error('Unable to read avatar file', err);
+        alert('Unable to read the selected image. Please try another file.');
       } finally {
         avatarInput.value = '';
       }
@@ -655,7 +563,7 @@ if (isDashboardPage()) {
   qi('greeting').textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   qi('logout').addEventListener('click', ()=>{
-    ['us_username','us_name','us_email','us_role','us_center','us_avatar'].forEach(k=>safeRemoveItem(sessionStore, k));
+    ['us_username','us_name','us_email','us_role','us_center','us_avatar'].forEach(k=>sessionStorage.removeItem(k));
     location.href = 'index.html';
   });
 
@@ -750,19 +658,15 @@ if (isDashboardPage()) {
         const imageFileInput = qi('center-image-file');
         let image = imageInput ? imageInput.value.trim() : '';
         const imageFile = imageFileInput && imageFileInput.files ? imageFileInput.files[0] : null;
-          if (imageFile) {
-            try {
-              validateImageFile(imageFile, 'center photo');
-              image = await readFileAsDataUrl(imageFile);
-              if (!image) throw new Error('file-read-error');
-            } catch (err) {
-              console.error('Unable to read center image file', err);
-              if (imageFileInput) imageFileInput.value = '';
-              const message = imageErrorMessage(err, 'Unable to read the selected center image. Please try another file.', 'center photo');
-              alert(message);
-              return;
-            }
+        if (imageFile) {
+          try {
+            image = await readFileAsDataUrl(imageFile);
+          } catch (err) {
+            console.error('Unable to read center image file', err);
+            alert('Unable to read the selected center image. Please try another file.');
+            return;
           }
+        }
         const desc = qi('center-desc').value.trim();
         const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
         const loginUsername = qi('center-username').value.trim();
@@ -955,19 +859,15 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
     const avatarFileInput = qi('spec-avatar-file');
     let avatar = avatarInput ? avatarInput.value.trim() : '';
     const avatarFile = avatarFileInput && avatarFileInput.files ? avatarFileInput.files[0] : null;
-      if (avatarFile) {
-        try {
-          validateImageFile(avatarFile, 'specialist photo');
-          avatar = await readFileAsDataUrl(avatarFile);
-          if (!avatar) throw new Error('file-read-error');
-        } catch (err) {
-          console.error('Unable to read specialist avatar file', err);
-          if (avatarFileInput) avatarFileInput.value = '';
-          const message = imageErrorMessage(err, 'Unable to read the selected avatar. Please try another file.', 'specialist photo');
-          alert(message);
-          return;
-        }
+    if (avatarFile) {
+      try {
+        avatar = await readFileAsDataUrl(avatarFile);
+      } catch (err) {
+        console.error('Unable to read specialist avatar file', err);
+        alert('Unable to read the selected avatar. Please try another file.');
+        return;
       }
+    }
     const loginUsername = qi('spec-username').value.trim();
     const loginPassword = qi('spec-password').value.trim();
     if (isCenterAdmin) {
