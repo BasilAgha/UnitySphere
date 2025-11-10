@@ -1,7 +1,12 @@
 // ===== UnitySphere Admin (client-side) =====
 
-const STORAGE_KEY = 'unitysphere-data-v3';
+const STORAGE_VERSION = 4;
+const STORAGE_KEY = `unitysphere-data-v${STORAGE_VERSION}`;
+const LEGACY_STORAGE_KEYS = ['unitysphere-data', 'unitysphere-data-v1', 'unitysphere-data-v2', 'unitysphere-data-v3'];
+const SESSION_VERSION_KEY = 'unitysphere-session-version';
+
 const storageAvailable = typeof localStorage !== 'undefined';
+const sessionAvailable = typeof sessionStorage !== 'undefined';
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
@@ -36,6 +41,7 @@ const seedCenters = [];
 const seedSpecialists = [];
 
 const DEFAULT_DATA = {
+  version: STORAGE_VERSION,
   users: [
     { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test' }
   ],
@@ -52,9 +58,17 @@ function loadData() {
   if (!storageAvailable) return clone(DEFAULT_DATA);
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) { saveData(DEFAULT_DATA); return clone(DEFAULT_DATA); }
+    if (!raw) {
+      saveData(DEFAULT_DATA);
+      return clone(DEFAULT_DATA);
+    }
     const parsed = JSON.parse(raw);
+    if (!parsed || parsed.version !== STORAGE_VERSION) {
+      saveData(DEFAULT_DATA);
+      return clone(DEFAULT_DATA);
+    }
     return {
+      version: STORAGE_VERSION,
       users: parsed.users || clone(DEFAULT_DATA.users),
       centers: parsed.centers || [],
       specialists: parsed.specialists || [],
@@ -62,12 +76,17 @@ function loadData() {
       assessments: parsed.assessments || []
     };
   } catch {
+    saveData(DEFAULT_DATA);
     return clone(DEFAULT_DATA);
   }
 }
 function saveData(data){
   if (!storageAvailable) return;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  try {
+    const payload = clone(data);
+    payload.version = STORAGE_VERSION;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch {}
 }
 function normalizeCenterLogin(center) {
   if (!center) return null;
