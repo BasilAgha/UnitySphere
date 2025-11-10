@@ -53,6 +53,8 @@
               <span id="user-role" class="hint">Main admin</span>
             </div>
           </div>
+          <button type="button" class="ghost small" id="btn-change-avatar">Change photo</button>
+          <input type="file" id="admin-avatar-file" accept="image/*" hidden>
         </div>
       </header>
 
@@ -205,8 +207,12 @@
                     <input id="center-location" placeholder="Riyadh, KSA">
                   </div>
                   <div class="input-group">
-                    <label for="center-image">Cover image URL</label>
+                    <label for="center-image">Cover image URL (optional)</label>
                     <input id="center-image" placeholder="https://.../cover.jpg">
+                  </div>
+                  <div class="input-group">
+                    <label for="center-image-file">Or upload cover photo</label>
+                    <input id="center-image-file" type="file" accept="image/*">
                   </div>
                   <div class="input-group">
                     <label for="center-desc">Short description</label>
@@ -230,14 +236,15 @@
                   </div>
                   <div class="grid-inline">
                     <div class="input-group">
-                      <label for="center-posx">Map X (0–100)</label>
-                      <input id="center-posx" type="number" min="0" max="100" placeholder="28">
+                      <label for="center-lat">Latitude</label>
+                      <input id="center-lat" type="number" step="any" placeholder="24.7136" required>
                     </div>
                     <div class="input-group">
-                      <label for="center-posy">Map Y (0–100)</label>
-                      <input id="center-posy" type="number" min="0" max="100" placeholder="52">
+                      <label for="center-lng">Longitude</label>
+                      <input id="center-lng" type="number" step="any" placeholder="46.6753" required>
                     </div>
                   </div>
+                  <p class="hint">Use decimal degrees. Coordinates are required to place the pin on Google Maps.</p>
                   <div class="form-actions">
                     <button type="button" class="ghost" id="btn-cancel-center">Cancel</button>
                     <button class="primary" type="submit">Save center</button>
@@ -246,8 +253,19 @@
               </form>
             </div>
               <div class="centers-map">
-                <div class="map-pins" id="map-pins"></div>
-                <small class="muted">Pins are positioned with X/Y (0–100).</small>
+                <div class="map-wrapper">
+                  <div
+                    id="centers-map-canvas"
+                    class="map-canvas"
+                    data-google-maps-key="YOUR_API_KEY"
+                    data-default-lat="24.7136"
+                    data-default-lng="46.6753"
+                    data-default-zoom="4"
+                  ></div>
+                </div>
+                <div id="centers-map-status" class="map-status muted">
+                  Add a Google Maps API key and center coordinates to visualize the pins.
+                </div>
               </div>
 
             <div class="center-directory">
@@ -330,6 +348,10 @@
             <div class="input-group">
               <label for="spec-avatar">Avatar URL (optional)</label>
               <input id="spec-avatar" placeholder="https://.../photo.jpg" />
+            </div>
+            <div class="input-group">
+              <label for="spec-avatar-file">Or upload avatar</label>
+              <input id="spec-avatar-file" type="file" accept="image/*" />
             </div>
             <button class="primary" type="submit">Add Specialist</button>
           </form>

@@ -2,6 +2,7 @@
 
 const STORAGE_VERSION = 4;
 const STORAGE_KEY = `unitysphere-data-v${STORAGE_VERSION}`;
+const DEFAULT_ADMIN_AVATAR = 'https://i.pravatar.cc/150?u=unitysphere-admin';
 const LEGACY_STORAGE_KEYS = ['unitysphere-data', 'unitysphere-data-v1', 'unitysphere-data-v2', 'unitysphere-data-v3'];
 const SESSION_VERSION_KEY = 'unitysphere-session-version';
 
@@ -11,7 +12,45 @@ const sessionAvailable = typeof sessionStorage !== 'undefined';
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
 
-function seedCenter({ name, location, desc, tags = [], image, posX, posY, login }) {
+function readFileAsDataUrl(file) {
+  if (!file) return Promise.resolve(null);
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || null);
+    reader.onerror = () => reject(reader.error || new Error('file-read-error'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function toNumber(value) {
+  if (value === null || value === undefined) return null;
+  const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function legacyMapToLatLng(posX, posY) {
+  const x = toNumber(posX);
+  const y = toNumber(posY);
+  if (x === null || y === null) return null;
+  const clampedX = Math.min(100, Math.max(0, x));
+  const clampedY = Math.min(100, Math.max(0, y));
+  const lat = +(90 - (clampedY / 100) * 180);
+  const lng = +((clampedX / 100) * 360 - 180);
+  return { lat, lng, approximate: true };
+}
+
+function seedCenter({ name, location, desc, tags = [], image, lat, latitude, lng, longitude, posX, posY, login }) {
+  const coords = (() => {
+    const directLat = toNumber(lat ?? latitude);
+    const directLng = toNumber(lng ?? longitude);
+    if (directLat !== null && directLng !== null) {
+      return { lat: directLat, lng: directLng, approximate: false };
+    }
+    const fallback = legacyMapToLatLng(posX, posY);
+    if (fallback) return fallback;
+    return { lat: null, lng: null, approximate: false };
+  })();
+
   return {
     id: uid(),
     name,
@@ -19,6 +58,8 @@ function seedCenter({ name, location, desc, tags = [], image, posX, posY, login 
     desc,
     tags,
     image,
+    lat: coords.lat,
+    lng: coords.lng,
     posX,
     posY,
     login: login || null
@@ -36,6 +77,180 @@ function seedSpecialist({ name, skill, centerId = null, avatar = '', login = nul
   };
 }
 
+function getCenterCoordinates(center) {
+  if (!center) return null;
+  const directLat = toNumber(center.lat ?? center.latitude);
+  const directLng = toNumber(center.lng ?? center.longitude);
+  if (directLat !== null && directLng !== null) {
+    return { lat: directLat, lng: directLng, approximate: false };
+  }
+  const fallback = legacyMapToLatLng(center.posX, center.posY);
+  if (fallback) return fallback;
+  return null;
+}
+
+let googleMapsPromise = null;
+let centersMapInstance = null;
+let centersMapMarkers = [];
+let centersActiveInfoWindow = null;
+
+function ensureGoogleMaps(apiKey) {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('no-window'));
+  }
+  if (window.google && window.google.maps) {
+    return Promise.resolve(window.google.maps);
+  }
+  const trimmedKey = (apiKey || '').trim();
+  if (!trimmedKey || trimmedKey === 'YOUR_API_KEY') {
+    return Promise.reject(new Error('missing-api-key'));
+  }
+  if (googleMapsPromise) {
+    return googleMapsPromise;
+  }
+  googleMapsPromise = new Promise((resolve, reject) => {
+    const callbackName = `__unitysphereInitMap${Math.random().toString(36).slice(2)}`;
+    window[callbackName] = () => {
+      if (window.google && window.google.maps) {
+        resolve(window.google.maps);
+      } else {
+        reject(new Error('google-maps-unavailable'));
+      }
+      delete window[callbackName];
+    };
+    const params = new URLSearchParams({ callback: callbackName, v: 'weekly' });
+    params.set('key', trimmedKey);
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => {
+      delete window[callbackName];
+      googleMapsPromise = null;
+      reject(new Error('google-maps-load-failed'));
+    };
+    document.head.appendChild(script);
+  });
+  return googleMapsPromise;
+}
+
+function updateCentersMap(centers) {
+  const canvas = document.getElementById('centers-map-canvas');
+  if (!canvas) return;
+  const statusEl = document.getElementById('centers-map-status');
+  const setStatus = (message) => {
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.style.display = message ? '' : 'none';
+  };
+
+  const apiKey = canvas.dataset.googleMapsKey || '';
+  const defaultLat = toNumber(canvas.dataset.defaultLat) ?? 24.7136;
+  const defaultLng = toNumber(canvas.dataset.defaultLng) ?? 46.6753;
+  const defaultZoom = toNumber(canvas.dataset.defaultZoom) ?? 4;
+  const singleZoom = toNumber(canvas.dataset.singleZoom);
+  const mapId = canvas.dataset.mapId;
+
+  const entries = centers
+    .map(center => {
+      const coords = getCenterCoordinates(center);
+      if (!coords) return null;
+      return { center, coords };
+    })
+    .filter(Boolean);
+  const hasCenters = Array.isArray(centers) && centers.length > 0;
+
+  const clearMarkers = () => {
+    centersMapMarkers.forEach(marker => marker.setMap(null));
+    centersMapMarkers = [];
+    if (centersActiveInfoWindow) {
+      centersActiveInfoWindow.close();
+      centersActiveInfoWindow = null;
+    }
+  };
+
+  if (!apiKey || apiKey.trim() === '' || apiKey.trim() === 'YOUR_API_KEY') {
+    clearMarkers();
+    centersMapInstance = null;
+    canvas.innerHTML = '';
+    if (entries.length) {
+      setStatus('Provide a valid Google Maps API key to render the map.');
+    } else if (hasCenters) {
+      setStatus('Add latitude and longitude for each center, then provide your Google Maps API key.');
+    } else {
+      setStatus('Add a Google Maps API key and center coordinates to visualize the pins.');
+    }
+    return;
+  }
+
+  if (!(window.google && window.google.maps)) {
+    setStatus('Loading Google Maps…');
+  }
+
+  ensureGoogleMaps(apiKey)
+    .then(maps => {
+      if (!centersMapInstance) {
+        const initialCenter = entries.length ? { lat: entries[0].coords.lat, lng: entries[0].coords.lng } : { lat: defaultLat, lng: defaultLng };
+        const options = {
+          center: initialCenter,
+          zoom: entries.length ? (Number.isFinite(singleZoom) ? singleZoom : 10) : defaultZoom,
+        };
+        if (mapId) options.mapId = mapId;
+        centersMapInstance = new maps.Map(canvas, options);
+      }
+
+      clearMarkers();
+
+      if (entries.length === 0) {
+        centersMapInstance.setCenter({ lat: defaultLat, lng: defaultLng });
+        centersMapInstance.setZoom(defaultZoom);
+        setStatus(hasCenters ? 'Add latitude and longitude for each center to see pins.' : 'Add centers with coordinates to see pins.');
+        return;
+      }
+
+      const bounds = new maps.LatLngBounds();
+      entries.forEach(({ center, coords }) => {
+        const marker = new maps.Marker({
+          map: centersMapInstance,
+          position: { lat: coords.lat, lng: coords.lng },
+          title: center.name || center.location || 'Center',
+        });
+        centersMapMarkers.push(marker);
+        bounds.extend(marker.getPosition());
+
+        const infoContent = `
+          <div class="map-info-window">
+            ${center.name ? `<strong>${esc(center.name)}</strong>` : ''}
+            ${center.location ? `<span class="map-info-sub">${esc(center.location)}</span>` : ''}
+          </div>
+        `;
+        if (center.name || center.location) {
+          const infoWindow = new maps.InfoWindow({ content: infoContent });
+          marker.addListener('click', () => {
+            if (centersActiveInfoWindow) centersActiveInfoWindow.close();
+            infoWindow.open({ map: centersMapInstance, anchor: marker });
+            centersActiveInfoWindow = infoWindow;
+          });
+        }
+      });
+
+      if (entries.length > 1) {
+        centersMapInstance.fitBounds(bounds);
+      } else {
+        const target = entries[0].coords;
+        centersMapInstance.setCenter({ lat: target.lat, lng: target.lng });
+        centersMapInstance.setZoom(Number.isFinite(singleZoom) ? singleZoom : 12);
+      }
+      setStatus('Click a pin to view center details.');
+    })
+    .catch(() => {
+      clearMarkers();
+      centersMapInstance = null;
+      canvas.innerHTML = '';
+      setStatus('Unable to load Google Maps. Verify your API key and network access.');
+    });
+}
+
 const seedCenters = [];
 
 const seedSpecialists = [];
@@ -43,7 +258,7 @@ const seedSpecialists = [];
 const DEFAULT_DATA = {
   version: STORAGE_VERSION,
   users: [
-    { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test' }
+    { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test', avatar: DEFAULT_ADMIN_AVATAR }
   ],
   centers: seedCenters,
   specialists: seedSpecialists,
@@ -245,6 +460,11 @@ if (isLoginPage()) {
     sessionStorage.setItem('us_name', user.name || user.username);
     sessionStorage.setItem('us_email', user.email || '');
     sessionStorage.setItem('us_role', user.role);
+    if (user.avatar) {
+      sessionStorage.setItem('us_avatar', user.avatar);
+    } else {
+      sessionStorage.removeItem('us_avatar');
+    }
     if (user.role === 'center-admin' && user.centerId) {
       sessionStorage.setItem('us_center', user.centerId);
     } else {
@@ -285,16 +505,57 @@ if (isDashboardPage()) {
     if (hint) hint.textContent = 'Add new specialists for your center and share their login credentials.';
   }
 
+  const userKey = (username || '').toLowerCase();
+  const currentUser = (db.users || []).find(u => (u?.username || '').toLowerCase() === userKey) || null;
+  const storedAvatar = sessionStorage.getItem('us_avatar');
+  const activeAvatar = storedAvatar || currentUser?.avatar || DEFAULT_ADMIN_AVATAR;
+  const applyAvatar = (src)=>{
+    const finalSrc = src || DEFAULT_ADMIN_AVATAR;
+    ['header-avatar','sidebar-avatar'].forEach(id=>{
+      const el = qi(id);
+      if (!el) return;
+      el.style.backgroundImage = `url(${finalSrc})`;
+      el.style.backgroundSize='cover';
+      el.style.backgroundPosition='center';
+    });
+  };
+  applyAvatar(activeAvatar);
+  if (activeAvatar) {
+    sessionStorage.setItem('us_avatar', activeAvatar);
+  }
+
+  const avatarInput = qi('admin-avatar-file');
+  const avatarButton = qi('btn-change-avatar');
+  if (avatarButton && avatarInput) {
+    avatarButton.addEventListener('click', ()=> avatarInput.click());
+    avatarInput.addEventListener('change', async ()=>{
+      const file = avatarInput.files && avatarInput.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        if (!dataUrl) return;
+        applyAvatar(dataUrl);
+        sessionStorage.setItem('us_avatar', dataUrl);
+        if (currentUser) {
+          currentUser.avatar = dataUrl;
+          saveData(db);
+        } else {
+          console.warn('Unable to locate current user record to save avatar.');
+        }
+      } catch (err) {
+        console.error('Unable to read avatar file', err);
+        alert('Unable to read the selected image. Please try another file.');
+      } finally {
+        avatarInput.value = '';
+      }
+    });
+  }
+
   const hour = new Date().getHours();
   qi('greeting').textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  const avatar = 'https://i.pravatar.cc/150?u=admin';
-  ['header-avatar','sidebar-avatar'].forEach(id=>{
-    const el = qi(id); el.style.backgroundImage = `url(${avatar})`; el.style.backgroundSize='cover'; el.style.backgroundPosition='center';
-  });
-
   qi('logout').addEventListener('click', ()=>{
-    ['us_username','us_name','us_email','us_role','us_center'].forEach(k=>sessionStorage.removeItem(k));
+    ['us_username','us_name','us_email','us_role','us_center','us_avatar'].forEach(k=>sessionStorage.removeItem(k));
     location.href = 'index.html';
   });
 
@@ -381,18 +642,34 @@ if (isDashboardPage()) {
         setToggleState(false);
       });
 
-      centerForm?.addEventListener('submit', e=>{
+      centerForm?.addEventListener('submit', async e=>{
         e.preventDefault();
         const name = qi('center-name').value.trim();
         const location = qi('center-location').value.trim();
-        const image = qi('center-image').value.trim();
+        const imageInput = qi('center-image');
+        const imageFileInput = qi('center-image-file');
+        let image = imageInput ? imageInput.value.trim() : '';
+        const imageFile = imageFileInput && imageFileInput.files ? imageFileInput.files[0] : null;
+        if (imageFile) {
+          try {
+            image = await readFileAsDataUrl(imageFile);
+          } catch (err) {
+            console.error('Unable to read center image file', err);
+            alert('Unable to read the selected center image. Please try another file.');
+            return;
+          }
+        }
         const desc = qi('center-desc').value.trim();
         const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
         const loginUsername = qi('center-username').value.trim();
         const loginPassword = qi('center-password').value.trim();
-        const posX = parseFloat(qi('center-posx').value);
-        const posY = parseFloat(qi('center-posy').value);
+        const lat = parseFloat(qi('center-lat').value);
+        const lng = parseFloat(qi('center-lng').value);
         if (!name || !loginUsername || !loginPassword) return;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          alert('Please provide both latitude and longitude for the center.');
+          return;
+        }
         // prevent duplicate usernames
         const usernameTaken = (db.users || []).some(
           u => u.username && u.username.toLowerCase() === loginUsername.toLowerCase()
@@ -402,15 +679,20 @@ if (isDashboardPage()) {
           return;
         }
         const centerId = uid();
+        const derivedPosX = Math.round(((lng + 180) / 360) * 100);
+        const derivedPosY = Math.round(((90 - lat) / 180) * 100);
         db.centers.push({
           id: centerId, name, location, image, desc, tags,
           login: { username: loginUsername, password: loginPassword },
-          posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
-          posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
+          lat,
+          lng,
+          posX: Number.isFinite(derivedPosX) ? derivedPosX : undefined,
+          posY: Number.isFinite(derivedPosY) ? derivedPosY : undefined
         });
         upsertUser({ username: loginUsername, password: loginPassword, role: 'center-admin', centerId, name: name ? `${name} Admin` : loginUsername });
         persistAndRender();
         e.target.reset();
+        if (imageFileInput) imageFileInput.value = '';
         setToggleState(false);
       });
     }
@@ -472,14 +754,7 @@ if (isDashboardPage()) {
       }
     }
 
-    // map pins
-    const map = qi('map-pins'); map.innerHTML = '';
-    centers.forEach(c=>{
-      const pin = el('div', { class:'map-pin', style:{ left:c.posX+'%', top:c.posY+'%' } },
-        el('span', {}, c.name)
-      );
-      map.append(pin);
-    });
+    updateCentersMap(centers);
 
     // cards
     const grid = qi('centers-grid'); grid.innerHTML = '';
@@ -567,12 +842,24 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
 
   // ---------- Specialists ----------
   const specialistForm = qi('form-specialist');
-  specialistForm?.addEventListener('submit', e=>{
+  specialistForm?.addEventListener('submit', async e=>{
     e.preventDefault();
     const name = qi('spec-name').value.trim();
     const skill = qi('spec-skill').value.trim();
     let centerId = qi('spec-center').value || null;
-    const avatar = qi('spec-avatar').value.trim();
+    const avatarInput = qi('spec-avatar');
+    const avatarFileInput = qi('spec-avatar-file');
+    let avatar = avatarInput ? avatarInput.value.trim() : '';
+    const avatarFile = avatarFileInput && avatarFileInput.files ? avatarFileInput.files[0] : null;
+    if (avatarFile) {
+      try {
+        avatar = await readFileAsDataUrl(avatarFile);
+      } catch (err) {
+        console.error('Unable to read specialist avatar file', err);
+        alert('Unable to read the selected avatar. Please try another file.');
+        return;
+      }
+    }
     const loginUsername = qi('spec-username').value.trim();
     const loginPassword = qi('spec-password').value.trim();
     if (isCenterAdmin) {
@@ -587,6 +874,7 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
     upsertUser({ username: loginUsername, password: loginPassword, role: 'specialist', centerId, name });
     persistAndRender();
     e.target.reset();
+    if (avatarFileInput) avatarFileInput.value = '';
     if (isCenterAdmin) {
       const centerSelect = qi('spec-center');
       if (centerSelect) centerSelect.value = centerIdForRole;
