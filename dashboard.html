@@ -230,14 +230,15 @@
                   </div>
                   <div class="grid-inline">
                     <div class="input-group">
-                      <label for="center-posx">Map X (0–100)</label>
-                      <input id="center-posx" type="number" min="0" max="100" placeholder="28">
+                      <label for="center-lat">Latitude</label>
+                      <input id="center-lat" type="number" step="any" placeholder="24.7136" required>
                     </div>
                     <div class="input-group">
-                      <label for="center-posy">Map Y (0–100)</label>
-                      <input id="center-posy" type="number" min="0" max="100" placeholder="52">
+                      <label for="center-lng">Longitude</label>
+                      <input id="center-lng" type="number" step="any" placeholder="46.6753" required>
                     </div>
                   </div>
+                  <p class="hint">Use decimal degrees. Coordinates are required to place the pin on Google Maps.</p>
                   <div class="form-actions">
                     <button type="button" class="ghost" id="btn-cancel-center">Cancel</button>
                     <button class="primary" type="submit">Save center</button>
@@ -246,8 +247,19 @@
               </form>
             </div>
               <div class="centers-map">
-                <div class="map-pins" id="map-pins"></div>
-                <small class="muted">Pins are positioned with X/Y (0–100).</small>
+                <div class="map-wrapper">
+                  <div
+                    id="centers-map-canvas"
+                    class="map-canvas"
+                    data-google-maps-key="YOUR_API_KEY"
+                    data-default-lat="24.7136"
+                    data-default-lng="46.6753"
+                    data-default-zoom="4"
+                  ></div>
+                </div>
+                <div id="centers-map-status" class="map-status muted">
+                  Add a Google Maps API key and center coordinates to visualize the pins.
+                </div>
               </div>
 
             <div class="center-directory">
