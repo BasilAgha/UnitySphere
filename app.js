@@ -6,43 +6,90 @@ const storageAvailable = typeof localStorage !== 'undefined';
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
 
+function seedCenter({ name, location, desc, tags = [], image, posX, posY, login }) {
+  return {
+    id: uid(),
+    name,
+    location,
+    desc,
+    tags,
+    image,
+    posX,
+    posY,
+    login: login || null
+  };
+}
+
+function seedSpecialist({ name, skill, centerId = null, avatar = '', login = null }) {
+  return {
+    id: uid(),
+    name,
+    skill,
+    centerId,
+    avatar,
+    login
+  };
+}
+
+const seedCenters = [
+  seedCenter({
+    name: 'Cogniplay City Center',
+    location: 'Riyadh, KSA',
+    desc: 'Immersive neurodevelopmental therapy',
+    tags: ['Cognitive Focus','Sensory Regulation'],
+    image: 'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?q=80&w=1600&auto=format&fit=crop',
+    posX: 28,
+    posY: 52,
+    login: { username: 'center-riyadh', password: 'Center123!' }
+  }),
+  seedCenter({
+    name: 'NeuroConnect Hub',
+    location: 'Jeddah, KSA',
+    desc: 'Executive function and language',
+    tags: ['Executive Function','Language Labs'],
+    image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop',
+    posX: 58,
+    posY: 68,
+    login: { username: 'center-jeddah', password: 'Connect@2024' }
+  }),
+  seedCenter({
+    name: 'Innovata Wellness Center',
+    location: 'Dubai, UAE',
+    desc: 'Sensory integration & family coaching',
+    tags: ['Sensory Gym','Family Coaching'],
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop',
+    posX: 74,
+    posY: 45,
+    login: { username: 'center-dubai', password: 'Innovata!9' }
+  }),
+  seedCenter({
+    name: 'Cortex Meadow Clinic',
+    location: 'Doha, Qatar',
+    desc: 'Motor planning & regulation',
+    tags: ['Motor Metrics','Calm Transitions'],
+    image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1600&auto=format&fit=crop',
+    posX: 82,
+    posY: 40,
+    login: { username: 'center-doha', password: 'Cortex!2024' }
+  })
+];
+
+const seedSpecialists = [
+  seedSpecialist({
+    name: 'Dr. Noor Al-Fahad',
+    skill: 'PT',
+    centerId: seedCenters[0]?.id || null,
+    avatar: '',
+    login: { username: 'noor.pt', password: 'Spec123!' }
+  })
+];
+
 const DEFAULT_DATA = {
   users: [
     { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test' }
   ],
-  centers: [
-    { id: uid(), name: 'Cogniplay City Center', location: 'Riyadh, KSA',
-      desc: 'Immersive neurodevelopmental therapy',
-      tags: ['Cognitive Focus','Sensory Regulation'],
-      image: 'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?q=80&w=1600&auto=format&fit=crop',
-      posX: 28, posY: 52,
-      login: { username: 'center-riyadh', password: 'Center123!' }
-    },
-    { id: uid(), name: 'NeuroConnect Hub', location: 'Jeddah, KSA',
-      desc: 'Executive function and language',
-      tags: ['Executive Function','Language Labs'],
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop',
-      posX: 58, posY: 68,
-      login: { username: 'center-jeddah', password: 'Connect@2024' }
-    },
-    { id: uid(), name: 'Innovata Wellness Center', location: 'Dubai, UAE',
-      desc: 'Sensory integration & family coaching',
-      tags: ['Sensory Gym','Family Coaching'],
-      image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop',
-      posX: 74, posY: 45,
-      login: { username: 'center-dubai', password: 'Innovata!9' }
-    },
-    { id: uid(), name: 'Cortex Meadow Clinic', location: 'Doha, Qatar',
-      desc: 'Motor planning & regulation',
-      tags: ['Motor Metrics','Calm Transitions'],
-      image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1600&auto=format&fit=crop',
-      posX: 82, posY: 40,
-      login: { username: 'center-doha', password: 'Cortex!2024' }
-    }
-  ],
-  specialists: [
-    { id: uid(), name: 'Dr. Noor Al-Fahad', skill: 'PT', centerId: null, avatar: '' }
-  ],
+  centers: seedCenters,
+  specialists: seedSpecialists,
   modules: [
     { id: uid(), title: 'Balance Training 1', category: 'Rehab', durationMin: 15 }
   ],
@@ -71,7 +118,125 @@ function saveData(data){
   if (!storageAvailable) return;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
+function normalizeCenterLogin(center) {
+  if (!center) return null;
+  if (!center.login && (center.centerUsername || center.centerPassword)) {
+    center.login = {
+      username: center.centerUsername || '',
+      password: center.centerPassword || ''
+    };
+  }
+  if (!center.login) return null;
+  center.login = {
+    username: (center.login.username || '').trim(),
+    password: center.login.password || ''
+  };
+  if (!center.login.username) {
+    center.login = null;
+  }
+  return center.login;
+}
+function normalizeSpecialistLogin(specialist) {
+  if (!specialist) return null;
+  if (!specialist.login && (specialist.username || specialist.password)) {
+    specialist.login = {
+      username: specialist.username || '',
+      password: specialist.password || ''
+    };
+    delete specialist.username;
+    delete specialist.password;
+  }
+  if (!specialist.login) return null;
+  specialist.login = {
+    username: (specialist.login.username || '').trim(),
+    password: specialist.login.password || ''
+  };
+  if (!specialist.login.username) {
+    specialist.login = null;
+  }
+  return specialist.login;
+}
+function upsertUser(user) {
+  if (!user || !user.username) return;
+  db.users = Array.isArray(db.users) ? db.users : [];
+  const key = user.username.toLowerCase();
+  const existing = db.users.find(u => u.username && u.username.toLowerCase() === key);
+  if (existing) {
+    Object.assign(existing, user);
+  } else {
+    db.users.push(user);
+  }
+}
+function removeUserByUsername(username) {
+  if (!username) return;
+  const key = username.toLowerCase();
+  db.users = (db.users || []).filter(u => !u.username || u.username.toLowerCase() !== key);
+}
+function syncUsersWithEntities() {
+  db.users = Array.isArray(db.users) ? db.users.filter(Boolean) : [];
+  db.centers = Array.isArray(db.centers) ? db.centers : [];
+  db.specialists = Array.isArray(db.specialists) ? db.specialists : [];
+
+  const userLookup = new Map();
+  db.users.forEach(u => {
+    if (u && u.username) {
+      userLookup.set(u.username.toLowerCase(), u);
+    }
+  });
+
+  db.centers.forEach(center => {
+    const login = normalizeCenterLogin(center);
+    if (!login || !login.username) return;
+    const key = login.username.toLowerCase();
+    const payload = {
+      username: login.username,
+      password: login.password || '',
+      role: 'center-admin',
+      centerId: center.id,
+      name: center.name ? `${center.name} Admin` : 'Center Admin'
+    };
+    if (userLookup.has(key)) {
+      Object.assign(userLookup.get(key), payload);
+    } else {
+      db.users.push(payload);
+      userLookup.set(key, payload);
+    }
+  });
+
+  const specialistUsers = new Set();
+  db.specialists.forEach(spec => {
+    const login = normalizeSpecialistLogin(spec);
+    if (!login || !login.username) return;
+    const key = login.username.toLowerCase();
+    const payload = {
+      username: login.username,
+      password: login.password || '',
+      role: 'specialist',
+      centerId: spec.centerId || null,
+      name: spec.name || login.username
+    };
+    if (userLookup.has(key)) {
+      Object.assign(userLookup.get(key), payload);
+    } else {
+      db.users.push(payload);
+      userLookup.set(key, payload);
+    }
+    specialistUsers.add(key);
+  });
+
+  db.users = db.users.filter(user => {
+    if (!user || !user.username) return false;
+    if (user.role === 'center-admin') {
+      return db.centers.some(center => center.id === user.centerId);
+    }
+    if (user.role === 'specialist') {
+      return specialistUsers.has(user.username.toLowerCase());
+    }
+    return true;
+  });
+}
 const db = loadData();
+syncUsersWithEntities();
 
 // ---- routing ----
 function isLoginPage(){ return location.pathname.endsWith('index.html') || !location.pathname.includes('.html'); }
@@ -103,12 +268,18 @@ if (isLoginPage()) {
     e.preventDefault();
     const u = (userI.value||'').trim().toLowerCase();
     const p = passI.value||'';
-    const user = (db.users||[]).find(x=>x.username.toLowerCase()===u && x.password===p);
+    const user = (db.users||[]).find(x=>x.username && x.username.toLowerCase()===u && x.password===p);
     if (!user) { alert('Invalid credentials'); return; }
-    if (user.role !== 'main-admin') { alert('Only main-admin can sign in here.'); return; }
+    if (!['main-admin','center-admin'].includes(user.role)) { alert('Access restricted to admin accounts.'); return; }
     sessionStorage.setItem('us_username', user.username);
     sessionStorage.setItem('us_name', user.name || user.username);
     sessionStorage.setItem('us_email', user.email || '');
+    sessionStorage.setItem('us_role', user.role);
+    if (user.role === 'center-admin' && user.centerId) {
+      sessionStorage.setItem('us_center', user.centerId);
+    } else {
+      sessionStorage.removeItem('us_center');
+    }
     location.href = 'dashboard.html';
   });
 }
@@ -121,9 +292,28 @@ if (isDashboardPage()) {
 
   const name = sessionStorage.getItem('us_name');
   const email = sessionStorage.getItem('us_email');
+  const role = sessionStorage.getItem('us_role') || 'main-admin';
+  const centerIdForRole = sessionStorage.getItem('us_center');
   qi('sidebar-name').textContent = name || username;
   qi('sidebar-email').textContent = email || '—';
   qi('user-name').textContent = name || username;
+  const userRoleLabel = role === 'center-admin' ? 'Center admin' : 'Main admin';
+  const roleEl = qi('user-role');
+  if (roleEl) roleEl.textContent = userRoleLabel;
+  const isCenterAdmin = role === 'center-admin';
+  const centersForRole = () => (isCenterAdmin && centerIdForRole) ? db.centers.filter(c => c.id === centerIdForRole) : db.centers;
+  const specialistsForRole = () => (isCenterAdmin && centerIdForRole) ? db.specialists.filter(s => s.centerId === centerIdForRole) : db.specialists;
+  const modulesForRole = () => db.modules;
+  const assessmentsForRole = () => {
+    if (!isCenterAdmin || !centerIdForRole) return db.assessments;
+    const allowed = new Set(specialistsForRole().map(s => s.id));
+    return db.assessments.filter(a => allowed.has(a.specialistId));
+  };
+  const accessibleSections = isCenterAdmin ? ['overview','centers','specialists'] : ['overview','centers','specialists','modules','assessments'];
+  if (isCenterAdmin) {
+    const hint = qi('specialist-form-hint');
+    if (hint) hint.textContent = 'Add new specialists for your center and share their login credentials.';
+  }
 
   const hour = new Date().getHours();
   qi('greeting').textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -134,7 +324,7 @@ if (isDashboardPage()) {
   });
 
   qi('logout').addEventListener('click', ()=>{
-    ['us_username','us_name','us_email'].forEach(k=>sessionStorage.removeItem(k));
+    ['us_username','us_name','us_email','us_role','us_center'].forEach(k=>sessionStorage.removeItem(k));
     location.href = 'index.html';
   });
 
@@ -143,6 +333,17 @@ if (isDashboardPage()) {
     const label = btn.querySelector('span')?.textContent.trim() || btn.textContent.trim();
     qi('section-title').textContent = label;
   };
+
+  qsa('.sidebar-nav .nav-link').forEach(btn=>{
+    const key = btn.dataset.section;
+    const allowed = accessibleSections.includes(key);
+    btn.classList.toggle('hidden', !allowed);
+  });
+  qsa('main .section').forEach(sec=>{
+    const key = sec.id.replace('section-','');
+    const allowed = accessibleSections.includes(key);
+    sec.classList.toggle('hidden', !allowed);
+  });
 
   qsa('.sidebar-nav .nav-link').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -157,7 +358,18 @@ if (isDashboardPage()) {
     });
   });
 
-  const initialNav = qs('.sidebar-nav .nav-link.active');
+  let initialNav = qs('.sidebar-nav .nav-link.active');
+  if (!initialNav || initialNav.classList.contains('hidden')) {
+    const defaultKey = accessibleSections[0];
+    if (defaultKey) {
+      qsa('.sidebar-nav .nav-link').forEach(b=>b.classList.remove('active'));
+      initialNav = qs(`.sidebar-nav .nav-link[data-section="${defaultKey}"]`);
+      if (initialNav) initialNav.classList.add('active');
+      qsa('main .section').forEach(sec=>{
+        sec.classList.toggle('active', sec.id === `section-${defaultKey}`);
+      });
+    }
+  }
   if (initialNav) setSectionTitle(initialNav);
 
   // ---------- Centers ----------
@@ -166,50 +378,60 @@ if (isDashboardPage()) {
   const cancelBtn = qi('btn-cancel-center');
   const centerForm = qi('form-center');
   if (addPanel && toggleBtn) {
-    const toggleLabel = toggleBtn.textContent.trim();
-    toggleBtn.setAttribute('aria-expanded', 'false');
-    toggleBtn.addEventListener('click', ()=>{
-      const isOpen = addPanel.classList.toggle('active');
-      toggleBtn.setAttribute('aria-expanded', String(isOpen));
-      toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
-      if (isOpen) {
-        addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-    cancelBtn?.addEventListener('click', ()=>{
-      addPanel.classList.remove('active');
+    if (isCenterAdmin) {
+      addPanel.classList.add('hidden');
+      toggleBtn.classList.add('hidden');
+      cancelBtn?.classList.add('hidden');
+    } else {
+      const toggleLabel = toggleBtn.textContent.trim();
       toggleBtn.setAttribute('aria-expanded', 'false');
-      toggleBtn.textContent = toggleLabel;
-    });
-
-    centerForm?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const name = qi('center-name').value.trim();
-      const location = qi('center-location').value.trim();
-      const image = qi('center-image').value.trim();
-      const desc = qi('center-desc').value.trim();
-      const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
-      const loginUsername = qi('center-username').value.trim();
-      const loginPassword = qi('center-password').value.trim();
-      const posX = parseFloat(qi('center-posx').value);
-      const posY = parseFloat(qi('center-posy').value);
-      if (!name || !loginUsername || !loginPassword) return;
-      db.centers.push({
-        id: uid(), name, location, image, desc, tags,
-        login: { username: loginUsername, password: loginPassword },
-        posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
-        posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
+      toggleBtn.addEventListener('click', ()=>{
+        const isOpen = addPanel.classList.toggle('active');
+        toggleBtn.setAttribute('aria-expanded', String(isOpen));
+        toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
+        if (isOpen) {
+          addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       });
-      persistAndRender();
-      e.target.reset();
-      addPanel.classList.remove('active');
-      toggleBtn.setAttribute('aria-expanded', 'false');
-      toggleBtn.textContent = toggleLabel;
-    });
+      cancelBtn?.addEventListener('click', ()=>{
+        addPanel.classList.remove('active');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.textContent = toggleLabel;
+      });
+
+      centerForm?.addEventListener('submit', e=>{
+        e.preventDefault();
+        const name = qi('center-name').value.trim();
+        const location = qi('center-location').value.trim();
+        const image = qi('center-image').value.trim();
+        const desc = qi('center-desc').value.trim();
+        const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+        const loginUsername = qi('center-username').value.trim();
+        const loginPassword = qi('center-password').value.trim();
+        const posX = parseFloat(qi('center-posx').value);
+        const posY = parseFloat(qi('center-posy').value);
+        if (!name || !loginUsername || !loginPassword) return;
+        const centerId = uid();
+        db.centers.push({
+          id: centerId, name, location, image, desc, tags,
+          login: { username: loginUsername, password: loginPassword },
+          posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
+          posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
+        });
+        upsertUser({ username: loginUsername, password: loginPassword, role: 'center-admin', centerId, name: name ? `${name} Admin` : loginUsername });
+        persistAndRender();
+        e.target.reset();
+        addPanel.classList.remove('active');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.textContent = toggleLabel;
+      });
+    }
   }
 
+  const exportBtn = qi('btn-export-centers');
+  if (exportBtn) exportBtn.classList.toggle('hidden', isCenterAdmin);
   qi('btn-export-centers').addEventListener('click', ()=>{
-    const out = db.centers.map(({id, ...rest})=>rest);
+    const out = centersForRole().map(({id, ...rest})=>rest);
     const blob = new Blob([JSON.stringify(out,null,2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href=url; a.download='centers.json'; a.click();
@@ -217,15 +439,16 @@ if (isDashboardPage()) {
   });
 
   function renderCenters(){
-    const totalCenters = db.centers.length;
-    const loginReady = db.centers.filter(c=>{
+    const centers = centersForRole();
+    const totalCenters = centers.length;
+    const loginReady = centers.filter(c=>{
       const login = c.login || {};
       return Boolean((login.username || c.centerUsername) && (login.password || c.centerPassword));
     }).length;
     const capabilityCounts = new Map();
     const locationSet = new Set();
 
-    db.centers.forEach(c=>{
+    centers.forEach(c=>{
       (c.tags || []).forEach(tag=>{
         const clean = tag && tag.trim();
         if (!clean) return;
@@ -261,7 +484,7 @@ if (isDashboardPage()) {
 
     // map pins
     const map = qi('map-pins'); map.innerHTML = '';
-    db.centers.forEach(c=>{
+    centers.forEach(c=>{
       const pin = el('div', { class:'map-pin', style:{ left:c.posX+'%', top:c.posY+'%' } },
         el('span', {}, c.name)
       );
@@ -270,7 +493,7 @@ if (isDashboardPage()) {
 
     // cards
     const grid = qi('centers-grid'); grid.innerHTML = '';
-    db.centers.forEach(c=>{
+    centers.forEach(c=>{
       const card = el('article', {class:'center-card'});
       const img = el('img', {src: c.image || 'https://images.unsplash.com/photo-1526948128573-703ee1aeb6fa?q=80&w=1600&auto=format&fit=crop', alt:c.name});
       const body = el('div', {class:'card-body'},
@@ -288,57 +511,122 @@ if (isDashboardPage()) {
       if (login && login.password) {
         credentials.append(el('span',{class:'pill'}, login.password));
       }
-      const footer = el('footer', {class:'center-footer'},
-        credentials,
-        (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.centers = db.centers.filter(x=>x.id!==c.id); persistAndRender(); }); return b; })()
+      const centerSpecialists = db.specialists.filter(s => s.centerId === c.id);
+      const roster = el('div', { class: 'center-roster' },
+        el('div', { class: 'center-roster-header' },
+          el('span', {}, 'Specialists'),
+          el('span', { class: 'hint' }, centerSpecialists.length ? `${centerSpecialists.length} ${centerSpecialists.length === 1 ? 'specialist' : 'specialists'}` : 'No specialists')
+        ),
+        centerSpecialists.length
+          ? el('ul', { class: 'center-roster-list' },
+              ...centerSpecialists.map(s => {
+                const loginInfo = normalizeSpecialistLogin(s);
+                return el('li', {},
+                  el('strong', {}, s.name),
+                  el('span', { class: 'role muted' }, s.skill || '—'),
+                  loginInfo && loginInfo.username
+                    ? el('div', { class: 'login-pill' },
+                        el('span', { class: 'badge badge-soft' }, `Login: ${loginInfo.username}`),
+                        loginInfo.password ? el('span', { class: 'pill small' }, loginInfo.password) : null
+                      )
+                    : null
+                );
+              })
+            )
+          : el('div', { class: 'muted center-roster-empty' }, 'No specialists assigned yet.')
       );
-      card.append(img, body, footer);
+      const footerActions = [credentials];
+      if (!isCenterAdmin) {
+        footerActions.push((()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{
+          const loginDetails = normalizeCenterLogin(c);
+          if (loginDetails && loginDetails.username) removeUserByUsername(loginDetails.username);
+          db.specialists = db.specialists.map(s => s.centerId === c.id ? { ...s, centerId: null } : s);
+          db.centers = db.centers.filter(x=>x.id!==c.id);
+          persistAndRender();
+        }); return b; })());
+      }
+      const footer = el('footer', {class:'center-footer'}, ...footerActions);
+      card.append(img, body, roster, footer);
       grid.append(card);
     });
 
-    if (!db.centers.length) {
+    if (!centers.length) {
       grid.append(el('div', { class: 'empty-state' }, 'No centers yet. Use “Add New Center” to start your network.'));
     }
   }
 
   // ---------- Specialists ----------
-  qi('form-specialist').addEventListener('submit', e=>{
+  const specialistForm = qi('form-specialist');
+  specialistForm?.addEventListener('submit', e=>{
     e.preventDefault();
     const name = qi('spec-name').value.trim();
     const skill = qi('spec-skill').value.trim();
-    const centerId = qi('spec-center').value || null;
+    let centerId = qi('spec-center').value || null;
     const avatar = qi('spec-avatar').value.trim();
-    if (!name) return;
-    db.specialists.push({ id: uid(), name, skill, centerId, avatar });
+    const loginUsername = qi('spec-username').value.trim();
+    const loginPassword = qi('spec-password').value.trim();
+    if (isCenterAdmin) {
+      if (!centerIdForRole) { alert('Your center assignment is missing. Contact the main admin.'); return; }
+      centerId = centerIdForRole;
+    }
+    if (!name || !loginUsername || !loginPassword) { alert('Please provide a name and login credentials for the specialist.'); return; }
+    const existingUser = (db.users || []).some(u => u.username && u.username.toLowerCase() === loginUsername.toLowerCase());
+    if (existingUser) { alert('This username is already in use. Choose another username.'); return; }
+    const specialistId = uid();
+    db.specialists.push({ id: specialistId, name, skill, centerId, avatar, login: { username: loginUsername, password: loginPassword } });
+    upsertUser({ username: loginUsername, password: loginPassword, role: 'specialist', centerId, name });
     persistAndRender();
     e.target.reset();
+    if (isCenterAdmin) {
+      const centerSelect = qi('spec-center');
+      if (centerSelect) centerSelect.value = centerIdForRole;
+    }
   });
 
   function renderSpecialists(){
     const grid = qi('specialists-grid'); grid.innerHTML='';
+    const specialists = specialistsForRole();
     let assigned = 0;
     const focusCounts = new Map();
 
-    db.specialists.forEach(s=>{
+    specialists.forEach(s=>{
       const centerName = db.centers.find(c=>c.id===s.centerId)?.name || '—';
       if (s.centerId) assigned += 1;
       const focusKey = (s.skill && s.skill.trim()) ? s.skill.trim() : 'Generalist';
       focusCounts.set(focusKey, (focusCounts.get(focusKey) || 0) + 1);
-      const card = el('div',{class:'specialist-card'},
-        (()=>{const a=el('div',{class:'avatar'}); if (s.avatar){ a.style.backgroundImage=`url(${s.avatar})`; a.style.backgroundSize='cover'; a.style.backgroundPosition='center'; } return a; })(),
+      const card = el('div',{class:'specialist-card'});
+      const avatarEl = (()=>{const a=el('div',{class:'avatar'}); if (s.avatar){ a.style.backgroundImage=`url(${s.avatar})`; a.style.backgroundSize='cover'; a.style.backgroundPosition='center'; } return a; })();
+      const loginInfo = normalizeSpecialistLogin(s);
+      const deleteBtn = el('button',{class:'primary ghost'},"Delete");
+      deleteBtn.addEventListener('click',()=>{
+        if (loginInfo && loginInfo.username) removeUserByUsername(loginInfo.username);
+        db.specialists = db.specialists.filter(x=>x.id!==s.id);
+        db.assessments = db.assessments.filter(a=>a.specialistId!==s.id);
+        persistAndRender();
+      });
+      card.append(
+        avatarEl,
         el('strong',{}, s.name),
         el('p',{}, s.skill || '—'),
-        el('span',{class:'badge badge-soft'}, centerName),
-        (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.specialists = db.specialists.filter(x=>x.id!==s.id); db.assessments = db.assessments.filter(a=>a.specialistId!==s.id); persistAndRender(); }); return b; })()
+        el('span',{class:'badge badge-soft'}, centerName)
       );
+      if (loginInfo && loginInfo.username) {
+        card.append(
+          el('div',{class:'specialist-credentials'},
+            el('span',{class:'badge badge-soft'}, `Login: ${loginInfo.username}`),
+            loginInfo.password ? el('span',{class:'pill'}, loginInfo.password) : null
+          )
+        );
+      }
+      card.append(deleteBtn);
       grid.append(card);
     });
 
-    if (!db.specialists.length) {
+    if (!specialists.length) {
       grid.append(el('div', { class: 'empty-state' }, 'No specialists registered yet. Add your first expert above.'));
     }
 
-    const total = db.specialists.length;
+    const total = specialists.length;
     const totalEl = qi('specialists-total'); if (totalEl) totalEl.textContent = total;
     const assignedEl = qi('specialists-assigned'); if (assignedEl) assignedEl.textContent = assigned;
     const unassignedEl = qi('specialists-unassigned'); if (unassignedEl) unassignedEl.textContent = Math.max(total - assigned, 0);
@@ -376,11 +664,12 @@ if (isDashboardPage()) {
   });
 
   function renderModules(){
+    const modules = modulesForRole();
     const grid = qi('modules-grid'); grid.innerHTML='';
     const categoryCounts = new Map();
     const durations = [];
 
-    db.modules.forEach(m=>{
+    modules.forEach(m=>{
       const card = el('div',{class:'module-card'},
         el('header',{}, el('strong',{}, m.title), el('span',{class:'tag'}, m.category || '—')),
         el('div',{class:'module-meta'},
@@ -400,11 +689,11 @@ if (isDashboardPage()) {
       }
     });
 
-    if (!db.modules.length) {
+    if (!modules.length) {
       grid.append(el('div', { class: 'empty-state' }, 'No modules yet. Add immersive content to build your library.'));
     }
 
-    const total = db.modules.length;
+    const total = modules.length;
     const totalEl = qi('modules-total'); if (totalEl) totalEl.textContent = total;
     const avgEl = qi('modules-avg-duration'); if (avgEl) {
       avgEl.textContent = durations.length ? `${Math.round(durations.reduce((a,b)=>a+b,0)/durations.length)} min` : '—';
@@ -436,6 +725,10 @@ if (isDashboardPage()) {
     const score = parseFloat(qi('ass-score').value || '0');
     const date = qi('ass-date').value || new Date().toISOString().slice(0,10);
     if (!trainee || !moduleId || !specialistId) return;
+    if (isCenterAdmin) {
+      const allowedIds = new Set(specialistsForRole().map(s => s.id));
+      if (!allowedIds.has(specialistId)) { alert('You can only log assessments for specialists at your center.'); return; }
+    }
     db.assessments.push({ id: uid(), trainee, moduleId, specialistId, score, date });
     persistAndRender();
     e.target.reset();
@@ -443,6 +736,7 @@ if (isDashboardPage()) {
 
   function renderAssessments(){
     const list = qi('assessments-list'); list.innerHTML='';
+    const assessments = assessmentsForRole();
     const scoreValues = [];
     const moduleHitMap = new Map();
     let latestDate = '';
@@ -453,7 +747,7 @@ if (isDashboardPage()) {
       return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
-    db.assessments.forEach(a=>{
+    assessments.forEach(a=>{
       const m = db.modules.find(x=>x.id===a.moduleId);
       const s = db.specialists.find(x=>x.id===a.specialistId);
       if (!isNaN(a.score)) scoreValues.push(a.score);
@@ -475,11 +769,11 @@ if (isDashboardPage()) {
       list.append(row);
     });
 
-    if (!db.assessments.length) {
+    if (!assessments.length) {
       list.append(el('div', { class: 'empty-state' }, 'No assessments logged yet. Capture the first outcome above.'));
     }
 
-    const total = db.assessments.length;
+    const total = assessments.length;
     const totalEl = qi('assessments-total'); if (totalEl) totalEl.textContent = total;
     const avgEl = qi('assessments-average'); if (avgEl) {
       avgEl.textContent = scoreValues.length ? `${Math.round(scoreValues.reduce((a,b)=>a+b,0)/scoreValues.length)}%` : '—';
@@ -499,15 +793,41 @@ if (isDashboardPage()) {
 
   // selectors + stats
   function refreshSelectors(){
-    qi('spec-center').innerHTML = `<option value="">— No center —</option>` + db.centers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
-    qi('ass-module').innerHTML = db.modules.map(m=>`<option value="${m.id}">${esc(m.title)}</option>`).join('');
-    qi('ass-specialist').innerHTML = db.specialists.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    const centerSelect = qi('spec-center');
+    if (centerSelect) {
+      const centers = centersForRole();
+      centerSelect.innerHTML = `<option value="">— No center —</option>` + centers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+      if (isCenterAdmin) {
+        centerSelect.value = centerIdForRole || '';
+        centerSelect.disabled = true;
+        centerSelect.classList.add('readonly');
+        centerSelect.closest('.input-group')?.classList.add('readonly');
+      } else {
+        centerSelect.disabled = false;
+        centerSelect.classList.remove('readonly');
+        centerSelect.closest('.input-group')?.classList.remove('readonly');
+      }
+    }
+
+    const moduleSelect = qi('ass-module');
+    if (moduleSelect) {
+      const modules = modulesForRole();
+      moduleSelect.innerHTML = modules.length ? modules.map(m=>`<option value="${m.id}">${esc(m.title)}</option>`).join('') : '<option value="">No modules available</option>';
+      moduleSelect.disabled = !modules.length;
+    }
+
+    const specialistSelect = qi('ass-specialist');
+    if (specialistSelect) {
+      const specialists = specialistsForRole();
+      specialistSelect.innerHTML = specialists.length ? specialists.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('') : '<option value="">No specialists</option>';
+      specialistSelect.disabled = !specialists.length;
+    }
   }
   function refreshStats(){
-    qi('stat-centers').textContent = db.centers.length;
-    qi('stat-specialists').textContent = db.specialists.length;
-    qi('stat-modules').textContent = db.modules.length;
-    qi('stat-assessments').textContent = db.assessments.length;
+    qi('stat-centers').textContent = centersForRole().length;
+    qi('stat-specialists').textContent = specialistsForRole().length;
+    qi('stat-modules').textContent = modulesForRole().length;
+    qi('stat-assessments').textContent = assessmentsForRole().length;
   }
 
   function renderAll(){
@@ -518,7 +838,11 @@ if (isDashboardPage()) {
     refreshSelectors();
     refreshStats();
   }
-  function persistAndRender(){ saveData(db); renderAll(); }
+  function persistAndRender(){
+    syncUsersWithEntities();
+    saveData(db);
+    renderAll();
+  }
 
   renderAll();
 }

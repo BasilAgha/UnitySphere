@@ -321,6 +321,14 @@ main { flex: 1; padding: 1.5rem 2.1rem 2.5rem; display: grid; align-content: sta
 .center-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; }
 .center-credentials { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .center-credentials .pill { background: rgba(15,23,42,0.6); border-color: rgba(99,102,241,0.4); color: #e0f2fe; }
+.center-roster { padding: 0 1.2rem 1.2rem; display: grid; gap: 0.6rem; border-top: 1px solid rgba(148,163,184,0.12); }
+.center-roster-header { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-muted); }
+.center-roster-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+.center-roster-list li { display: grid; gap: 0.35rem; background: rgba(148,163,184,0.08); border-radius: 14px; padding: 0.6rem 0.8rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); }
+.center-roster-list li .role { font-size: 0.8rem; }
+.center-roster-list li .login-pill { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; font-size: 0.8rem; }
+.center-roster-empty { font-size: 0.85rem; }
+
 .tag { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; padding: 0.25rem 0.65rem; border-radius: 999px; background: rgba(99,102,241,0.2); color: #cbd5f5; }
 
 .specialists-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; }
@@ -329,6 +337,8 @@ main { flex: 1; padding: 1.5rem 2.1rem 2.5rem; display: grid; align-content: sta
 .specialist-card .avatar::after { content: none; }
 .specialist-card p { font-size: 0.95rem; color: var(--color-muted); }
 .specialist-card .badge { justify-self: center; }
+.specialist-card .specialist-credentials { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; font-size: 0.8rem; color: var(--color-muted); }
+.specialist-card .specialist-credentials .pill { font-size: 0.75rem; background: rgba(15,23,42,0.65); border-color: rgba(99,102,241,0.45); color: #dbeafe; }
 .modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.2rem; }
 .module-card { background: linear-gradient(170deg, rgba(18,27,50,0.95), rgba(10,16,31,0.95)); border: 1px solid rgba(59,73,110,0.5); border-radius: 22px; padding: 1.3rem; display: grid; gap: 0.8rem; box-shadow: 0 18px 45px rgba(3,7,18,0.45); }
 .module-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
@@ -350,6 +360,8 @@ main { flex: 1; padding: 1.5rem 2.1rem 2.5rem; display: grid; align-content: sta
 .content-column { display: grid; gap: 1.5rem; }
 .form-panel { background: linear-gradient(170deg, rgba(18,27,50,0.92), rgba(10,16,31,0.94)); border: 1px solid rgba(59,73,110,0.55); border-radius: 22px; padding: 1.4rem; display: grid; gap: 1rem; box-shadow: 0 18px 38px rgba(3,7,18,0.45); }
 .form-panel h3 { font-size: 1.1rem; }
+.dashboard-page .input-group.readonly label::after { content: ' (locked)'; font-size: 0.75rem; color: var(--color-muted); }
+.dashboard-page .input-group.readonly select { cursor: not-allowed; opacity: 0.75; }
 
 .assessment-controls { display: flex; align-items: center; gap: 0.6rem; background: rgba(148,163,184,0.12); padding: 0.6rem 0.9rem; border-radius: 12px; border: 1px solid rgba(148,163,184,0.2); }
 .assessment-controls select { background: transparent; border: none; color: #fff; font-size: 1rem; padding: 0.4rem 0.2rem; }
