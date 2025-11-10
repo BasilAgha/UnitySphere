@@ -40,50 +40,6 @@ const seedCenters = [];
 
 const seedSpecialists = [];
 
-function safeRemoveStorageItem(api, key) {
-  try { api.removeItem(key); } catch {}
-}
-
-function resetSessionAuth() {
-  if (!sessionAvailable) return;
-  try {
-    ['us_username', 'us_name', 'us_email', 'us_role', 'us_center'].forEach(key => sessionStorage.removeItem(key));
-  } catch {}
-}
-
-function initializePersistenceGuards() {
-  if (storageAvailable) {
-    LEGACY_STORAGE_KEYS.forEach(key => {
-      if (key !== STORAGE_KEY) safeRemoveStorageItem(localStorage, key);
-    });
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (!parsed || parsed.version !== STORAGE_VERSION) {
-          safeRemoveStorageItem(localStorage, STORAGE_KEY);
-        }
-      }
-    } catch {
-      safeRemoveStorageItem(localStorage, STORAGE_KEY);
-    }
-  }
-
-  if (sessionAvailable) {
-    try {
-      const marker = sessionStorage.getItem(SESSION_VERSION_KEY);
-      if (marker !== String(STORAGE_VERSION)) {
-        resetSessionAuth();
-        sessionStorage.setItem(SESSION_VERSION_KEY, String(STORAGE_VERSION));
-      } else if (storageAvailable && !localStorage.getItem(STORAGE_KEY)) {
-        resetSessionAuth();
-      }
-    } catch {}
-  }
-}
-
-initializePersistenceGuards();
-
 const DEFAULT_DATA = {
   version: STORAGE_VERSION,
   users: [
