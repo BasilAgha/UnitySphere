@@ -521,30 +521,50 @@ if (isDashboardPage()) {
       if (login && login.password) {
         credentials.append(el('span',{class:'pill'}, login.password));
       }
-      const centerSpecialists = db.specialists.filter(s => s.centerId === c.id);
-      const roster = el('div', { class: 'center-roster' },
-        el('div', { class: 'center-roster-header' },
-          el('span', {}, 'Specialists'),
-          el('span', { class: 'hint' }, centerSpecialists.length ? `${centerSpecialists.length} ${centerSpecialists.length === 1 ? 'specialist' : 'specialists'}` : 'No specialists')
-        ),
-        centerSpecialists.length
-          ? el('ul', { class: 'center-roster-list' },
-              ...centerSpecialists.map(s => {
-                const loginInfo = normalizeSpecialistLogin(s);
-                return el('li', {},
-                  el('strong', {}, s.name),
-                  el('span', { class: 'role muted' }, s.skill || '—'),
-                  loginInfo && loginInfo.username
-                    ? el('div', { class: 'login-pill' },
-                        el('span', { class: 'badge badge-soft' }, `Login: ${loginInfo.username}`),
-                        loginInfo.password ? el('span', { class: 'pill small' }, loginInfo.password) : null
-                      )
-                    : null
-                );
-              })
-            )
-          : el('div', { class: 'muted center-roster-empty' }, 'No specialists assigned yet.')
-      );
+// current list of specialists for this center
+const centerSpecialists = db.specialists.filter(s => s.centerId === c.id);
+
+// build the list (or an empty state)
+const rosterList = centerSpecialists.length
+  ? el('ul', { class: 'center-roster-list' },
+      ...centerSpecialists.map(s => {
+        const loginInfo = normalizeSpecialistLogin(s);
+        return el('li', {},
+          el('strong', {}, s.name),
+          el('span', { class: 'role muted' }, s.skill || '—'),
+          loginInfo && loginInfo.username
+            ? el('div', { class: 'login-pill' },
+                el('span', { class: 'badge badge-soft' }, `Login: ${loginInfo.username}`),
+                loginInfo.password ? el('span', { class: 'pill small' }, loginInfo.password) : null
+              )
+            : null
+        );
+      })
+    )
+  : el('div', { class: 'muted center-roster-empty' }, 'No specialists assigned yet.');
+
+// toggle button
+const rosterToggle = el('button', { class: 'ghost', 'aria-expanded': 'true' }, 'Hide specialists');
+rosterToggle.addEventListener('click', () => {
+  const hidden = rosterList.classList.toggle('hidden');
+  rosterToggle.setAttribute('aria-expanded', String(!hidden));
+  rosterToggle.textContent = hidden ? 'Show specialists' : 'Hide specialists';
+});
+
+// header + roster container
+const rosterHeader = el('div', { class: 'center-roster-header' },
+  el('span', {}, 'Specialists'),
+  el('span', { class: 'hint' },
+    centerSpecialists.length
+      ? `${centerSpecialists.length} ${centerSpecialists.length === 1 ? 'specialist' : 'specialists'}`
+      : 'No specialists'
+  ),
+  rosterToggle
+);
+
+// final roster block
+const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
+
       const footerActions = [credentials];
       if (!isCenterAdmin) {
         footerActions.push((()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{
