@@ -12,16 +12,6 @@ const sessionAvailable = typeof sessionStorage !== 'undefined';
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
 
-function readFileAsDataUrl(file) {
-  if (!file) return Promise.resolve(null);
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result || null);
-    reader.onerror = () => reject(reader.error || new Error('file-read-error'));
-    reader.readAsDataURL(file);
-  });
-}
-
 function toNumber(value) {
   if (value === null || value === undefined) return null;
   const num = typeof value === 'string' ? parseFloat(value) : Number(value);
