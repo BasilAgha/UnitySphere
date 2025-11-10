@@ -2,6 +2,7 @@
 
 const STORAGE_VERSION = 4;
 const STORAGE_KEY = `unitysphere-data-v${STORAGE_VERSION}`;
+const DEFAULT_ADMIN_AVATAR = 'https://i.pravatar.cc/150?u=unitysphere-admin';
 const LEGACY_STORAGE_KEYS = ['unitysphere-data', 'unitysphere-data-v1', 'unitysphere-data-v2', 'unitysphere-data-v3'];
 const SESSION_VERSION_KEY = 'unitysphere-session-version';
 
@@ -247,7 +248,7 @@ const seedSpecialists = [];
 const DEFAULT_DATA = {
   version: STORAGE_VERSION,
   users: [
-    { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test' }
+    { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test', avatar: DEFAULT_ADMIN_AVATAR }
   ],
   centers: seedCenters,
   specialists: seedSpecialists,
@@ -449,6 +450,11 @@ if (isLoginPage()) {
     sessionStorage.setItem('us_name', user.name || user.username);
     sessionStorage.setItem('us_email', user.email || '');
     sessionStorage.setItem('us_role', user.role);
+    if (user.avatar) {
+      sessionStorage.setItem('us_avatar', user.avatar);
+    } else {
+      sessionStorage.removeItem('us_avatar');
+    }
     if (user.role === 'center-admin' && user.centerId) {
       sessionStorage.setItem('us_center', user.centerId);
     } else {
@@ -489,16 +495,57 @@ if (isDashboardPage()) {
     if (hint) hint.textContent = 'Add new specialists for your center and share their login credentials.';
   }
 
+  const userKey = (username || '').toLowerCase();
+  const currentUser = (db.users || []).find(u => (u?.username || '').toLowerCase() === userKey) || null;
+  const storedAvatar = sessionStorage.getItem('us_avatar');
+  const activeAvatar = storedAvatar || currentUser?.avatar || DEFAULT_ADMIN_AVATAR;
+  const applyAvatar = (src)=>{
+    const finalSrc = src || DEFAULT_ADMIN_AVATAR;
+    ['header-avatar','sidebar-avatar'].forEach(id=>{
+      const el = qi(id);
+      if (!el) return;
+      el.style.backgroundImage = `url(${finalSrc})`;
+      el.style.backgroundSize='cover';
+      el.style.backgroundPosition='center';
+    });
+  };
+  applyAvatar(activeAvatar);
+  if (activeAvatar) {
+    sessionStorage.setItem('us_avatar', activeAvatar);
+  }
+
+  const avatarInput = qi('admin-avatar-file');
+  const avatarButton = qi('btn-change-avatar');
+  if (avatarButton && avatarInput) {
+    avatarButton.addEventListener('click', ()=> avatarInput.click());
+    avatarInput.addEventListener('change', async ()=>{
+      const file = avatarInput.files && avatarInput.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        if (!dataUrl) return;
+        applyAvatar(dataUrl);
+        sessionStorage.setItem('us_avatar', dataUrl);
+        if (currentUser) {
+          currentUser.avatar = dataUrl;
+          saveData(db);
+        } else {
+          console.warn('Unable to locate current user record to save avatar.');
+        }
+      } catch (err) {
+        console.error('Unable to read avatar file', err);
+        alert('Unable to read the selected image. Please try another file.');
+      } finally {
+        avatarInput.value = '';
+      }
+    });
+  }
+
   const hour = new Date().getHours();
   qi('greeting').textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  const avatar = 'https://i.pravatar.cc/150?u=admin';
-  ['header-avatar','sidebar-avatar'].forEach(id=>{
-    const el = qi(id); el.style.backgroundImage = `url(${avatar})`; el.style.backgroundSize='cover'; el.style.backgroundPosition='center';
-  });
-
   qi('logout').addEventListener('click', ()=>{
-    ['us_username','us_name','us_email','us_role','us_center'].forEach(k=>sessionStorage.removeItem(k));
+    ['us_username','us_name','us_email','us_role','us_center','us_avatar'].forEach(k=>sessionStorage.removeItem(k));
     location.href = 'index.html';
   });
 
@@ -585,11 +632,23 @@ if (isDashboardPage()) {
         setToggleState(false);
       });
 
-      centerForm?.addEventListener('submit', e=>{
+      centerForm?.addEventListener('submit', async e=>{
         e.preventDefault();
         const name = qi('center-name').value.trim();
         const location = qi('center-location').value.trim();
-        const image = qi('center-image').value.trim();
+        const imageInput = qi('center-image');
+        const imageFileInput = qi('center-image-file');
+        let image = imageInput ? imageInput.value.trim() : '';
+        const imageFile = imageFileInput && imageFileInput.files ? imageFileInput.files[0] : null;
+        if (imageFile) {
+          try {
+            image = await readFileAsDataUrl(imageFile);
+          } catch (err) {
+            console.error('Unable to read center image file', err);
+            alert('Unable to read the selected center image. Please try another file.');
+            return;
+          }
+        }
         const desc = qi('center-desc').value.trim();
         const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
         const loginUsername = qi('center-username').value.trim();
@@ -623,6 +682,7 @@ if (isDashboardPage()) {
         upsertUser({ username: loginUsername, password: loginPassword, role: 'center-admin', centerId, name: name ? `${name} Admin` : loginUsername });
         persistAndRender();
         e.target.reset();
+        if (imageFileInput) imageFileInput.value = '';
         setToggleState(false);
       });
     }
@@ -772,12 +832,24 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
 
   // ---------- Specialists ----------
   const specialistForm = qi('form-specialist');
-  specialistForm?.addEventListener('submit', e=>{
+  specialistForm?.addEventListener('submit', async e=>{
     e.preventDefault();
     const name = qi('spec-name').value.trim();
     const skill = qi('spec-skill').value.trim();
     let centerId = qi('spec-center').value || null;
-    const avatar = qi('spec-avatar').value.trim();
+    const avatarInput = qi('spec-avatar');
+    const avatarFileInput = qi('spec-avatar-file');
+    let avatar = avatarInput ? avatarInput.value.trim() : '';
+    const avatarFile = avatarFileInput && avatarFileInput.files ? avatarFileInput.files[0] : null;
+    if (avatarFile) {
+      try {
+        avatar = await readFileAsDataUrl(avatarFile);
+      } catch (err) {
+        console.error('Unable to read specialist avatar file', err);
+        alert('Unable to read the selected avatar. Please try another file.');
+        return;
+      }
+    }
     const loginUsername = qi('spec-username').value.trim();
     const loginPassword = qi('spec-password').value.trim();
     if (isCenterAdmin) {
@@ -792,6 +864,7 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
     upsertUser({ username: loginUsername, password: loginPassword, role: 'specialist', centerId, name });
     persistAndRender();
     e.target.reset();
+    if (avatarFileInput) avatarFileInput.value = '';
     if (isCenterAdmin) {
       const centerSelect = qi('spec-center');
       if (centerSelect) centerSelect.value = centerIdForRole;
