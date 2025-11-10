@@ -411,6 +411,14 @@ if (isDashboardPage()) {
         const posX = parseFloat(qi('center-posx').value);
         const posY = parseFloat(qi('center-posy').value);
         if (!name || !loginUsername || !loginPassword) return;
+        // prevent duplicate usernames
+        const usernameTaken = (db.users || []).some(
+          u => u.username && u.username.toLowerCase() === loginUsername.toLowerCase()
+        );
+        if (usernameTaken) {
+          alert('This center username is already in use. Choose another username.');
+          return;
+        }
         const centerId = uid();
         db.centers.push({
           id: centerId, name, location, image, desc, tags,
@@ -429,14 +437,16 @@ if (isDashboardPage()) {
   }
 
   const exportBtn = qi('btn-export-centers');
-  if (exportBtn) exportBtn.classList.toggle('hidden', isCenterAdmin);
-  qi('btn-export-centers').addEventListener('click', ()=>{
-    const out = centersForRole().map(({id, ...rest})=>rest);
-    const blob = new Blob([JSON.stringify(out,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download='centers.json'; a.click();
-    URL.revokeObjectURL(url);
-  });
+  if (exportBtn) {
+    exportBtn.classList.toggle('hidden', isCenterAdmin);
+    exportBtn.addEventListener('click', ()=>{
+      const out = centersForRole().map(({id, ...rest})=>rest);
+      const blob = new Blob([JSON.stringify(out,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='centers.json'; a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
 
   function renderCenters(){
     const centers = centersForRole();
@@ -651,6 +661,92 @@ if (isDashboardPage()) {
     }
   }
 
+  /* ---------- Specialists dropdown & toggle card (fixed) ---------- */
+  function initSpecialistsPicker() {
+    const sel = qi('specialist-select');        // element IDs (no # because qi gets by id)
+    const details = qi('specialist-details');
+    if (!sel || !details) return;
+
+    const centerName = id => (db.centers || []).find(c => c.id === id)?.name || '—';
+    const label = s => {
+      const n = s.name || s.login?.username || 'Unnamed';
+      const t = s.skill || s.role || '';
+      return t ? `${n} (${t})` : n;
+    };
+
+    function populate(selectedId) {
+      const keep = selectedId ?? sel.value;
+      sel.innerHTML = '<option value="">Select specialist…</option>';
+      (specialistsForRole() || []).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = label(s);
+        if (keep && keep === s.id) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function render(id) {
+      if (!id) {
+        details.classList.remove('active');
+        details.style.display = 'none';
+        details.innerHTML = '';
+        return;
+      }
+      const s = (db.specialists || []).find(x => x.id === id);
+      if (!s) return;
+
+      const login = normalizeSpecialistLogin(s);
+      const loginUser = login?.username || '—';
+      const loginPass = login?.password || '—';
+
+      details.style.display = 'block';
+      details.classList.add('active');
+      details.innerHTML = `
+        <div class="card-header" style="padding:12px 16px;">
+          <div>
+            <h3 style="margin:0">${s.name || loginUser || 'Unnamed'}</h3>
+            <p class="hint" style="margin-top:4px">${s.skill || '—'} · Center: ${centerName(s.centerId)}</p>
+          </div>
+          <div class="card-actions">
+            <button id="btn-toggle-spec-creds" class="ghost" aria-expanded="false">Show credentials</button>
+          </div>
+        </div>
+        <div id="spec-creds" class="collapsible" style="padding:12px 16px;">
+          <div class="pill">Login: ${loginUser}</div>
+          <div class="pill" style="margin-top:6px;">${loginPass}</div>
+        </div>
+        <div style="padding:0 16px 12px;">
+          <button class="ghost" id="btn-back-spec">Back</button>
+        </div>
+      `;
+
+      const creds = qi('spec-creds');
+      const toggleBtn = qi('btn-toggle-spec-creds');
+      toggleBtn?.addEventListener('click', () => {
+        const open = creds.classList.toggle('active');
+        toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggleBtn.textContent = open ? 'Hide credentials' : 'Show credentials';
+      });
+
+      qi('btn-back-spec')?.addEventListener('click', () => {
+        sel.value = '';
+        render(null);
+      });
+    }
+
+    sel.addEventListener('change', () => render(sel.value || null));
+    populate();
+    render(null);
+
+    // refresh hook after DB changes
+    window.__refreshSpecPicker = () => {
+      const cur = sel.value;
+      populate(cur);
+      render(cur || null);
+    };
+  }
+
   // ---------- Modules ----------
   qi('form-module').addEventListener('submit', e=>{
     e.preventDefault();
@@ -842,7 +938,10 @@ if (isDashboardPage()) {
     syncUsersWithEntities();
     saveData(db);
     renderAll();
+    window.__refreshSpecPicker?.();
   }
 
+  // init picker + initial render
+  initSpecialistsPicker();
   renderAll();
 }
