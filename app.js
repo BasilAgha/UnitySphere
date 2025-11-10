@@ -17,7 +17,7 @@ function formatFileSize(bytes) {
   return Number.isInteger(sizeInMB) ? `${sizeInMB} MB` : `${sizeInMB.toFixed(1)} MB`;
 }
 
-const MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024; // 1 MB limit keeps local storage stable
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // increase to 5MB
 const IMAGE_SIZE_LIMIT_LABEL = formatFileSize(MAX_IMAGE_SIZE_BYTES);
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/pjpeg'];
 
