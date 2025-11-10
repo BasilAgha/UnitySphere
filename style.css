@@ -99,6 +99,13 @@ button.primary { background: linear-gradient(135deg, #735bff, #9a6bff); color: #
 button.primary:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(115,91,255,0.45); }
 button.ghost { background: rgba(115,91,255,0.14); border: 1px solid rgba(115,91,255,0.4); color: #fff; border-radius: 14px; padding: 0.7rem 1.4rem; cursor: pointer; }
 button.ghost:hover { background: rgba(115,91,255,0.22); }
+button.with-icon { display: inline-flex; align-items: center; gap: 0.65rem; }
+button.with-icon .icon { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 1rem; background: rgba(15,23,42,0.4); border: 1px solid rgba(148,163,184,0.25); transition: transform var(--transition-fast), background var(--transition-fast), border var(--transition-fast); }
+button.with-icon:hover .icon { background: rgba(15,23,42,0.55); border-color: rgba(148,163,184,0.35); }
+button.with-icon .label { letter-spacing: 0.01em; }
+button.primary.is-open { background: linear-gradient(135deg, #22d3ee, #38bdf8); box-shadow: 0 18px 44px rgba(34,211,238,0.38); }
+button.primary.is-open .icon { transform: rotate(45deg) scale(1.05); background: rgba(2,6,23,0.4); border-color: rgba(148,163,184,0.35); }
+button.primary.is-open:hover { box-shadow: 0 20px 50px rgba(34,211,238,0.45); }
 button.primary.ghost { background: rgba(115,91,255,0.16); border: 1px solid rgba(115,91,255,0.38); color: #fff; padding: 0.65rem 1.3rem; }
 button.primary.ghost:hover { background: rgba(115,91,255,0.26); }
 button.chip, .chip { background: rgba(148,163,184,0.12); border: 1px solid rgba(148,163,184,0.15); border-radius: 999px; padding: 0.4rem 1rem; color: inherit; font-size: 0.9rem; cursor: pointer; transition: background var(--transition-fast), border var(--transition-fast); }
@@ -180,28 +187,61 @@ main { flex: 1; padding: 1.5rem 2.1rem 2.5rem; display: grid; align-content: sta
 
 .grid-2-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; }
 .card.collapsible {
+  position: relative;
   max-height: 0;
   opacity: 0;
   overflow: hidden;
   transform: translateY(-8px);
   padding-block: 0;
+  padding-inline: 1.5rem;
   pointer-events: none;
   border-width: 1px;
   border-style: dashed;
   border-color: rgba(148,163,184,0.35);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(175deg, rgba(16,24,46,0.92), rgba(8,13,25,0.94));
+  box-shadow: 0 20px 45px rgba(3,7,18,0.45);
   transition: max-height 240ms ease, opacity 180ms ease, transform 220ms ease, padding 220ms ease, margin 220ms ease;
 }
+.card.collapsible::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at top right, rgba(115,91,255,0.28), transparent 60%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
 .card.collapsible.active {
-  max-height: 900px;
+  max-height: 1000px;
   opacity: 1;
   transform: translateY(0);
   padding-block: 1.5rem;
   pointer-events: auto;
   margin-top: 0.6rem;
   border-style: solid;
-  border-color: var(--color-border);
+  border-color: rgba(115,91,255,0.4);
+  box-shadow: 0 28px 60px rgba(3,7,18,0.55);
 }
+.card.collapsible.active::before { opacity: 1; }
 .card.collapsible form { margin-top: 0.4rem; }
+#add-center-panel .card-header { align-items: flex-start; gap: 0.8rem; }
+#add-center-panel .card-header h2 { font-size: 1.25rem; }
+#add-center-panel .card-header .hint { max-width: 34ch; line-height: 1.45; }
+#add-center-panel .form-panel { background: rgba(9,16,31,0.78); border: 1px solid rgba(115,91,255,0.3); border-radius: 18px; padding: 1.25rem 1.35rem; display: grid; gap: 0.85rem; box-shadow: inset 0 0 0 1px rgba(148,163,184,0.08); }
+#add-center-panel .input-group { display: grid; gap: 0.3rem; }
+#add-center-panel label { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(226,232,240,0.78); }
+#add-center-panel input { background: rgba(15,23,42,0.55); border: 1px solid rgba(99,102,241,0.35); border-radius: 12px; padding: 0.7rem 0.9rem; color: inherit; box-shadow: inset 0 10px 22px rgba(3,7,18,0.35); }
+#add-center-panel input::placeholder { color: rgba(148,163,184,0.6); }
+#add-center-panel input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 2px rgba(34,211,238,0.25); }
+#add-center-panel .grid-inline { margin-top: 0.4rem; gap: 0.9rem; }
+#add-center-panel .form-divider { padding-top: 1rem; border-top-color: rgba(148,163,184,0.24); margin-top: 0.2rem; }
+#add-center-panel .form-divider h3 { letter-spacing: 0.02em; text-transform: none; }
+#add-center-panel .form-divider .hint { font-size: 0.85rem; }
+#add-center-panel .form-actions { padding-top: 0.9rem; border-top: 1px dashed rgba(148,163,184,0.2); justify-content: space-between; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+#add-center-panel .form-actions button { min-width: 140px; }
+#add-center-panel .form-actions .ghost { background: rgba(15,23,42,0.45); border-color: rgba(148,163,184,0.35); }
 .form-divider {
   grid-column: 1 / -1;
   display: grid;

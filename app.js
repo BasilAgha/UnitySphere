@@ -31,58 +31,9 @@ function seedSpecialist({ name, skill, centerId = null, avatar = '', login = nul
   };
 }
 
-const seedCenters = [
-  seedCenter({
-    name: 'Cogniplay City Center',
-    location: 'Riyadh, KSA',
-    desc: 'Immersive neurodevelopmental therapy',
-    tags: ['Cognitive Focus','Sensory Regulation'],
-    image: 'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?q=80&w=1600&auto=format&fit=crop',
-    posX: 28,
-    posY: 52,
-    login: { username: 'center-riyadh', password: 'Center123!' }
-  }),
-  seedCenter({
-    name: 'NeuroConnect Hub',
-    location: 'Jeddah, KSA',
-    desc: 'Executive function and language',
-    tags: ['Executive Function','Language Labs'],
-    image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop',
-    posX: 58,
-    posY: 68,
-    login: { username: 'center-jeddah', password: 'Connect@2024' }
-  }),
-  seedCenter({
-    name: 'Innovata Wellness Center',
-    location: 'Dubai, UAE',
-    desc: 'Sensory integration & family coaching',
-    tags: ['Sensory Gym','Family Coaching'],
-    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1600&auto=format&fit=crop',
-    posX: 74,
-    posY: 45,
-    login: { username: 'center-dubai', password: 'Innovata!9' }
-  }),
-  seedCenter({
-    name: 'Cortex Meadow Clinic',
-    location: 'Doha, Qatar',
-    desc: 'Motor planning & regulation',
-    tags: ['Motor Metrics','Calm Transitions'],
-    image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1600&auto=format&fit=crop',
-    posX: 82,
-    posY: 40,
-    login: { username: 'center-doha', password: 'Cortex!2024' }
-  })
-];
+const seedCenters = [];
 
-const seedSpecialists = [
-  seedSpecialist({
-    name: 'Dr. Noor Al-Fahad',
-    skill: 'PT',
-    centerId: seedCenters[0]?.id || null,
-    avatar: '',
-    login: { username: 'noor.pt', password: 'Spec123!' }
-  })
-];
+const seedSpecialists = [];
 
 const DEFAULT_DATA = {
   users: [
@@ -383,20 +334,32 @@ if (isDashboardPage()) {
       toggleBtn.classList.add('hidden');
       cancelBtn?.classList.add('hidden');
     } else {
-      const toggleLabel = toggleBtn.textContent.trim();
-      toggleBtn.setAttribute('aria-expanded', 'false');
-      toggleBtn.addEventListener('click', ()=>{
-        const isOpen = addPanel.classList.toggle('active');
+      const defaultOpenLabel = toggleBtn.dataset.labelOpen || toggleBtn.textContent.trim();
+      const defaultCloseLabel = toggleBtn.dataset.labelClose || 'Close form';
+      const labelEl = toggleBtn.querySelector('.label');
+      const updateToggleLabel = (text)=>{
+        if (labelEl) {
+          labelEl.textContent = text;
+        } else {
+          toggleBtn.textContent = text;
+        }
+      };
+      const setToggleState = (isOpen)=>{
+        addPanel.classList.toggle('active', isOpen);
         toggleBtn.setAttribute('aria-expanded', String(isOpen));
-        toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
+        toggleBtn.classList.toggle('is-open', isOpen);
+        updateToggleLabel(isOpen ? defaultCloseLabel : defaultOpenLabel);
+      };
+      setToggleState(false);
+      toggleBtn.addEventListener('click', ()=>{
+        const isOpen = !addPanel.classList.contains('active');
+        setToggleState(isOpen);
         if (isOpen) {
           addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
       cancelBtn?.addEventListener('click', ()=>{
-        addPanel.classList.remove('active');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        toggleBtn.textContent = toggleLabel;
+        setToggleState(false);
       });
 
       centerForm?.addEventListener('submit', e=>{
@@ -429,9 +392,7 @@ if (isDashboardPage()) {
         upsertUser({ username: loginUsername, password: loginPassword, role: 'center-admin', centerId, name: name ? `${name} Admin` : loginUsername });
         persistAndRender();
         e.target.reset();
-        addPanel.classList.remove('active');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        toggleBtn.textContent = toggleLabel;
+        setToggleState(false);
       });
     }
   }
