@@ -317,13 +317,13 @@ main { flex: 1; padding: 1.5rem 2.1rem 2.5rem; display: grid; align-content: sta
 }
 .recommendation-list li { line-height: 1.4; }
 
-.centers-map { background: linear-gradient(170deg, rgba(17,27,48,0.95), rgba(10,16,31,0.95)); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid rgba(59,73,110,0.5); display: grid; gap: 1.1rem; box-shadow: 0 20px 45px rgba(3,7,18,0.45); position: relative; }
-.map-pins { height: 260px; background: linear-gradient(180deg, #1f2937, #0f172a); border-radius: 18px; position: relative; overflow: hidden; border: 1px solid rgba(148,163,184,0.15); }
-.map-pins::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(148,163,184,0.25) 1px, transparent 1px); background-size: 42px 42px; opacity: 0.3; mix-blend-mode: screen; }
-.map-pin { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #f8fafc 0%, #c084fc 55%, #7c3aed 100%); box-shadow: 0 0 0 8px rgba(124,58,237,0.2); transform: translate(-50%, -50%); display: grid; place-items: center; }
-.map-pin::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.85); }
-.map-pin span { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); background: rgba(8,15,31,0.95); border: 1px solid rgba(115,91,255,0.35); padding: 0.3rem 0.6rem; border-radius: 999px; font-size: 0.75rem; white-space: nowrap; box-shadow: 0 10px 25px rgba(3,7,18,0.4); }
-.map-pin { animation: pulse 2.6s infinite; }
+.centers-map { background: linear-gradient(170deg, rgba(17,27,48,0.95), rgba(10,16,31,0.95)); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid rgba(59,73,110,0.5); display: grid; gap: 1rem; box-shadow: 0 20px 45px rgba(3,7,18,0.45); position: relative; }
+.map-wrapper { border-radius: 18px; overflow: hidden; border: 1px solid rgba(148,163,184,0.15); min-height: 260px; background: linear-gradient(180deg, #1f2937, #0f172a); position: relative; }
+.map-canvas { width: 100%; height: 260px; }
+.map-status { font-size: 0.85rem; }
+.map-info-window { display: grid; gap: 0.25rem; font-size: 0.9rem; color: #0f172a; }
+.map-info-window strong { font-size: 1rem; color: #0f172a; }
+.map-info-window .map-info-sub { color: #475569; }
 
 .centers-layout { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(260px, 1fr); gap: 1.5rem; align-items: start; }
 .centers-primary { display: grid; gap: 1.2rem; }

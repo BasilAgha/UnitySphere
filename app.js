@@ -11,7 +11,35 @@ const sessionAvailable = typeof sessionStorage !== 'undefined';
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
 
-function seedCenter({ name, location, desc, tags = [], image, posX, posY, login }) {
+function toNumber(value) {
+  if (value === null || value === undefined) return null;
+  const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function legacyMapToLatLng(posX, posY) {
+  const x = toNumber(posX);
+  const y = toNumber(posY);
+  if (x === null || y === null) return null;
+  const clampedX = Math.min(100, Math.max(0, x));
+  const clampedY = Math.min(100, Math.max(0, y));
+  const lat = +(90 - (clampedY / 100) * 180);
+  const lng = +((clampedX / 100) * 360 - 180);
+  return { lat, lng, approximate: true };
+}
+
+function seedCenter({ name, location, desc, tags = [], image, lat, latitude, lng, longitude, posX, posY, login }) {
+  const coords = (() => {
+    const directLat = toNumber(lat ?? latitude);
+    const directLng = toNumber(lng ?? longitude);
+    if (directLat !== null && directLng !== null) {
+      return { lat: directLat, lng: directLng, approximate: false };
+    }
+    const fallback = legacyMapToLatLng(posX, posY);
+    if (fallback) return fallback;
+    return { lat: null, lng: null, approximate: false };
+  })();
+
   return {
     id: uid(),
     name,
@@ -19,6 +47,8 @@ function seedCenter({ name, location, desc, tags = [], image, posX, posY, login 
     desc,
     tags,
     image,
+    lat: coords.lat,
+    lng: coords.lng,
     posX,
     posY,
     login: login || null
@@ -34,6 +64,180 @@ function seedSpecialist({ name, skill, centerId = null, avatar = '', login = nul
     avatar,
     login
   };
+}
+
+function getCenterCoordinates(center) {
+  if (!center) return null;
+  const directLat = toNumber(center.lat ?? center.latitude);
+  const directLng = toNumber(center.lng ?? center.longitude);
+  if (directLat !== null && directLng !== null) {
+    return { lat: directLat, lng: directLng, approximate: false };
+  }
+  const fallback = legacyMapToLatLng(center.posX, center.posY);
+  if (fallback) return fallback;
+  return null;
+}
+
+let googleMapsPromise = null;
+let centersMapInstance = null;
+let centersMapMarkers = [];
+let centersActiveInfoWindow = null;
+
+function ensureGoogleMaps(apiKey) {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('no-window'));
+  }
+  if (window.google && window.google.maps) {
+    return Promise.resolve(window.google.maps);
+  }
+  const trimmedKey = (apiKey || '').trim();
+  if (!trimmedKey || trimmedKey === 'YOUR_API_KEY') {
+    return Promise.reject(new Error('missing-api-key'));
+  }
+  if (googleMapsPromise) {
+    return googleMapsPromise;
+  }
+  googleMapsPromise = new Promise((resolve, reject) => {
+    const callbackName = `__unitysphereInitMap${Math.random().toString(36).slice(2)}`;
+    window[callbackName] = () => {
+      if (window.google && window.google.maps) {
+        resolve(window.google.maps);
+      } else {
+        reject(new Error('google-maps-unavailable'));
+      }
+      delete window[callbackName];
+    };
+    const params = new URLSearchParams({ callback: callbackName, v: 'weekly' });
+    params.set('key', trimmedKey);
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => {
+      delete window[callbackName];
+      googleMapsPromise = null;
+      reject(new Error('google-maps-load-failed'));
+    };
+    document.head.appendChild(script);
+  });
+  return googleMapsPromise;
+}
+
+function updateCentersMap(centers) {
+  const canvas = document.getElementById('centers-map-canvas');
+  if (!canvas) return;
+  const statusEl = document.getElementById('centers-map-status');
+  const setStatus = (message) => {
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.style.display = message ? '' : 'none';
+  };
+
+  const apiKey = canvas.dataset.googleMapsKey || '';
+  const defaultLat = toNumber(canvas.dataset.defaultLat) ?? 24.7136;
+  const defaultLng = toNumber(canvas.dataset.defaultLng) ?? 46.6753;
+  const defaultZoom = toNumber(canvas.dataset.defaultZoom) ?? 4;
+  const singleZoom = toNumber(canvas.dataset.singleZoom);
+  const mapId = canvas.dataset.mapId;
+
+  const entries = centers
+    .map(center => {
+      const coords = getCenterCoordinates(center);
+      if (!coords) return null;
+      return { center, coords };
+    })
+    .filter(Boolean);
+  const hasCenters = Array.isArray(centers) && centers.length > 0;
+
+  const clearMarkers = () => {
+    centersMapMarkers.forEach(marker => marker.setMap(null));
+    centersMapMarkers = [];
+    if (centersActiveInfoWindow) {
+      centersActiveInfoWindow.close();
+      centersActiveInfoWindow = null;
+    }
+  };
+
+  if (!apiKey || apiKey.trim() === '' || apiKey.trim() === 'YOUR_API_KEY') {
+    clearMarkers();
+    centersMapInstance = null;
+    canvas.innerHTML = '';
+    if (entries.length) {
+      setStatus('Provide a valid Google Maps API key to render the map.');
+    } else if (hasCenters) {
+      setStatus('Add latitude and longitude for each center, then provide your Google Maps API key.');
+    } else {
+      setStatus('Add a Google Maps API key and center coordinates to visualize the pins.');
+    }
+    return;
+  }
+
+  if (!(window.google && window.google.maps)) {
+    setStatus('Loading Google Maps…');
+  }
+
+  ensureGoogleMaps(apiKey)
+    .then(maps => {
+      if (!centersMapInstance) {
+        const initialCenter = entries.length ? { lat: entries[0].coords.lat, lng: entries[0].coords.lng } : { lat: defaultLat, lng: defaultLng };
+        const options = {
+          center: initialCenter,
+          zoom: entries.length ? (Number.isFinite(singleZoom) ? singleZoom : 10) : defaultZoom,
+        };
+        if (mapId) options.mapId = mapId;
+        centersMapInstance = new maps.Map(canvas, options);
+      }
+
+      clearMarkers();
+
+      if (entries.length === 0) {
+        centersMapInstance.setCenter({ lat: defaultLat, lng: defaultLng });
+        centersMapInstance.setZoom(defaultZoom);
+        setStatus(hasCenters ? 'Add latitude and longitude for each center to see pins.' : 'Add centers with coordinates to see pins.');
+        return;
+      }
+
+      const bounds = new maps.LatLngBounds();
+      entries.forEach(({ center, coords }) => {
+        const marker = new maps.Marker({
+          map: centersMapInstance,
+          position: { lat: coords.lat, lng: coords.lng },
+          title: center.name || center.location || 'Center',
+        });
+        centersMapMarkers.push(marker);
+        bounds.extend(marker.getPosition());
+
+        const infoContent = `
+          <div class="map-info-window">
+            ${center.name ? `<strong>${esc(center.name)}</strong>` : ''}
+            ${center.location ? `<span class="map-info-sub">${esc(center.location)}</span>` : ''}
+          </div>
+        `;
+        if (center.name || center.location) {
+          const infoWindow = new maps.InfoWindow({ content: infoContent });
+          marker.addListener('click', () => {
+            if (centersActiveInfoWindow) centersActiveInfoWindow.close();
+            infoWindow.open({ map: centersMapInstance, anchor: marker });
+            centersActiveInfoWindow = infoWindow;
+          });
+        }
+      });
+
+      if (entries.length > 1) {
+        centersMapInstance.fitBounds(bounds);
+      } else {
+        const target = entries[0].coords;
+        centersMapInstance.setCenter({ lat: target.lat, lng: target.lng });
+        centersMapInstance.setZoom(Number.isFinite(singleZoom) ? singleZoom : 12);
+      }
+      setStatus('Click a pin to view center details.');
+    })
+    .catch(() => {
+      clearMarkers();
+      centersMapInstance = null;
+      canvas.innerHTML = '';
+      setStatus('Unable to load Google Maps. Verify your API key and network access.');
+    });
 }
 
 const seedCenters = [];
@@ -390,9 +594,13 @@ if (isDashboardPage()) {
         const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
         const loginUsername = qi('center-username').value.trim();
         const loginPassword = qi('center-password').value.trim();
-        const posX = parseFloat(qi('center-posx').value);
-        const posY = parseFloat(qi('center-posy').value);
+        const lat = parseFloat(qi('center-lat').value);
+        const lng = parseFloat(qi('center-lng').value);
         if (!name || !loginUsername || !loginPassword) return;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          alert('Please provide both latitude and longitude for the center.');
+          return;
+        }
         // prevent duplicate usernames
         const usernameTaken = (db.users || []).some(
           u => u.username && u.username.toLowerCase() === loginUsername.toLowerCase()
@@ -402,11 +610,15 @@ if (isDashboardPage()) {
           return;
         }
         const centerId = uid();
+        const derivedPosX = Math.round(((lng + 180) / 360) * 100);
+        const derivedPosY = Math.round(((90 - lat) / 180) * 100);
         db.centers.push({
           id: centerId, name, location, image, desc, tags,
           login: { username: loginUsername, password: loginPassword },
-          posX: isFinite(posX)? posX : Math.round(20 + Math.random()*60),
-          posY: isFinite(posY)? posY : Math.round(30 + Math.random()*40)
+          lat,
+          lng,
+          posX: Number.isFinite(derivedPosX) ? derivedPosX : undefined,
+          posY: Number.isFinite(derivedPosY) ? derivedPosY : undefined
         });
         upsertUser({ username: loginUsername, password: loginPassword, role: 'center-admin', centerId, name: name ? `${name} Admin` : loginUsername });
         persistAndRender();
@@ -472,14 +684,7 @@ if (isDashboardPage()) {
       }
     }
 
-    // map pins
-    const map = qi('map-pins'); map.innerHTML = '';
-    centers.forEach(c=>{
-      const pin = el('div', { class:'map-pin', style:{ left:c.posX+'%', top:c.posY+'%' } },
-        el('span', {}, c.name)
-      );
-      map.append(pin);
-    });
+    updateCentersMap(centers);
 
     // cards
     const grid = qi('centers-grid'); grid.innerHTML = '';
