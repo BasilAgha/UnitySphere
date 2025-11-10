@@ -8,6 +8,18 @@ const SESSION_VERSION_KEY = 'unitysphere-session-version';
 
 const storageAvailable = typeof localStorage !== 'undefined';
 const sessionAvailable = typeof sessionStorage !== 'undefined';
+const localStore = storageAvailable ? localStorage : null;
+const sessionStore = sessionAvailable ? sessionStorage : null;
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes)) return '';
+  const sizeInMB = bytes / (1024 * 1024);
+  return Number.isInteger(sizeInMB) ? `${sizeInMB} MB` : `${sizeInMB.toFixed(1)} MB`;
+}
+
+const MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024; // 1 MB limit keeps local storage stable
+const IMAGE_SIZE_LIMIT_LABEL = formatFileSize(MAX_IMAGE_SIZE_BYTES);
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/pjpeg'];
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
@@ -262,7 +274,7 @@ const DEFAULT_DATA = {
 function loadData() {
   if (!storageAvailable) return clone(DEFAULT_DATA);
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStore?.getItem?.(STORAGE_KEY);
     if (!raw) {
       saveData(DEFAULT_DATA);
       return clone(DEFAULT_DATA);
@@ -286,12 +298,16 @@ function loadData() {
   }
 }
 function saveData(data){
-  if (!storageAvailable) return;
+  if (!storageAvailable || !localStore) return true;
   try {
     const payload = clone(data);
     payload.version = STORAGE_VERSION;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch {}
+    localStore.setItem(STORAGE_KEY, JSON.stringify(payload));
+    return true;
+  } catch (err) {
+    console.warn('Failed to persist dashboard data to local storage', err);
+    return false;
+  }
 }
 function normalizeCenterLogin(center) {
   if (!center) return null;
@@ -467,13 +483,15 @@ if (isLoginPage()) {
 // ================= DASHBOARD =================
 if (isDashboardPage()) {
   // guard
-  const username = sessionStorage.getItem('us_username');
+    const username = sessionStore?.getItem?.('us_username');
   if (!username) location.href = 'index.html';
 
-  const name = sessionStorage.getItem('us_name');
-  const email = sessionStorage.getItem('us_email');
-  const role = sessionStorage.getItem('us_role') || 'main-admin';
-  const centerIdForRole = sessionStorage.getItem('us_center');
+    let storageWarningShown = false;
+
+    const name = sessionStore?.getItem?.('us_name');
+    const email = sessionStore?.getItem?.('us_email');
+    const role = sessionStore?.getItem?.('us_role') || 'main-admin';
+    const centerIdForRole = sessionStore?.getItem?.('us_center');
   qi('sidebar-name').textContent = name || username;
   qi('sidebar-email').textContent = email || '—';
   qi('user-name').textContent = name || username;
@@ -1212,12 +1230,16 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
     refreshSelectors();
     refreshStats();
   }
-  function persistAndRender(){
-    syncUsersWithEntities();
-    saveData(db);
-    renderAll();
-    window.__refreshSpecPicker?.();
-  }
+    function persistAndRender(){
+      syncUsersWithEntities();
+      const persisted = saveData(db);
+      if (!persisted && !storageWarningShown) {
+        storageWarningShown = true;
+        alert(`Changes couldn't be saved because your browser storage is full. Remove a large image or choose a smaller PNG or JPG (under ${IMAGE_SIZE_LIMIT_LABEL}).`);
+      }
+      renderAll();
+      window.__refreshSpecPicker?.();
+    }
 
   // init picker + initial render
   initSpecialistsPicker();
