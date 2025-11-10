@@ -383,20 +383,32 @@ if (isDashboardPage()) {
       toggleBtn.classList.add('hidden');
       cancelBtn?.classList.add('hidden');
     } else {
-      const toggleLabel = toggleBtn.textContent.trim();
-      toggleBtn.setAttribute('aria-expanded', 'false');
-      toggleBtn.addEventListener('click', ()=>{
-        const isOpen = addPanel.classList.toggle('active');
+      const defaultOpenLabel = toggleBtn.dataset.labelOpen || toggleBtn.textContent.trim();
+      const defaultCloseLabel = toggleBtn.dataset.labelClose || 'Close form';
+      const labelEl = toggleBtn.querySelector('.label');
+      const updateToggleLabel = (text)=>{
+        if (labelEl) {
+          labelEl.textContent = text;
+        } else {
+          toggleBtn.textContent = text;
+        }
+      };
+      const setToggleState = (isOpen)=>{
+        addPanel.classList.toggle('active', isOpen);
         toggleBtn.setAttribute('aria-expanded', String(isOpen));
-        toggleBtn.textContent = isOpen ? 'Close form' : toggleLabel;
+        toggleBtn.classList.toggle('is-open', isOpen);
+        updateToggleLabel(isOpen ? defaultCloseLabel : defaultOpenLabel);
+      };
+      setToggleState(false);
+      toggleBtn.addEventListener('click', ()=>{
+        const isOpen = !addPanel.classList.contains('active');
+        setToggleState(isOpen);
         if (isOpen) {
           addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
       cancelBtn?.addEventListener('click', ()=>{
-        addPanel.classList.remove('active');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        toggleBtn.textContent = toggleLabel;
+        setToggleState(false);
       });
 
       centerForm?.addEventListener('submit', e=>{
@@ -429,9 +441,7 @@ if (isDashboardPage()) {
         upsertUser({ username: loginUsername, password: loginPassword, role: 'center-admin', centerId, name: name ? `${name} Admin` : loginUsername });
         persistAndRender();
         e.target.reset();
-        addPanel.classList.remove('active');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        toggleBtn.textContent = toggleLabel;
+        setToggleState(false);
       });
     }
   }
