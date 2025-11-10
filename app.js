@@ -20,6 +20,23 @@ function formatFileSize(bytes) {
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // increase to 5MB
 const IMAGE_SIZE_LIMIT_LABEL = formatFileSize(MAX_IMAGE_SIZE_BYTES);
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/pjpeg'];
+async function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return reject(new Error('no-file'));
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return reject(new Error('bad-type'));
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      return reject(new Error('too-large'));
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('read-failed'));
+    reader.readAsDataURL(file);
+  });
+}
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
@@ -552,7 +569,11 @@ if (isDashboardPage()) {
         }
       } catch (err) {
         console.error('Unable to read avatar file', err);
-        alert('Unable to read the selected image. Please try another file.');
+        const msg =
+          err?.message === 'bad-type' ? 'Only PNG or JPG images are allowed.' :
+          err?.message === 'too-large' ? `Image must be under ${IMAGE_SIZE_LIMIT_LABEL}.` :
+          'Unable to read the selected image. Please try another file.';
+        alert(msg);
       } finally {
         avatarInput.value = '';
       }
