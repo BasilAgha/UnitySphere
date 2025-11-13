@@ -61,7 +61,7 @@
       <main>
         <!-- Overview -->
         <section id="section-overview" class="section active">
-          <div class="overview-grid">
+          <div class="overview-grid" id="network-overview">
             <div class="stat-card">
               <header><span>Centers</span><span class="chip">Live</span></header>
               <div class="stat-value" id="stat-centers">0</div>
@@ -164,6 +164,45 @@
                   </ul>
                 </div>
               </div>
+            </div>
+          </div>
+          <div id="center-overview" class="center-overview hidden">
+            <div class="card hero-card">
+              <div class="hero-header">
+                <div>
+                  <h2 id="center-overview-name">Your center</h2>
+                  <p class="hint" id="center-overview-location">—</p>
+                </div>
+                <span class="chip subtle">Center dashboard</span>
+              </div>
+              <p class="hint" id="center-overview-desc">Stay connected with your specialists and recent progress.</p>
+              <div class="tag-row" id="center-overview-tags"></div>
+            </div>
+            <div class="center-metrics">
+              <div class="stat-card mini">
+                <header><span>Your specialists</span></header>
+                <div class="stat-value" id="center-overview-specialists">0</div>
+                <div class="hint">Assigned to this center</div>
+              </div>
+              <div class="stat-card mini">
+                <header><span>Assessments logged</span></header>
+                <div class="stat-value" id="center-overview-assessments">0</div>
+                <div class="hint">Captured by your team</div>
+              </div>
+              <div class="stat-card mini">
+                <header><span>Average score</span></header>
+                <div class="stat-value" id="center-overview-average">—</div>
+                <div class="hint">Across your assessments</div>
+              </div>
+            </div>
+            <div class="card" id="center-overview-recent-card">
+              <div class="card-header">
+                <div>
+                  <h3>Recent assessments</h3>
+                  <p class="hint">Latest activity at your center</p>
+                </div>
+              </div>
+              <div class="stacked-list" id="center-overview-recent"></div>
             </div>
           </div>
         </section>
@@ -462,7 +501,7 @@
             <div class="card-header">
               <div>
                 <h2>Assessments</h2>
-                <p class="hint">Record an assessment result for a module with a specialist.</p>
+                <p class="hint" id="assessments-description">Record an assessment result for a module with a specialist.</p>
               </div>
             </div>
 

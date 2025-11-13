@@ -524,10 +524,23 @@ if (isDashboardPage()) {
     const allowed = new Set(specialistsForRole().map(s => s.id));
     return db.assessments.filter(a => allowed.has(a.specialistId));
   };
-  const accessibleSections = isCenterAdmin ? ['overview','centers','specialists'] : ['overview','centers','specialists','modules','assessments'];
+  const accessibleSections = isCenterAdmin ? ['overview','specialists','assessments'] : ['overview','centers','specialists','modules','assessments'];
+  if (isCenterAdmin) {
+    const overviewNavLabel = qs('.sidebar-nav .nav-link[data-section="overview"] span');
+    if (overviewNavLabel) overviewNavLabel.textContent = 'Center dashboard';
+  }
   if (isCenterAdmin) {
     const hint = qi('specialist-form-hint');
     if (hint) hint.textContent = 'Add new specialists for your center and share their login credentials.';
+  }
+
+  const assessmentsDescription = qi('assessments-description');
+  if (assessmentsDescription && isCenterAdmin) {
+    assessmentsDescription.textContent = 'Review assessments logged by specialists at your center.';
+  }
+  const assessmentsListHint = qs('#section-assessments .card-subsection .hint');
+  if (assessmentsListHint && isCenterAdmin) {
+    assessmentsListHint.textContent = 'Stay on top of the latest progress recorded by your specialists.';
   }
 
   const userKey = (username || '').toLowerCase();
@@ -1130,25 +1143,47 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
   }
 
   // ---------- Assessments ----------
-  qi('form-assessment').addEventListener('submit', e=>{
-    e.preventDefault();
-    const trainee = qi('ass-trainee').value.trim();
-    const moduleId = qi('ass-module').value;
-    const specialistId = qi('ass-specialist').value;
-    const score = parseFloat(qi('ass-score').value || '0');
-    const date = qi('ass-date').value || new Date().toISOString().slice(0,10);
-    if (!trainee || !moduleId || !specialistId) return;
+  const assessmentForm = qi('form-assessment');
+  const assessmentFormPanel = assessmentForm?.closest('.form-panel');
+  if (assessmentFormPanel) {
+    assessmentFormPanel.classList.toggle('hidden', isCenterAdmin);
+  }
+  if (assessmentForm) {
+    const handleAssessmentSubmit = e => {
+      e.preventDefault();
+      const trainee = qi('ass-trainee').value.trim();
+      const moduleId = qi('ass-module').value;
+      const specialistId = qi('ass-specialist').value;
+      const score = parseFloat(qi('ass-score').value || '0');
+      const date = qi('ass-date').value || new Date().toISOString().slice(0,10);
+      if (!trainee || !moduleId || !specialistId) return;
+      if (isCenterAdmin) {
+        const allowedIds = new Set(specialistsForRole().map(s => s.id));
+        if (!allowedIds.has(specialistId)) { alert('You can only log assessments for specialists at your center.'); return; }
+      }
+      db.assessments.push({ id: uid(), trainee, moduleId, specialistId, score, date });
+      persistAndRender();
+      e.target.reset();
+    };
+
     if (isCenterAdmin) {
-      const allowedIds = new Set(specialistsForRole().map(s => s.id));
-      if (!allowedIds.has(specialistId)) { alert('You can only log assessments for specialists at your center.'); return; }
+      assessmentForm.addEventListener('submit', e => e.preventDefault());
+      assessmentForm.querySelectorAll('input, select, button').forEach(field => {
+        field.disabled = true;
+      });
+      const submitBtn = assessmentForm.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.textContent = 'Viewing only';
+      }
+    } else {
+      assessmentForm.addEventListener('submit', handleAssessmentSubmit);
     }
-    db.assessments.push({ id: uid(), trainee, moduleId, specialistId, score, date });
-    persistAndRender();
-    e.target.reset();
-  });
+  }
 
   function renderAssessments(){
-    const list = qi('assessments-list'); list.innerHTML='';
+    const list = qi('assessments-list');
+    if (!list) return;
+    list.innerHTML='';
     const assessments = assessmentsForRole();
     const scoreValues = [];
     const moduleHitMap = new Map();
@@ -1170,20 +1205,25 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
       if (a.moduleId) {
         moduleHitMap.set(a.moduleId, (moduleHitMap.get(a.moduleId) || 0) + 1);
       }
-      const row = el('div',{class:'recommendation'},
+      const rowChildren = [
         el('div',{}, '👤'),
         el('div',{},
           el('strong',{}, a.trainee),
           el('div',{class:'hint'}, (m? m.title:'—') + ' • ' + (s? s.name:'—')),
           el('div',{}, el('span',{class:'pill'}, 'Score: '+(isNaN(a.score)?'—':`${a.score}%`)), ' ', el('span',{class:'pill'}, formatDate(a.date)))
-        ),
-        (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.assessments = db.assessments.filter(x=>x.id!==a.id); persistAndRender(); }); return b; })()
-      );
-      list.append(row);
+        )
+      ];
+      if (!isCenterAdmin) {
+        rowChildren.push((()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.assessments = db.assessments.filter(x=>x.id!==a.id); persistAndRender(); }); return b; })());
+      }
+      list.append(el('div',{class:'recommendation'}, ...rowChildren));
     });
 
     if (!assessments.length) {
-      list.append(el('div', { class: 'empty-state' }, 'No assessments logged yet. Capture the first outcome above.'));
+      const message = isCenterAdmin
+        ? 'No assessments recorded for your center yet.'
+        : 'No assessments logged yet. Capture the first outcome above.';
+      list.append(el('div', { class: 'empty-state' }, message));
     }
 
     const total = assessments.length;
@@ -1200,6 +1240,117 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
         const [moduleId] = [...moduleHitMap.entries()].sort((a,b)=>b[1]-a[1])[0];
         const moduleName = db.modules.find(m=>m.id===moduleId)?.title || '—';
         topModuleEl.textContent = moduleName;
+      }
+    }
+  }
+
+  function renderCenterOverview(){
+    const networkOverview = qi('network-overview');
+    const centerOverview = qi('center-overview');
+    if (!networkOverview || !centerOverview) return;
+    if (!isCenterAdmin) {
+      centerOverview.classList.add('hidden');
+      networkOverview.classList.remove('hidden');
+      return;
+    }
+
+    networkOverview.classList.add('hidden');
+    centerOverview.classList.remove('hidden');
+
+    const center = centersForRole()[0] || null;
+    const nameEl = qi('center-overview-name');
+    const locationEl = qi('center-overview-location');
+    const descEl = qi('center-overview-desc');
+    const tagsWrap = qi('center-overview-tags');
+    const specialistsCountEl = qi('center-overview-specialists');
+    const assessmentsCountEl = qi('center-overview-assessments');
+    const avgEl = qi('center-overview-average');
+    const recentList = qi('center-overview-recent');
+
+    if (tagsWrap) tagsWrap.innerHTML = '';
+    const fallbackMessage = !center ? 'No center assigned yet. Reach out to the main admin to connect your account.' : '';
+
+    if (!center) {
+      if (nameEl) nameEl.textContent = 'Center not assigned';
+      if (locationEl) locationEl.textContent = 'Assignment pending';
+      if (descEl) descEl.textContent = fallbackMessage;
+      if (tagsWrap) tagsWrap.append(el('span', { class: 'pill small' }, 'Awaiting assignment'));
+      if (specialistsCountEl) specialistsCountEl.textContent = '0';
+      if (assessmentsCountEl) assessmentsCountEl.textContent = '0';
+      if (avgEl) avgEl.textContent = '—';
+      if (recentList) {
+        recentList.innerHTML = '';
+        recentList.append(el('div', { class: 'empty-state' }, fallbackMessage || 'No activity yet.'));
+      }
+      return;
+    }
+
+    if (nameEl) nameEl.textContent = center.name || 'Unnamed center';
+    if (locationEl) locationEl.textContent = center.location ? `📍 ${center.location}` : 'Location not provided';
+    if (descEl) descEl.textContent = center.desc || 'Add a description so your specialists stay aligned.';
+
+    const tags = Array.isArray(center.tags)
+      ? center.tags
+      : (typeof center.tags === 'string'
+        ? center.tags.split(',').map(t => t.trim()).filter(Boolean)
+        : []);
+    if (tagsWrap) {
+      if (tags.length) {
+        tags.forEach(tag => tagsWrap.append(el('span', { class: 'pill small' }, tag)));
+      } else {
+        tagsWrap.append(el('span', { class: 'pill small' }, 'Capabilities pending'));
+      }
+    }
+
+    const specialists = specialistsForRole();
+    if (specialistsCountEl) specialistsCountEl.textContent = specialists.length;
+
+    const assessments = assessmentsForRole().slice().sort((a, b) => {
+      const aDate = a.date || '';
+      const bDate = b.date || '';
+      if (aDate && bDate) return bDate.localeCompare(aDate);
+      if (aDate) return -1;
+      if (bDate) return 1;
+      return 0;
+    });
+    if (assessmentsCountEl) assessmentsCountEl.textContent = assessments.length;
+
+    const numericScores = assessments
+      .map(item => toNumber(item.score))
+      .filter(value => value !== null);
+    if (avgEl) avgEl.textContent = numericScores.length ? `${Math.round(numericScores.reduce((a,b)=>a+b,0)/numericScores.length)}%` : '—';
+
+    const formatDate = (value)=>{
+      if (!value) return '—';
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return value;
+      return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    if (recentList) {
+      recentList.innerHTML = '';
+      if (!assessments.length) {
+        recentList.append(el('div', { class: 'empty-state' }, 'No assessments recorded yet. Logs will appear here once your team submits them.'));
+      } else {
+        assessments.slice(0, 4).forEach(entry => {
+          const module = db.modules.find(x => x.id === entry.moduleId);
+          const specialist = db.specialists.find(x => x.id === entry.specialistId);
+          const scoreValue = toNumber(entry.score);
+          recentList.append(
+            el('div', { class: 'recommendation' },
+              el('div', {}, '🗓'),
+              el('div', {},
+                el('strong', {}, entry.trainee),
+                el('div', { class: 'hint' }, `${module ? module.title : '—'} • ${specialist ? specialist.name : '—'}`),
+                el('div', {},
+                  el('span', { class: 'pill' }, `Score: ${scoreValue === null ? '—' : `${scoreValue}%`}`),
+                  ' ',
+                  el('span', { class: 'pill' }, formatDate(entry.date))
+                )
+              )
+            )
+          );
+        });
       }
     }
   }
@@ -1248,6 +1399,7 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
     renderSpecialists();
     renderModules();
     renderAssessments();
+    renderCenterOverview();
     refreshSelectors();
     refreshStats();
   }
