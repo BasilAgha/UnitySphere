@@ -11,6 +11,8 @@
   --shadow-soft: 0 18px 45px rgba(0,0,0,0.45);
   --radius-xl: 24px;
   --transition-fast: 0.25s ease;
+  --page-max: 1200px;
+  --section-pad: clamp(70px, 12vw, 140px);
 }
 
 /* LIGHT MODE OVERRIDES */
@@ -36,6 +38,7 @@ body {
   color: var(--text-main);
   line-height: 1.6;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 a {
@@ -257,10 +260,14 @@ body[data-theme="light"] .lang-toggle {
 /* layout wrapper */
 main {
   margin-top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(60px, 8vw, 110px);
 }
 
 section {
   width: 100%;
+  position: relative;
 }
 
 /* ========== HERO SLIDER ========== */
@@ -340,14 +347,23 @@ body[data-theme="light"] .hero-overlay {
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 0 12vw;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 0 clamp(1.5rem, 8vw, 11rem);
   color: #fff;
 }
 
 body[data-theme="light"] .hero-content {
   color: #020617;
+}
+
+.hero-copy {
+  max-width: min(640px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .hero-subtitle {
@@ -372,8 +388,8 @@ body[data-theme="light"] .hero-title {
 
 .hero-text {
   font-size: 1.05rem;
-  max-width: 680px;
-  margin: 0 auto 30px;
+  max-width: 640px;
+  margin: 0 0 30px;
   color: var(--text-muted);
   text-shadow: 0 6px 26px rgba(0,0,0,0.9);
 }
@@ -399,6 +415,46 @@ body[data-theme="light"] .hero-text {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 26px 60px rgba(37,99,235,0.9);
   filter: brightness(1.05);
+}
+
+.hero-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.hero-meta-card {
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(5,8,22,0.65);
+  border: 1px solid rgba(148,163,184,0.2);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+body[data-theme="light"] .hero-meta-card {
+  background: rgba(255,255,255,0.7);
+  border-color: rgba(15,23,42,0.08);
+  box-shadow: 0 15px 35px rgba(15,23,42,0.08);
+}
+
+.hero-meta-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.hero-meta-label {
+  font-size: 0.78rem;
+  color: rgba(229,231,235,0.75);
+}
+
+body[data-theme="light"] .hero-meta-label {
+  color: rgba(15,23,42,0.6);
 }
 
 .hero-counter {
@@ -448,7 +504,19 @@ body[data-theme="light"] .hero-dot {
 
 /* ========== SECTION WRAPPERS ========== */
 .section-pad {
-  padding: 80px 8vw;
+  padding: var(--section-pad) clamp(1.5rem, 7vw, 5rem);
+}
+
+.section-shell {
+  width: min(var(--page-max), 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2rem, 4vw, 3.5rem);
+}
+
+.section-shell > .section-header {
+  margin-bottom: 0;
 }
 
 .section-header {
@@ -480,7 +548,7 @@ body[data-theme="light"] .benefits {
 
 .benefit-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
 }
 
@@ -739,7 +807,7 @@ body[data-theme="light"] .team {
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.4rem;
+  gap: clamp(1rem, 2vw, 1.6rem);
 }
 
 /* base card */
@@ -910,7 +978,7 @@ body[data-theme="light"] .contact::before {
   z-index: 1;
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 40px;
+  gap: clamp(1.5rem, 5vw, 3.5rem);
   align-items: stretch;
 }
 
@@ -1092,7 +1160,7 @@ body[data-theme="light"] footer.site-footer {
 }
 
 .footer-inner {
-  max-width: 1180px;
+  max-width: var(--page-max);
   margin: 0 auto;
   position: relative;
   z-index: 1;
@@ -1372,7 +1440,11 @@ body[data-theme="light"] .footer-bottom-links a:hover {
   .hero-content {
     padding: 0 6vw;
   }
-  .benefit-grid, .team-grid, .contact-layout {
+  .hero-meta-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+  .benefit-grid,
+  .contact-layout {
     grid-template-columns: repeat(2,minmax(0,1fr));
   }
   .world-card {
@@ -1391,6 +1463,10 @@ body[data-theme="light"] .footer-bottom-links a:hover {
   main {
     margin-top: 70px;
   }
+  .hero-copy {
+    text-align: center;
+    align-items: center;
+  }
   .hero-counter {
     left: 16px;
   }
@@ -1400,9 +1476,13 @@ body[data-theme="light"] .footer-bottom-links a:hover {
   .section-pad {
     padding: 60px 18px;
   }
+  .section-shell {
+    gap: 2rem;
+  }
   .benefit-grid,
   .team-grid,
-  .contact-layout {
+  .contact-layout,
+  .hero-meta-grid {
     grid-template-columns: minmax(0,1fr);
   }
   .hero-title {
