@@ -194,22 +194,29 @@ if (scrollTopBtn) {
 
 // THEME TOGGLE (DARK / LIGHT)
 const themeToggle = document.getElementById("themeToggle");
+const THEME_KEY = "unitysphere-theme";
 
-// default is LIGHT
-let currentTheme = "light";
+const prefersDark =
+  window.matchMedia &&
+  window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-// load stored theme if exists
-const storedTheme = localStorage.getItem("unitysphere-theme");
-if (storedTheme === "light" || storedTheme === "dark") {
-  currentTheme = storedTheme;
-}
+const savedTheme = localStorage.getItem(THEME_KEY);
+let currentTheme = savedTheme || (prefersDark ? "dark" : "light");
 
 function applyTheme(theme) {
   document.body.setAttribute("data-theme", theme);
+
   if (themeToggle) {
-    themeToggle.textContent = theme === "dark" ? "☾ Dark" : "☀ Light";
+    if (theme === "dark") {
+      themeToggle.textContent = "☀ Light mode";
+      themeToggle.setAttribute("aria-label", "Switch to light mode");
+    } else {
+      themeToggle.textContent = "🌙 Dark mode";
+      themeToggle.setAttribute("aria-label", "Switch to dark mode");
+    }
   }
-  localStorage.setItem("unitysphere-theme", theme);
+
+  localStorage.setItem(THEME_KEY, theme);
 }
 
 // initial apply
@@ -222,4 +229,3 @@ if (themeToggle) {
     applyTheme(currentTheme);
   });
 }
-

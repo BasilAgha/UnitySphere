@@ -6,45 +6,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="style.css" />
+  <!-- Styles: use the new landing design -->
+  <link rel="stylesheet" href="landing.css" />
 </head>
 <body data-theme="light">
   <!-- GLOBAL BACKGROUND ANIMATION -->
-  <div class="bg-orbit"></div>
+<div class="bg-orbit bg-animated"></div>
 
   <!-- NAVBAR -->
-  <header class="navbar">
-    <div class="nav-left">
-      <div class="logo-icon">∞</div>
-      <span>UnitySphere</span>
-    </div>
+<header class="navbar">
+  <div class="nav-container">
+    <!-- Logo -->
+    <a href="#home" class="nav-logo" data-scroll="#home">
+      <div class="logo-circle">US</div>
+      <span class="logo-text">UnitySphere</span>
+    </a>
 
-    <nav class="nav-center">
+    <!-- Nav links -->
+    <nav class="nav-links">
       <a class="nav-link active" data-scroll="#home">Home</a>
       <a class="nav-link" data-scroll="#about">About</a>
       <a class="nav-link" data-scroll="#world">Inside Our World</a>
       <a class="nav-link" data-scroll="#team">Team</a>
       <a class="nav-link" data-scroll="#contact">Contact</a>
-      <a class="nav-link" href="Dashboard/login.html">Dashboard</a>
     </nav>
 
-    <div class="nav-right">
-      <div class="social-row">
-        <div class="social-circle">IG</div>
-        <div class="social-circle">X</div>
-        <div class="social-circle">in</div>
-      </div>
-      <!-- Theme toggle -->
-      <button class="lang-toggle theme-toggle" id="themeToggle">☀ Light</button>
-    </div>
-  </header>
+    <!-- Right side: dashboard CTA -->
+<div class="nav-actions">
+    <a href="Dashboard/login.html" class="btn-primary">Open Dashboard</a>
+  <button id="themeToggle" class="theme-toggle">🌙 Dark mode</button>
+</div>
+</header>
+
 
   <main>
     <!-- HERO -->
-    <section id="home" class="hero">
+    <section id="home" class="hero hero-section">
       <div class="hero-slider">
         <div
           class="hero-slide active"
