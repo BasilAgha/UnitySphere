@@ -19,7 +19,7 @@
 
 /* LIGHT THEME VARIABLES */
 body[data-theme="light"] {
-  --bg-page: #f5f7ff;
+  --bg-page: #edf1f9;
   --bg-card: #ffffff;
   --bg-navbar: rgba(255, 255, 255, 0.96);
 
@@ -27,12 +27,12 @@ body[data-theme="light"] {
   --accent: #0ea5e9;
 
   --text: #020617;
-  --text-muted: #64748b;
-  --border: rgba(148, 163, 184, 0.35);
-  --shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --text-muted: #6b7280;
+  --border: rgba(148, 163, 184, 0.3);
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
 
-  --hero-overlay-start: rgba(255, 255, 255, 0.65);
-  --hero-overlay-end: rgba(255, 255, 255, 0.9);
+  --hero-overlay-start: rgba(15, 23, 42, 0.55);
+  --hero-overlay-end: rgba(15, 23, 42, 0.85);
   --hero-counter-bg: rgba(255, 255, 255, 0.9);
 }
 
@@ -1032,4 +1032,64 @@ body[data-theme="light"] .theme-toggle::before {
   .hero-section {
     margin-top: 72px;
   }
+}
+
+
+/* ========== LIGHT THEME SECTION BACKGROUNDS ========== */
+body[data-theme="light"] .benefits {
+  background: radial-gradient(circle at 0% 0%, #e0e7ff, #f8fafc 60%);
+}
+
+body[data-theme="light"] .world {
+  background: radial-gradient(circle at 50% 0%, #e0f2fe, #f9fafb 70%);
+}
+
+body[data-theme="light"] .team {
+  background: radial-gradient(circle at 100% 100%, #e5e7eb, #f9fafb 60%);
+}
+
+body[data-theme="light"] .contact {
+  background: radial-gradient(circle at 0 0, #e0e7ff, #f9fafb 60%);
+}
+
+body[data-theme="light"] .site-footer {
+  background: #f9fafb;
+}
+
+/* Light mode cards */
+body[data-theme="light"] .benefit-card {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme="light"] .world-card {
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme="light"] .team-card {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+body[data-theme="light"] .contact-layout {
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+}
+
+/* Light mode hero tweaks */
+body[data-theme="light"] .hero-title {
+  text-shadow: 0 6px 24px rgba(15, 23, 42, 0.25);
+}
+
+body[data-theme="light"] .hero-text {
+  color: var(--text-muted);
+}
+
+/* Light mode theme toggle */
+body[data-theme="light"] .theme-toggle {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.5);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
 }

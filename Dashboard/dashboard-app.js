@@ -6,6 +6,51 @@ const DEFAULT_ADMIN_AVATAR = 'https://i.pravatar.cc/150?u=unitysphere-admin';
 const LEGACY_STORAGE_KEYS = ['unitysphere-data', 'unitysphere-data-v1', 'unitysphere-data-v2', 'unitysphere-data-v3', 'unitysphere-data-v4'];
 const SESSION_VERSION_KEY = 'unitysphere-session-version';
 
+// === Google Sheets backend config ===
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-CMQMTXnmfDgJgSsZTgKzZt5rIIsMjkBNw916NxDoITQUR8lYjI_fz7Ma4A4nZETRog/exec';
+
+/**
+ * Save the full DB object to Google Sheets.
+ * Expects Apps Script to handle:
+ *   POST { action: 'save', payload: {...db} }
+ */
+async function remoteSave(data) {
+  if (typeof fetch !== 'function' || !GOOGLE_SCRIPT_URL) return;
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save',
+        payload: data
+      })
+    });
+  } catch (err) {
+    console.warn('Remote save (Google Sheets) failed', err);
+  }
+}
+
+/**
+ * Load the full DB object from Google Sheets.
+ * Expects Apps Script to handle:
+ *   GET ?action=load -> JSON
+ */
+async function remoteLoad() {
+  if (typeof fetch !== 'function' || !GOOGLE_SCRIPT_URL) return null;
+  try {
+    const resp = await fetch(`${GOOGLE_SCRIPT_URL}?action=load`, {
+      method: 'GET'
+    });
+    if (!resp.ok) return null;
+    const json = await resp.json();
+    if (!json || typeof json !== 'object') return null;
+    return json;
+  } catch (err) {
+    console.warn('Remote load (Google Sheets) failed', err);
+    return null;
+  }
+}
+
 const storageAvailable = typeof localStorage !== 'undefined';
 const sessionAvailable = typeof sessionStorage !== 'undefined';
 const localStore = storageAvailable ? localStorage : null;
@@ -122,13 +167,16 @@ function ensureGoogleMaps(apiKey) {
   if (window.google && window.google.maps) {
     return Promise.resolve(window.google.maps);
   }
+
   const trimmedKey = (apiKey || '').trim();
   if (!trimmedKey || trimmedKey === 'YOUR_API_KEY') {
     return Promise.reject(new Error('missing-api-key'));
   }
+
   if (googleMapsPromise) {
     return googleMapsPromise;
   }
+
   googleMapsPromise = new Promise((resolve, reject) => {
     const callbackName = `__unitysphereInitMap${Math.random().toString(36).slice(2)}`;
     window[callbackName] = () => {
@@ -139,8 +187,17 @@ function ensureGoogleMaps(apiKey) {
       }
       delete window[callbackName];
     };
-    const params = new URLSearchParams({ callback: callbackName, v: 'weekly' });
+
+    // 👇 Load Maps JS with Places library, restricted to Jordan
+    const params = new URLSearchParams({
+      callback: callbackName,
+      v: 'weekly',
+      libraries: 'places',
+      region: 'JO'
+      // you can also add: language: 'en' or 'ar'
+    });
     params.set('key', trimmedKey);
+
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     script.async = true;
@@ -152,8 +209,10 @@ function ensureGoogleMaps(apiKey) {
     };
     document.head.appendChild(script);
   });
+
   return googleMapsPromise;
 }
+
 
 function updateCentersMap(centers) {
   const canvas = document.getElementById('centers-map-canvas');
@@ -271,6 +330,65 @@ function updateCentersMap(centers) {
       centersMapInstance = null;
       canvas.innerHTML = '';
       setStatus('Unable to load Google Maps. Verify your API key and network access.');
+    });
+}
+function initCenterLocationAutocomplete() {
+  const locationInput = qi('center-location');
+  const latInput = qi('center-lat');
+  const lngInput = qi('center-lng');
+  const canvas = document.getElementById('centers-map-canvas');
+
+  if (!locationInput || !latInput || !lngInput || !canvas) return;
+
+  const apiKey = canvas.dataset.googleMapsKey || '';
+  if (!apiKey || apiKey.trim() === '' || apiKey.trim() === 'YOUR_API_KEY') {
+    // No key => autocomplete can’t work
+    return;
+  }
+
+  ensureGoogleMaps(apiKey)
+    .then(maps => {
+      if (!maps.places || !maps.places.Autocomplete) {
+        console.warn('Google Places library not available. Check libraries=places in script URL.');
+        return;
+      }
+
+      const autocomplete = new maps.places.Autocomplete(locationInput, {
+        componentRestrictions: { country: 'jo' }, // 🇯🇴 restrict to Jordan
+        fields: ['geometry', 'formatted_address', 'name']
+      });
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (!place || !place.geometry || !place.geometry.location) {
+          alert('Please select a location from the suggestions.');
+          return;
+        }
+
+        const loc = place.geometry.location;
+        const lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
+        const lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+
+        latInput.value = lat;
+        lngInput.value = lng;
+
+        if (place.formatted_address) {
+          locationInput.value = place.formatted_address;
+        }
+
+        // Optional: focus map on this new spot
+        try {
+          if (centersMapInstance) {
+            centersMapInstance.setCenter({ lat, lng });
+            centersMapInstance.setZoom(14);
+          }
+        } catch (err) {
+          console.warn('Unable to re-center map on autocomplete place', err);
+        }
+      });
+    })
+    .catch(err => {
+      console.warn('Unable to init center location autocomplete', err);
     });
 }
 
@@ -757,6 +875,9 @@ if (isDashboardPage()) {
   const toggleBtn = qi('btn-toggle-add-center');
   const cancelBtn = qi('btn-cancel-center');
   const centerForm = qi('form-center');
+    // Initialize Google-style search for center location (Jordan only)
+  initCenterLocationAutocomplete();
+
 
   if (addPanel && toggleBtn) {
     if (isCenterAdmin || isSpecialist) {
@@ -816,10 +937,11 @@ if (isDashboardPage()) {
         const lat = parseFloat(qi('center-lat').value);
         const lng = parseFloat(qi('center-lng').value);
         if (!name || !loginUsername || !loginPassword) return;
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          alert('Please provide both latitude and longitude for the center.');
-          return;
-        }
+if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+  alert('Please choose a location from the search box (start typing and select one of the suggestions).');
+  return;
+}
+
         // prevent duplicate usernames
         const usernameTaken = (db.users || []).some(
           u => u.username && u.username.toLowerCase() === loginUsername.toLowerCase()
@@ -1789,18 +1911,46 @@ if (isDashboardPage()) {
     refreshStats();
   }
 
-  function persistAndRender() {
-    syncUsersWithEntities();
-    const persisted = saveData(db);
-    if (!persisted && !storageWarningShown) {
-      storageWarningShown = true;
-      alert(`Changes couldn't be saved because your browser storage is full. Remove a large image or choose a smaller PNG or JPG (under ${IMAGE_SIZE_LIMIT_LABEL}).`);
-    }
-    renderAll();
-    window.__refreshSpecPicker?.();
+function persistAndRender() {
+  syncUsersWithEntities();
+
+  const persisted = saveData(db);
+  if (!persisted && !storageWarningShown) {
+    storageWarningShown = true;
+    alert(
+      `Changes couldn't be saved locally because your browser storage is full. ` +
+      `Remove a large image or choose a smaller PNG or JPG (under ${IMAGE_SIZE_LIMIT_LABEL}).`
+    );
   }
 
-  // init picker + initial render
+  // Also push a copy of the DB to Google Sheets (fire-and-forget)
+  remoteSave(db);
+
+  renderAll();
+  window.__refreshSpecPicker?.();
+}
+
+
+  // init picker + initial render (local data first)
   initSpecialistsPicker();
   renderAll();
+
+  // Then try to load the latest snapshot from Google Sheets and override
+  if (typeof fetch === 'function') {
+    remoteLoad().then(remote => {
+      if (!remote || remote.version !== STORAGE_VERSION) return;
+
+      // Merge remote into current db
+      db.users = remote.users || db.users;
+      db.centers = remote.centers || db.centers;
+      db.specialists = remote.specialists || db.specialists;
+      db.children = remote.children || db.children;
+      db.modules = remote.modules || db.modules;
+      db.assessments = remote.assessments || db.assessments;
+
+      // Re-sync users and re-render with the remote data
+      persistAndRender();
+    });
+  }
 }
+

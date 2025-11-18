@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>UnitySphere | Admin Dashboard</title>
-  <link href="style.css" rel="stylesheet">
 </head>
 <body class="dashboard-page">
   <div class="app-shell" id="dashboard">
@@ -302,17 +301,24 @@
                     <label for="center-password">Center password</label>
                     <input id="center-password" type="password" required placeholder="StrongPass!123">
                   </div>
-                  <div class="grid-inline">
-                    <div class="input-group">
-                      <label for="center-lat">Latitude</label>
-                      <input id="center-lat" type="number" step="any" placeholder="24.7136" required>
-                    </div>
-                    <div class="input-group">
-                      <label for="center-lng">Longitude</label>
-                      <input id="center-lng" type="number" step="any" placeholder="46.6753" required>
-                    </div>
-                  </div>
-                  <p class="hint">Use decimal degrees. Coordinates are required to place the pin on Google Maps.</p>
+<div class="grid-inline">
+  <div class="input-group">
+    <label for="center-location">Location (search)</label>
+    <input
+      id="center-location"
+      placeholder="Start typing and choose a place in Jordan"
+      autocomplete="off"
+    >
+  </div>
+
+  <!-- Lat/Lng are now hidden and auto-filled from the search -->
+  <input id="center-lat" type="hidden">
+  <input id="center-lng" type="hidden">
+</div>
+<p class="hint">
+  Start typing the address and select one of the suggestions. Coordinates will be filled automatically.
+</p>
+
                   <div class="form-actions">
                     <button type="button" class="ghost" id="btn-cancel-center">Cancel</button>
                     <button class="primary" type="submit">Save center</button>
@@ -323,9 +329,9 @@
               <div class="centers-map">
                 <div class="map-wrapper">
                   <div
-                    id="centers-map-canvas"
+                     id="centers-map-canvas"
                     class="map-canvas"
-                    data-google-maps-key="YOUR_API_KEY"
+                    data-google-maps-key="AIzaSyDOWFIbnuoUNyLwx6XG08c3l6DMBauLIwM"
                     data-default-lat="24.7136"
                     data-default-lng="46.6753"
                     data-default-zoom="4"
