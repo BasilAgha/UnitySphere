@@ -1,9 +1,9 @@
 // ===== UnitySphere Admin (client-side) =====
 
-const STORAGE_VERSION = 4;
+const STORAGE_VERSION = 5;
 const STORAGE_KEY = `unitysphere-data-v${STORAGE_VERSION}`;
 const DEFAULT_ADMIN_AVATAR = 'https://i.pravatar.cc/150?u=unitysphere-admin';
-const LEGACY_STORAGE_KEYS = ['unitysphere-data', 'unitysphere-data-v1', 'unitysphere-data-v2', 'unitysphere-data-v3'];
+const LEGACY_STORAGE_KEYS = ['unitysphere-data', 'unitysphere-data-v1', 'unitysphere-data-v2', 'unitysphere-data-v3', 'unitysphere-data-v4'];
 const SESSION_VERSION_KEY = 'unitysphere-session-version';
 
 const storageAvailable = typeof localStorage !== 'undefined';
@@ -17,9 +17,10 @@ function formatFileSize(bytes) {
   return Number.isInteger(sizeInMB) ? `${sizeInMB} MB` : `${sizeInMB.toFixed(1)} MB`;
 }
 
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // increase to 5MB
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const IMAGE_SIZE_LIMIT_LABEL = formatFileSize(MAX_IMAGE_SIZE_BYTES);
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/pjpeg'];
+
 async function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     if (!file) return reject(new Error('no-file'));
@@ -38,8 +39,8 @@ async function readFileAsDataUrl(file) {
   });
 }
 
-function uid(){ return Math.random().toString(36).slice(2,10); }
-function clone(x){ return JSON.parse(JSON.stringify(x)); }
+function uid() { return Math.random().toString(36).slice(2, 10); }
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
 
 function toNumber(value) {
   if (value === null || value === undefined) return null;
@@ -108,6 +109,7 @@ function getCenterCoordinates(center) {
   return null;
 }
 
+// ---- Google Maps helpers ----
 let googleMapsPromise = null;
 let centersMapInstance = null;
 let centersMapMarkers = [];
@@ -209,7 +211,9 @@ function updateCentersMap(centers) {
   ensureGoogleMaps(apiKey)
     .then(maps => {
       if (!centersMapInstance) {
-        const initialCenter = entries.length ? { lat: entries[0].coords.lat, lng: entries[0].coords.lng } : { lat: defaultLat, lng: defaultLng };
+        const initialCenter = entries.length
+          ? { lat: entries[0].coords.lat, lng: entries[0].coords.lng }
+          : { lat: defaultLat, lng: defaultLng };
         const options = {
           center: initialCenter,
           zoom: entries.length ? (Number.isFinite(singleZoom) ? singleZoom : 10) : defaultZoom,
@@ -270,19 +274,32 @@ function updateCentersMap(centers) {
     });
 }
 
+// ---- Seed data ----
 const seedCenters = [];
-
 const seedSpecialists = [];
 
 const DEFAULT_DATA = {
   version: STORAGE_VERSION,
   users: [
-    { username: 'unity-admin', password: 'Admin123!', name: 'UnitySphere Admin', role: 'main-admin', email: 'admin@unitysphere.test', avatar: DEFAULT_ADMIN_AVATAR }
+    {
+      username: 'admin_user',
+      password: 'Admin123!',     // demo only
+      name: 'Main Admin',
+      role: 'main-admin',
+      email: 'admin@example.com',
+      avatar: DEFAULT_ADMIN_AVATAR
+    }
   ],
   centers: seedCenters,
   specialists: seedSpecialists,
+  children: [],
   modules: [
-    { id: uid(), title: 'Balance Training 1', category: 'Rehab', durationMin: 15 }
+    {
+      id: uid(),
+      title: 'Sample VR Module 1',
+      category: 'Demo Category',
+      durationMin: 15
+    }
   ],
   assessments: []
 };
@@ -306,6 +323,7 @@ function loadData() {
       users: parsed.users || clone(DEFAULT_DATA.users),
       centers: parsed.centers || [],
       specialists: parsed.specialists || [],
+      children: parsed.children || [],
       modules: parsed.modules || [],
       assessments: parsed.assessments || []
     };
@@ -314,7 +332,8 @@ function loadData() {
     return clone(DEFAULT_DATA);
   }
 }
-function saveData(data){
+
+function saveData(data) {
   if (!storageAvailable || !localStore) return true;
   try {
     const payload = clone(data);
@@ -326,6 +345,7 @@ function saveData(data){
     return false;
   }
 }
+
 function normalizeCenterLogin(center) {
   if (!center) return null;
   if (!center.login && (center.centerUsername || center.centerPassword)) {
@@ -344,6 +364,7 @@ function normalizeCenterLogin(center) {
   }
   return center.login;
 }
+
 function normalizeSpecialistLogin(specialist) {
   if (!specialist) return null;
   if (!specialist.login && (specialist.username || specialist.password)) {
@@ -364,6 +385,7 @@ function normalizeSpecialistLogin(specialist) {
   }
   return specialist.login;
 }
+
 function upsertUser(user) {
   if (!user || !user.username) return;
   db.users = Array.isArray(db.users) ? db.users : [];
@@ -375,11 +397,13 @@ function upsertUser(user) {
     db.users.push(user);
   }
 }
+
 function removeUserByUsername(username) {
   if (!username) return;
   const key = username.toLowerCase();
   db.users = (db.users || []).filter(u => !u.username || u.username.toLowerCase() !== key);
 }
+
 function syncUsersWithEntities() {
   db.users = Array.isArray(db.users) ? db.users.filter(Boolean) : [];
   db.centers = Array.isArray(db.centers) ? db.centers : [];
@@ -392,6 +416,7 @@ function syncUsersWithEntities() {
     }
   });
 
+  // Centers -> center-admin users
   db.centers.forEach(center => {
     const login = normalizeCenterLogin(center);
     if (!login || !login.username) return;
@@ -411,6 +436,7 @@ function syncUsersWithEntities() {
     }
   });
 
+  // Specialists -> specialist users (with specialistId for direct mapping)
   const specialistUsers = new Set();
   db.specialists.forEach(spec => {
     const login = normalizeSpecialistLogin(spec);
@@ -421,6 +447,7 @@ function syncUsersWithEntities() {
       password: login.password || '',
       role: 'specialist',
       centerId: spec.centerId || null,
+      specialistId: spec.id,
       name: spec.name || login.username
     };
     if (userLookup.has(key)) {
@@ -432,6 +459,7 @@ function syncUsersWithEntities() {
     specialistUsers.add(key);
   });
 
+  // Clean up users that no longer map to an entity
   db.users = db.users.filter(user => {
     if (!user || !user.username) return false;
     if (user.role === 'center-admin') {
@@ -440,9 +468,10 @@ function syncUsersWithEntities() {
     if (user.role === 'specialist') {
       return specialistUsers.has(user.username.toLowerCase());
     }
-    return true;
+    return true; // main-admin or other roles
   });
 }
+
 const db = loadData();
 syncUsersWithEntities();
 
@@ -456,20 +485,25 @@ function isDashboardPage() {
 }
 
 // ---- tiny DOM helpers ----
-const qs = (s)=>document.querySelector(s);
-const qsa = (s)=>[...document.querySelectorAll(s)];
-const qi = (id)=>document.getElementById(id);
-function el(tag, attrs={}, ...kids){
+const qs = (s) => document.querySelector(s);
+const qsa = (s) => [...document.querySelectorAll(s)];
+const qi = (id) => document.getElementById(id);
+function el(tag, attrs = {}, ...kids) {
   const n = document.createElement(tag);
-  Object.entries(attrs).forEach(([k,v])=>{
-    if (k==='class') n.className = v;
-    else if (k==='style') Object.assign(n.style, v);
-    else n.setAttribute(k,v);
+  Object.entries(attrs).forEach(([k, v]) => {
+    if (k === 'class') n.className = v;
+    else if (k === 'style') Object.assign(n.style, v);
+    else n.setAttribute(k, v);
   });
-  kids.forEach(k => n.append(k));
+  kids.forEach(k => {
+    if (k === null || k === undefined) return;
+    n.append(k);
+  });
   return n;
 }
-function esc(s){return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
+function esc(s) {
+  return (s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
 
 // ================= AUTH =================
 if (isLoginPage()) {
@@ -477,27 +511,43 @@ if (isLoginPage()) {
   const userI = qi('auth-username');
   const passI = qi('auth-password');
 
-  form.addEventListener('submit', (e)=>{
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const u = (userI.value||'').trim().toLowerCase();
-    const p = passI.value||'';
-    const user = (db.users||[]).find(x=>x.username && x.username.toLowerCase()===u && x.password===p);
-    if (!user) { alert('Invalid credentials'); return; }
-    if (!['main-admin','center-admin'].includes(user.role)) { alert('Access restricted to admin accounts.'); return; }
+    const u = (userI.value || '').trim().toLowerCase();
+    const p = passI.value || '';
+    const user = (db.users || []).find(x => x.username && x.username.toLowerCase() === u && x.password === p);
+    if (!user) {
+      alert('Invalid credentials');
+      return;
+    }
+    if (!['main-admin', 'center-admin', 'specialist'].includes(user.role)) {
+      alert('Access restricted to platform accounts.');
+      return;
+    }
+
     sessionStorage.setItem('us_username', user.username);
     sessionStorage.setItem('us_name', user.name || user.username);
     sessionStorage.setItem('us_email', user.email || '');
     sessionStorage.setItem('us_role', user.role);
+
     if (user.avatar) {
       sessionStorage.setItem('us_avatar', user.avatar);
     } else {
       sessionStorage.removeItem('us_avatar');
     }
+
     if (user.role === 'center-admin' && user.centerId) {
       sessionStorage.setItem('us_center', user.centerId);
     } else {
       sessionStorage.removeItem('us_center');
     }
+
+    if (user.role === 'specialist' && user.specialistId) {
+      sessionStorage.setItem('us_specialist', user.specialistId);
+    } else {
+      sessionStorage.removeItem('us_specialist');
+    }
+
     location.href = 'dashboard.html';
   });
 }
@@ -505,61 +555,93 @@ if (isLoginPage()) {
 // ================= DASHBOARD =================
 if (isDashboardPage()) {
   // guard
-    const username = sessionStore?.getItem?.('us_username');
+  const username = sessionStore?.getItem?.('us_username');
   if (!username) location.href = 'index.html';
 
-    let storageWarningShown = false;
+  let storageWarningShown = false;
 
-    const name = sessionStore?.getItem?.('us_name');
-    const email = sessionStore?.getItem?.('us_email');
-    const role = sessionStore?.getItem?.('us_role') || 'main-admin';
-    const centerIdForRole = sessionStore?.getItem?.('us_center');
+  const name = sessionStore?.getItem?.('us_name');
+  const email = sessionStore?.getItem?.('us_email');
+  const role = sessionStore?.getItem?.('us_role') || 'main-admin';
+  const centerIdForRole = sessionStore?.getItem?.('us_center');
+  const specialistIdForRole = sessionStore?.getItem?.('us_specialist');
+
   qi('sidebar-name').textContent = name || username;
   qi('sidebar-email').textContent = email || '—';
   qi('user-name').textContent = name || username;
-  const userRoleLabel = role === 'center-admin' ? 'Center admin' : 'Main admin';
+
+  let userRoleLabel = 'Main admin';
+  if (role === 'center-admin') userRoleLabel = 'Center admin';
+  else if (role === 'specialist') userRoleLabel = 'Specialist';
   const roleEl = qi('user-role');
   if (roleEl) roleEl.textContent = userRoleLabel;
+
   const isCenterAdmin = role === 'center-admin';
-  const centersForRole = () => (isCenterAdmin && centerIdForRole) ? db.centers.filter(c => c.id === centerIdForRole) : db.centers;
-  const specialistsForRole = () => (isCenterAdmin && centerIdForRole) ? db.specialists.filter(s => s.centerId === centerIdForRole) : db.specialists;
-  const modulesForRole = () => db.modules;
-  const assessmentsForRole = () => {
-    if (!isCenterAdmin || !centerIdForRole) return db.assessments;
-    const allowed = new Set(specialistsForRole().map(s => s.id));
-    return db.assessments.filter(a => allowed.has(a.specialistId));
+  const isSpecialist = role === 'specialist';
+
+  const centersForRole = () => {
+    if (isCenterAdmin && centerIdForRole) return db.centers.filter(c => c.id === centerIdForRole);
+    return db.centers;
   };
-  const accessibleSections = isCenterAdmin ? ['overview','specialists','assessments'] : ['overview','centers','specialists','modules','assessments'];
+
+  const specialistsForRole = () => {
+    if (isSpecialist && specialistIdForRole) return db.specialists.filter(s => s.id === specialistIdForRole);
+    if (isCenterAdmin && centerIdForRole) return db.specialists.filter(s => s.centerId === centerIdForRole);
+    return db.specialists;
+  };
+
+  const childrenForRole = () => {
+    const all = db.children || [];
+    if (isSpecialist && specialistIdForRole) {
+      return all.filter(ch => ch.specialistId === specialistIdForRole);
+    }
+    if (isCenterAdmin && centerIdForRole) {
+      return all.filter(ch => ch.centerId === centerIdForRole);
+    }
+    return all;
+  };
+
+  const modulesForRole = () => db.modules;
+
+  const assessmentsForRole = () => {
+    const all = db.assessments || [];
+    if (isSpecialist && specialistIdForRole) {
+      return all.filter(a => a.specialistId === specialistIdForRole);
+    }
+    if (isCenterAdmin && centerIdForRole) {
+      const allowed = new Set(specialistsForRole().map(s => s.id));
+      return all.filter(a => allowed.has(a.specialistId));
+    }
+    return all;
+  };
+
+  const accessibleSections = isSpecialist
+    ? ['overview', 'children', 'assessments']
+    : isCenterAdmin
+      ? ['overview', 'children', 'specialists', 'assessments']
+      : ['overview', 'centers', 'specialists', 'modules', 'children', 'assessments'];
+
   if (isCenterAdmin) {
     const overviewNavLabel = qs('.sidebar-nav .nav-link[data-section="overview"] span');
     if (overviewNavLabel) overviewNavLabel.textContent = 'Center dashboard';
   }
-  if (isCenterAdmin) {
-    const hint = qi('specialist-form-hint');
-    if (hint) hint.textContent = 'Add new specialists for your center and share their login credentials.';
-  }
-
-  const assessmentsDescription = qi('assessments-description');
-  if (assessmentsDescription && isCenterAdmin) {
-    assessmentsDescription.textContent = 'Review assessments logged by specialists at your center.';
-  }
-  const assessmentsListHint = qs('#section-assessments .card-subsection .hint');
-  if (assessmentsListHint && isCenterAdmin) {
-    assessmentsListHint.textContent = 'Stay on top of the latest progress recorded by your specialists.';
+  if (isSpecialist) {
+    const overviewNavLabel = qs('.sidebar-nav .nav-link[data-section="overview"] span');
+    if (overviewNavLabel) overviewNavLabel.textContent = 'My dashboard';
   }
 
   const userKey = (username || '').toLowerCase();
   const currentUser = (db.users || []).find(u => (u?.username || '').toLowerCase() === userKey) || null;
   const storedAvatar = sessionStorage.getItem('us_avatar');
   const activeAvatar = storedAvatar || currentUser?.avatar || DEFAULT_ADMIN_AVATAR;
-  const applyAvatar = (src)=>{
+  const applyAvatar = (src) => {
     const finalSrc = src || DEFAULT_ADMIN_AVATAR;
-    ['header-avatar','sidebar-avatar'].forEach(id=>{
-      const el = qi(id);
-      if (!el) return;
-      el.style.backgroundImage = `url(${finalSrc})`;
-      el.style.backgroundSize='cover';
-      el.style.backgroundPosition='center';
+    ['header-avatar', 'sidebar-avatar'].forEach(id => {
+      const elNode = qi(id);
+      if (!elNode) return;
+      elNode.style.backgroundImage = `url(${finalSrc})`;
+      elNode.style.backgroundSize = 'cover';
+      elNode.style.backgroundPosition = 'center';
     });
   };
   applyAvatar(activeAvatar);
@@ -570,8 +652,8 @@ if (isDashboardPage()) {
   const avatarInput = qi('admin-avatar-file');
   const avatarButton = qi('btn-change-avatar');
   if (avatarButton && avatarInput) {
-    avatarButton.addEventListener('click', ()=> avatarInput.click());
-    avatarInput.addEventListener('change', async ()=>{
+    avatarButton.addEventListener('click', () => avatarInput.click());
+    avatarInput.addEventListener('change', async () => {
       const file = avatarInput.files && avatarInput.files[0];
       if (!file) return;
       try {
@@ -589,8 +671,8 @@ if (isDashboardPage()) {
         console.error('Unable to read avatar file', err);
         const msg =
           err?.message === 'bad-type' ? 'Only PNG or JPG images are allowed.' :
-          err?.message === 'too-large' ? `Image must be under ${IMAGE_SIZE_LIMIT_LABEL}.` :
-          'Unable to read the selected image. Please try another file.';
+            err?.message === 'too-large' ? `Image must be under ${IMAGE_SIZE_LIMIT_LABEL}.` :
+              'Unable to read the selected image. Please try another file.';
         alert(msg);
       } finally {
         avatarInput.value = '';
@@ -601,37 +683,57 @@ if (isDashboardPage()) {
   const hour = new Date().getHours();
   qi('greeting').textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  qi('logout').addEventListener('click', ()=>{
-    ['us_username','us_name','us_email','us_role','us_center','us_avatar'].forEach(k=>sessionStorage.removeItem(k));
+  qi('logout').addEventListener('click', () => {
+    ['us_username', 'us_name', 'us_email', 'us_role', 'us_center', 'us_specialist', 'us_avatar'].forEach(k => sessionStorage.removeItem(k));
     location.href = 'index.html';
   });
 
+  // assessments description tweaks for roles
+  const assessmentsDescription = qi('assessments-description');
+  if (assessmentsDescription) {
+    if (isCenterAdmin) {
+      assessmentsDescription.textContent = 'Review assessments logged by specialists at your center.';
+    } else if (isSpecialist) {
+      assessmentsDescription.textContent = 'Log and review VR assessments for the children you follow.';
+    }
+  }
+  const assessmentsListHint = qs('#section-assessments .card-subsection .hint');
+  if (assessmentsListHint) {
+    if (isCenterAdmin) {
+      assessmentsListHint.textContent = 'Stay on top of the latest progress recorded by your specialists.';
+    } else if (isSpecialist) {
+      assessmentsListHint.textContent = 'Each card summarizes an assessment you have logged.';
+    }
+  }
+
   // nav
-  const setSectionTitle = (btn)=>{
+  const setSectionTitle = (btn) => {
     const label = btn.querySelector('span')?.textContent.trim() || btn.textContent.trim();
     qi('section-title').textContent = label;
   };
 
-  qsa('.sidebar-nav .nav-link').forEach(btn=>{
+  // hide nav items not in accessibleSections
+  qsa('.sidebar-nav .nav-link').forEach(btn => {
     const key = btn.dataset.section;
     const allowed = accessibleSections.includes(key);
     btn.classList.toggle('hidden', !allowed);
   });
-  qsa('main .section').forEach(sec=>{
-    const key = sec.id.replace('section-','');
+  qsa('main .section').forEach(sec => {
+    const key = sec.id.replace('section-', '');
     const allowed = accessibleSections.includes(key);
     sec.classList.toggle('hidden', !allowed);
   });
 
-  qsa('.sidebar-nav .nav-link').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      qsa('.sidebar-nav .nav-link').forEach(b=>b.classList.remove('active'));
+  qsa('.sidebar-nav .nav-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      qsa('.sidebar-nav .nav-link').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const key = btn.dataset.section;
-      qsa('main .section').forEach(sec=>sec.classList.remove('active'));
-      qi(`section-${key}`).classList.add('active');
+      qsa('main .section').forEach(sec => sec.classList.remove('active'));
+      const targetSection = qi(`section-${key}`);
+      if (targetSection) targetSection.classList.add('active');
       setSectionTitle(btn);
-      if (key === 'specialists' || key === 'assessments') refreshSelectors();
+      if (key === 'specialists' || key === 'assessments' || key === 'children') refreshSelectors();
       refreshStats();
     });
   });
@@ -640,10 +742,10 @@ if (isDashboardPage()) {
   if (!initialNav || initialNav.classList.contains('hidden')) {
     const defaultKey = accessibleSections[0];
     if (defaultKey) {
-      qsa('.sidebar-nav .nav-link').forEach(b=>b.classList.remove('active'));
+      qsa('.sidebar-nav .nav-link').forEach(b => b.classList.remove('active'));
       initialNav = qs(`.sidebar-nav .nav-link[data-section="${defaultKey}"]`);
       if (initialNav) initialNav.classList.add('active');
-      qsa('main .section').forEach(sec=>{
+      qsa('main .section').forEach(sec => {
         sec.classList.toggle('active', sec.id === `section-${defaultKey}`);
       });
     }
@@ -655,8 +757,9 @@ if (isDashboardPage()) {
   const toggleBtn = qi('btn-toggle-add-center');
   const cancelBtn = qi('btn-cancel-center');
   const centerForm = qi('form-center');
+
   if (addPanel && toggleBtn) {
-    if (isCenterAdmin) {
+    if (isCenterAdmin || isSpecialist) {
       addPanel.classList.add('hidden');
       toggleBtn.classList.add('hidden');
       cancelBtn?.classList.add('hidden');
@@ -664,32 +767,32 @@ if (isDashboardPage()) {
       const defaultOpenLabel = toggleBtn.dataset.labelOpen || toggleBtn.textContent.trim();
       const defaultCloseLabel = toggleBtn.dataset.labelClose || 'Close form';
       const labelEl = toggleBtn.querySelector('.label');
-      const updateToggleLabel = (text)=>{
+      const updateToggleLabel = (text) => {
         if (labelEl) {
           labelEl.textContent = text;
         } else {
           toggleBtn.textContent = text;
         }
       };
-      const setToggleState = (isOpen)=>{
+      const setToggleState = (isOpen) => {
         addPanel.classList.toggle('active', isOpen);
         toggleBtn.setAttribute('aria-expanded', String(isOpen));
         toggleBtn.classList.toggle('is-open', isOpen);
         updateToggleLabel(isOpen ? defaultCloseLabel : defaultOpenLabel);
       };
       setToggleState(false);
-      toggleBtn.addEventListener('click', ()=>{
+      toggleBtn.addEventListener('click', () => {
         const isOpen = !addPanel.classList.contains('active');
         setToggleState(isOpen);
         if (isOpen) {
           addPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
-      cancelBtn?.addEventListener('click', ()=>{
+      cancelBtn?.addEventListener('click', () => {
         setToggleState(false);
       });
 
-      centerForm?.addEventListener('submit', async e=>{
+      centerForm?.addEventListener('submit', async e => {
         e.preventDefault();
         const name = qi('center-name').value.trim();
         const location = qi('center-location').value.trim();
@@ -707,7 +810,7 @@ if (isDashboardPage()) {
           }
         }
         const desc = qi('center-desc').value.trim();
-        const tags = (qi('center-tags').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+        const tags = (qi('center-tags').value || '').split(',').map(s => s.trim()).filter(Boolean);
         const loginUsername = qi('center-username').value.trim();
         const loginPassword = qi('center-password').value.trim();
         const lat = parseFloat(qi('center-lat').value);
@@ -736,7 +839,13 @@ if (isDashboardPage()) {
           posX: Number.isFinite(derivedPosX) ? derivedPosX : undefined,
           posY: Number.isFinite(derivedPosY) ? derivedPosY : undefined
         });
-        upsertUser({ username: loginUsername, password: loginPassword, role: 'center-admin', centerId, name: name ? `${name} Admin` : loginUsername });
+        upsertUser({
+          username: loginUsername,
+          password: loginPassword,
+          role: 'center-admin',
+          centerId,
+          name: name ? `${name} Admin` : loginUsername
+        });
         persistAndRender();
         e.target.reset();
         if (imageFileInput) imageFileInput.value = '';
@@ -747,28 +856,28 @@ if (isDashboardPage()) {
 
   const exportBtn = qi('btn-export-centers');
   if (exportBtn) {
-    exportBtn.classList.toggle('hidden', isCenterAdmin);
-    exportBtn.addEventListener('click', ()=>{
-      const out = centersForRole().map(({id, ...rest})=>rest);
-      const blob = new Blob([JSON.stringify(out,null,2)], {type:'application/json'});
+    exportBtn.classList.toggle('hidden', isCenterAdmin || isSpecialist);
+    exportBtn.addEventListener('click', () => {
+      const out = centersForRole().map(({ id, ...rest }) => rest);
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='centers.json'; a.click();
+      const a = document.createElement('a'); a.href = url; a.download = 'centers.json'; a.click();
       URL.revokeObjectURL(url);
     });
   }
 
-  function renderCenters(){
+  function renderCenters() {
     const centers = centersForRole();
     const totalCenters = centers.length;
-    const loginReady = centers.filter(c=>{
+    const loginReady = centers.filter(c => {
       const login = c.login || {};
       return Boolean((login.username || c.centerUsername) && (login.password || c.centerPassword));
     }).length;
     const capabilityCounts = new Map();
     const locationSet = new Set();
 
-    centers.forEach(c=>{
-      (c.tags || []).forEach(tag=>{
+    centers.forEach(c => {
+      (c.tags || []).forEach(tag => {
         const clean = tag && tag.trim();
         if (!clean) return;
         const key = clean.toLowerCase();
@@ -793,9 +902,9 @@ if (isDashboardPage()) {
         capPills.append(el('span', { class: 'pill small' }, 'No capabilities logged yet'));
       } else {
         caps
-          .sort((a,b)=> b.count - a.count || a.label.localeCompare(b.label))
-          .slice(0,6)
-          .forEach(({label,count})=>{
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+          .slice(0, 6)
+          .forEach(({ label, count }) => {
             capPills.append(el('span', { class: 'pill small' }, `${label} (${count})`));
           });
       }
@@ -804,80 +913,87 @@ if (isDashboardPage()) {
     updateCentersMap(centers);
 
     // cards
-    const grid = qi('centers-grid'); grid.innerHTML = '';
-    centers.forEach(c=>{
-      const card = el('article', {class:'center-card'});
-      const img = el('img', {src: c.image || 'https://images.unsplash.com/photo-1526948128573-703ee1aeb6fa?q=80&w=1600&auto=format&fit=crop', alt:c.name});
-      const body = el('div', {class:'card-body'},
-        el('div', {class:'title'}, c.name),
-        el('div', {class:'place muted'}, `📍 ${c.location || 'Not specified'}`),
-        el('div', {class:'desc muted'}, c.desc || 'Awaiting description'),
-        el('div', {class:'tag-row'},
-          ...(c.tags && c.tags.length ? c.tags : ['General']).map(t=> el('span', {class:'tag'}, t))
+    const grid = qi('centers-grid'); if (!grid) return;
+    grid.innerHTML = '';
+    centers.forEach(c => {
+      const card = el('article', { class: 'center-card' });
+      const img = el('img', {
+        src: c.image || 'https://images.unsplash.com/photo-1526948128573-703ee1aeb6fa?q=80&w=1600&auto=format&fit=crop',
+        alt: c.name
+      });
+      const body = el('div', { class: 'card-body' },
+        el('div', { class: 'title' }, c.name),
+        el('div', { class: 'place muted' }, `📍 ${c.location || 'Not specified'}`),
+        el('div', { class: 'desc muted' }, c.desc || 'Awaiting description'),
+        el('div', { class: 'tag-row' },
+          ...(c.tags && c.tags.length ? c.tags : ['General']).map(t => el('span', { class: 'tag' }, t))
         )
       );
       const login = c.login || { username: c.centerUsername, password: c.centerPassword } || {};
-      const credentials = el('div',{class:'center-credentials'},
-        el('span',{class:'badge badge-soft'}, login && login.username ? `Login: ${login.username}` : 'Login pending')
+      const credentials = el('div', { class: 'center-credentials' },
+        el('span', { class: 'badge badge-soft' }, login && login.username ? `Login: ${login.username}` : 'Login pending')
       );
       if (login && login.password) {
-        credentials.append(el('span',{class:'pill'}, login.password));
+        credentials.append(el('span', { class: 'pill' }, login.password));
       }
-// current list of specialists for this center
-const centerSpecialists = db.specialists.filter(s => s.centerId === c.id);
 
-// build the list (or an empty state)
-const rosterList = centerSpecialists.length
-  ? el('ul', { class: 'center-roster-list' },
-      ...centerSpecialists.map(s => {
-        const loginInfo = normalizeSpecialistLogin(s);
-        return el('li', {},
-          el('strong', {}, s.name),
-          el('span', { class: 'role muted' }, s.skill || '—'),
-          loginInfo && loginInfo.username
-            ? el('div', { class: 'login-pill' },
-                el('span', { class: 'badge badge-soft' }, `Login: ${loginInfo.username}`),
-                loginInfo.password ? el('span', { class: 'pill small' }, loginInfo.password) : null
-              )
-            : null
-        );
-      })
-    )
-  : el('div', { class: 'muted center-roster-empty' }, 'No specialists assigned yet.');
+      // roster for this center
+      const centerSpecialists = db.specialists.filter(s => s.centerId === c.id);
+      const rosterList = centerSpecialists.length
+        ? el('ul', { class: 'center-roster-list' },
+          ...centerSpecialists.map(s => {
+            const loginInfo = normalizeSpecialistLogin(s);
+            return el('li', {},
+              el('strong', {}, s.name),
+              el('span', { class: 'role muted' }, s.skill || '—'),
+              loginInfo && loginInfo.username
+                ? el('div', { class: 'login-pill' },
+                  el('span', { class: 'badge badge-soft' }, `Login: ${loginInfo.username}`),
+                  loginInfo.password ? el('span', { class: 'pill small' }, loginInfo.password) : null
+                )
+                : null
+            );
+          })
+        )
+        : el('div', { class: 'muted center-roster-empty' }, 'No specialists assigned yet.');
 
-// toggle button
-const rosterToggle = el('button', { class: 'ghost', 'aria-expanded': 'true' }, 'Hide specialists');
-rosterToggle.addEventListener('click', () => {
-  const hidden = rosterList.classList.toggle('hidden');
-  rosterToggle.setAttribute('aria-expanded', String(!hidden));
-  rosterToggle.textContent = hidden ? 'Show specialists' : 'Hide specialists';
-});
+      const rosterToggle = el('button', { class: 'ghost', 'aria-expanded': 'true' }, 'Hide specialists');
+      rosterToggle.addEventListener('click', () => {
+        const hidden = rosterList.classList.toggle('hidden');
+        rosterToggle.setAttribute('aria-expanded', String(!hidden));
+        rosterToggle.textContent = hidden ? 'Show specialists' : 'Hide specialists';
+      });
 
-// header + roster container
-const rosterHeader = el('div', { class: 'center-roster-header' },
-  el('span', {}, 'Specialists'),
-  el('span', { class: 'hint' },
-    centerSpecialists.length
-      ? `${centerSpecialists.length} ${centerSpecialists.length === 1 ? 'specialist' : 'specialists'}`
-      : 'No specialists'
-  ),
-  rosterToggle
-);
+      const rosterHeader = el('div', { class: 'center-roster-header' },
+        el('span', {}, 'Specialists'),
+        el('span', { class: 'hint' },
+          centerSpecialists.length
+            ? `${centerSpecialists.length} ${centerSpecialists.length === 1 ? 'specialist' : 'specialists'}`
+            : 'No specialists'
+        ),
+        rosterToggle
+      );
 
-// final roster block
-const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
+      const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
 
       const footerActions = [credentials];
-      if (!isCenterAdmin) {
-        footerActions.push((()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{
-          const loginDetails = normalizeCenterLogin(c);
-          if (loginDetails && loginDetails.username) removeUserByUsername(loginDetails.username);
-          db.specialists = db.specialists.map(s => s.centerId === c.id ? { ...s, centerId: null } : s);
-          db.centers = db.centers.filter(x=>x.id!==c.id);
-          persistAndRender();
-        }); return b; })());
+      if (!isCenterAdmin && !isSpecialist) {
+        footerActions.push((() => {
+          const b = el('button', { class: 'primary ghost' }, "Delete");
+          b.addEventListener('click', () => {
+            const loginDetails = normalizeCenterLogin(c);
+            if (loginDetails && loginDetails.username) removeUserByUsername(loginDetails.username);
+            // detach specialists from this center, keep them as freelance
+            db.specialists = db.specialists.map(s => s.centerId === c.id ? { ...s, centerId: null } : s);
+            // detach children from this center
+            db.children = (db.children || []).map(ch => ch.centerId === c.id ? { ...ch, centerId: null } : ch);
+            db.centers = db.centers.filter(x => x.id !== c.id);
+            persistAndRender();
+          });
+          return b;
+        })());
       }
-      const footer = el('footer', {class:'center-footer'}, ...footerActions);
+      const footer = el('footer', { class: 'center-footer' }, ...footerActions);
       card.append(img, body, roster, footer);
       grid.append(card);
     });
@@ -889,81 +1005,116 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
 
   // ---------- Specialists ----------
   const specialistForm = qi('form-specialist');
-  specialistForm?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const name = qi('spec-name').value.trim();
-    const skill = qi('spec-skill').value.trim();
-    let centerId = qi('spec-center').value || null;
-    const avatarInput = qi('spec-avatar');
-    const avatarFileInput = qi('spec-avatar-file');
-    let avatar = avatarInput ? avatarInput.value.trim() : '';
-    const avatarFile = avatarFileInput && avatarFileInput.files ? avatarFileInput.files[0] : null;
-    if (avatarFile) {
-      try {
-        avatar = await readFileAsDataUrl(avatarFile);
-      } catch (err) {
-        console.error('Unable to read specialist avatar file', err);
-        alert('Unable to read the selected avatar. Please try another file.');
-        return;
-      }
+  if (specialistForm) {
+    const hint = qi('specialist-form-hint');
+    if (hint && isCenterAdmin) {
+      hint.textContent = 'Add new specialists for your center and share their login credentials.';
+    } else if (hint && isSpecialist) {
+      hint.textContent = 'Specialists are managed by your admin. You can view only your own profile.';
     }
-    const loginUsername = qi('spec-username').value.trim();
-    const loginPassword = qi('spec-password').value.trim();
-    if (isCenterAdmin) {
-      if (!centerIdForRole) { alert('Your center assignment is missing. Contact the main admin.'); return; }
-      centerId = centerIdForRole;
-    }
-    if (!name || !loginUsername || !loginPassword) { alert('Please provide a name and login credentials for the specialist.'); return; }
-    const existingUser = (db.users || []).some(u => u.username && u.username.toLowerCase() === loginUsername.toLowerCase());
-    if (existingUser) { alert('This username is already in use. Choose another username.'); return; }
-    const specialistId = uid();
-    db.specialists.push({ id: specialistId, name, skill, centerId, avatar, login: { username: loginUsername, password: loginPassword } });
-    upsertUser({ username: loginUsername, password: loginPassword, role: 'specialist', centerId, name });
-    persistAndRender();
-    e.target.reset();
-    if (avatarFileInput) avatarFileInput.value = '';
-    if (isCenterAdmin) {
-      const centerSelect = qi('spec-center');
-      if (centerSelect) centerSelect.value = centerIdForRole;
-    }
-  });
 
-  function renderSpecialists(){
-    const grid = qi('specialists-grid'); grid.innerHTML='';
+    if (isSpecialist) {
+      // lock the form for specialist role (view-only)
+      specialistForm.querySelectorAll('input, select, button').forEach(field => {
+        field.disabled = true;
+      });
+    } else {
+      specialistForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = qi('spec-name').value.trim();
+        const skill = qi('spec-skill').value.trim();
+        let centerId = qi('spec-center').value || null;
+        const avatarInput = qi('spec-avatar');
+        const avatarFileInput = qi('spec-avatar-file');
+        let avatar = avatarInput ? avatarInput.value.trim() : '';
+        const avatarFile = avatarFileInput && avatarFileInput.files ? avatarFileInput.files[0] : null;
+        if (avatarFile) {
+          try {
+            avatar = await readFileAsDataUrl(avatarFile);
+          } catch (err) {
+            console.error('Unable to read specialist avatar file', err);
+            alert('Unable to read the selected avatar. Please try another file.');
+            return;
+          }
+        }
+        const loginUsername = qi('spec-username').value.trim();
+        const loginPassword = qi('spec-password').value.trim();
+        if (isCenterAdmin) {
+          if (!centerIdForRole) { alert('Your center assignment is missing. Contact the main admin.'); return; }
+          centerId = centerIdForRole;
+        }
+        if (!name || !loginUsername || !loginPassword) {
+          alert('Please provide a name and login credentials for the specialist.');
+          return;
+        }
+        const existingUser = (db.users || []).some(u => u.username && u.username.toLowerCase() === loginUsername.toLowerCase());
+        if (existingUser) {
+          alert('This username is already in use. Choose another username.');
+          return;
+        }
+        const specialistId = uid();
+        db.specialists.push({ id: specialistId, name, skill, centerId, avatar, login: { username: loginUsername, password: loginPassword } });
+        upsertUser({ username: loginUsername, password: loginPassword, role: 'specialist', centerId, specialistId, name });
+        persistAndRender();
+        e.target.reset();
+        if (avatarFileInput) avatarFileInput.value = '';
+        if (isCenterAdmin) {
+          const centerSelect = qi('spec-center');
+          if (centerSelect) centerSelect.value = centerIdForRole;
+        }
+      });
+    }
+  }
+
+  function renderSpecialists() {
+    const grid = qi('specialists-grid'); if (!grid) return;
+    grid.innerHTML = '';
     const specialists = specialistsForRole();
     let assigned = 0;
     const focusCounts = new Map();
 
-    specialists.forEach(s=>{
-      const centerName = db.centers.find(c=>c.id===s.centerId)?.name || '—';
+    specialists.forEach(s => {
+      const centerName = db.centers.find(c => c.id === s.centerId)?.name || (s.centerId ? 'Center' : 'Freelance');
       if (s.centerId) assigned += 1;
       const focusKey = (s.skill && s.skill.trim()) ? s.skill.trim() : 'Generalist';
       focusCounts.set(focusKey, (focusCounts.get(focusKey) || 0) + 1);
-      const card = el('div',{class:'specialist-card'});
-      const avatarEl = (()=>{const a=el('div',{class:'avatar'}); if (s.avatar){ a.style.backgroundImage=`url(${s.avatar})`; a.style.backgroundSize='cover'; a.style.backgroundPosition='center'; } return a; })();
+      const card = el('div', { class: 'specialist-card' });
+      const avatarEl = (() => {
+        const a = el('div', { class: 'avatar' });
+        if (s.avatar) {
+          a.style.backgroundImage = `url(${s.avatar})`;
+          a.style.backgroundSize = 'cover';
+          a.style.backgroundPosition = 'center';
+        }
+        a.classList.add('avatar-static');
+        return a;
+      })();
       const loginInfo = normalizeSpecialistLogin(s);
-      const deleteBtn = el('button',{class:'primary ghost'},"Delete");
-      deleteBtn.addEventListener('click',()=>{
+      const deleteBtn = el('button', { class: 'primary ghost' }, "Delete");
+      deleteBtn.addEventListener('click', () => {
         if (loginInfo && loginInfo.username) removeUserByUsername(loginInfo.username);
-        db.specialists = db.specialists.filter(x=>x.id!==s.id);
-        db.assessments = db.assessments.filter(a=>a.specialistId!==s.id);
+        db.specialists = db.specialists.filter(x => x.id !== s.id);
+        db.assessments = db.assessments.filter(a => a.specialistId !== s.id);
+        db.children = (db.children || []).map(ch => ch.specialistId === s.id ? { ...ch, specialistId: null } : ch);
         persistAndRender();
       });
       card.append(
         avatarEl,
-        el('strong',{}, s.name),
-        el('p',{}, s.skill || '—'),
-        el('span',{class:'badge badge-soft'}, centerName)
+        el('strong', {}, s.name),
+        el('p', {}, s.skill || '—'),
+        el('span', { class: 'badge badge-soft' }, centerName)
       );
       if (loginInfo && loginInfo.username) {
         card.append(
-          el('div',{class:'specialist-credentials'},
-            el('span',{class:'badge badge-soft'}, `Login: ${loginInfo.username}`),
-            loginInfo.password ? el('span',{class:'pill'}, loginInfo.password) : null
+          el('div', { class: 'specialist-credentials' },
+            el('span', { class: 'badge badge-soft' }, `Login: ${loginInfo.username}`),
+            loginInfo.password ? el('span', { class: 'pill' }, loginInfo.password) : null
           )
         );
       }
-      card.append(deleteBtn);
+      if (!isSpecialist) {
+        card.append(deleteBtn);
+      }
       grid.append(card);
     });
 
@@ -987,18 +1138,18 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
         focusWrap.append(el('span', { class: 'pill small' }, 'No focus areas yet'));
       } else {
         [...focusCounts.entries()]
-          .sort((a,b)=>b[1]-a[1])
-          .slice(0,6)
-          .forEach(([label,count])=>{
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6)
+          .forEach(([label, count]) => {
             focusWrap.append(el('span', { class: 'pill small' }, `${label} (${count})`));
           });
       }
     }
   }
 
-  /* ---------- Specialists dropdown & toggle card (fixed) ---------- */
+  /* ---------- Specialists dropdown & toggle card ---------- */
   function initSpecialistsPicker() {
-    const sel = qi('specialist-select');        // element IDs (no # because qi gets by id)
+    const sel = qi('specialist-select');
     const details = qi('specialist-details');
     if (!sel || !details) return;
 
@@ -1083,30 +1234,47 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
   }
 
   // ---------- Modules ----------
-  qi('form-module').addEventListener('submit', e=>{
-    e.preventDefault();
-    const title = qi('mod-title').value.trim();
-    const category = qi('mod-category').value.trim();
-    const dur = parseInt(qi('mod-duration').value||'0',10) || null;
-    if (!title) return;
-    db.modules.push({ id: uid(), title, category, durationMin: dur });
-    persistAndRender();
-    e.target.reset();
-  });
+  const moduleForm = qi('form-module');
+  if (moduleForm && !isSpecialist) {
+    moduleForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const title = qi('mod-title').value.trim();
+      const category = qi('mod-category').value.trim();
+      const dur = parseInt(qi('mod-duration').value || '0', 10) || null;
+      if (!title) return;
+      db.modules.push({ id: uid(), title, category, durationMin: dur });
+      persistAndRender();
+      e.target.reset();
+    });
+  } else if (moduleForm && isSpecialist) {
+    moduleForm.querySelectorAll('input, button').forEach(f => f.disabled = true);
+  }
 
-  function renderModules(){
+  function renderModules() {
     const modules = modulesForRole();
-    const grid = qi('modules-grid'); grid.innerHTML='';
+    const grid = qi('modules-grid'); if (!grid) return;
+    grid.innerHTML = '';
     const categoryCounts = new Map();
     const durations = [];
 
-    modules.forEach(m=>{
-      const card = el('div',{class:'module-card'},
-        el('header',{}, el('strong',{}, m.title), el('span',{class:'tag'}, m.category || '—')),
-        el('div',{class:'module-meta'},
-          el('span',{}, '⏱ ', (m.durationMin? `${m.durationMin} min`:'—'))
+    modules.forEach(m => {
+      const card = el('div', { class: 'module-card' },
+        el('header', {},
+          el('strong', {}, m.title),
+          el('span', { class: 'tag' }, m.category || '—')
         ),
-        (()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.modules = db.modules.filter(x=>x.id!==m.id); db.assessments = db.assessments.filter(a=>a.moduleId!==m.id); persistAndRender(); }); return b; })()
+        el('div', { class: 'module-meta' },
+          el('span', {}, '⏱ ', (m.durationMin ? `${m.durationMin} min` : '—'))
+        ),
+        !isSpecialist ? (() => {
+          const b = el('button', { class: 'primary ghost' }, "Delete");
+          b.addEventListener('click', () => {
+            db.modules = db.modules.filter(x => x.id !== m.id);
+            db.assessments = db.assessments.filter(a => a.moduleId !== m.id);
+            persistAndRender();
+          });
+          return b;
+        })() : null
       );
       grid.append(card);
 
@@ -1127,7 +1295,7 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
     const total = modules.length;
     const totalEl = qi('modules-total'); if (totalEl) totalEl.textContent = total;
     const avgEl = qi('modules-avg-duration'); if (avgEl) {
-      avgEl.textContent = durations.length ? `${Math.round(durations.reduce((a,b)=>a+b,0)/durations.length)} min` : '—';
+      avgEl.textContent = durations.length ? `${Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)} min` : '—';
     }
     const catCountEl = qi('modules-category-count'); if (catCountEl) catCountEl.textContent = categoryCounts.size;
 
@@ -1138,12 +1306,138 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
         catWrap.append(el('span', { class: 'pill small' }, 'No categories yet'));
       } else {
         [...categoryCounts.values()]
-          .sort((a,b)=>b.count - a.count || a.label.localeCompare(b.label))
-          .slice(0,6)
-          .forEach(({label,count})=>{
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+          .slice(0, 6)
+          .forEach(({ label, count }) => {
             catWrap.append(el('span', { class: 'pill small' }, `${label} (${count})`));
           });
       }
+    }
+  }
+
+  // ---------- Children ----------
+  const childForm = qi('form-child');
+  if (childForm) {
+    if (isSpecialist || isCenterAdmin || !isCenterAdmin && !isSpecialist) {
+      childForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nameInput = qi('child-name');
+        const ageInput = qi('child-age');
+        const specialistSelect = qi('child-specialist');
+        const notesInput = qi('child-notes');
+
+        const nameVal = (nameInput?.value || '').trim();
+        const ageValue = (ageInput?.value || '').trim();
+        const age = ageValue ? Number(ageValue) : null;
+        let specialistId = specialistSelect?.value || null;
+
+        if (!nameVal) {
+          alert('Please enter a child name.');
+          return;
+        }
+
+        if (isSpecialist && specialistIdForRole) {
+          specialistId = specialistIdForRole;
+        }
+
+        const specialist = specialistId ? (db.specialists || []).find(s => s.id === specialistId) : null;
+        const centerId = specialist?.centerId || (isCenterAdmin && centerIdForRole ? centerIdForRole : null);
+
+        db.children = db.children || [];
+        db.children.push({
+          id: uid(),
+          name: nameVal,
+          age,
+          notes: (notesInput?.value || '').trim(),
+          specialistId,
+          centerId
+        });
+
+        persistAndRender();
+        childForm.reset();
+
+        if (isSpecialist && specialistIdForRole && specialistSelect) {
+          specialistSelect.value = specialistIdForRole;
+        }
+      });
+    }
+  }
+
+  function renderChildren() {
+    const grid = qi('children-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const children = childrenForRole();
+    const assessments = assessmentsForRole();
+    const countByChild = new Map();
+
+    (assessments || []).forEach(a => {
+      if (a.childId) {
+        countByChild.set(a.childId, (countByChild.get(a.childId) || 0) + 1);
+      }
+    });
+
+    children.forEach(child => {
+      const assessCount = countByChild.get(child.id) || 0;
+      const specialist = (db.specialists || []).find(s => s.id === child.specialistId) || null;
+      const center = (db.centers || []).find(c => c.id === child.centerId) || null;
+
+      const metaRow = el('div', { class: 'module-meta' },
+        el('span', {}, `🎯 ${child.age ? `Age ${child.age}` : 'Age not set'}`),
+        el('span', {}, `🧑‍⚕️ ${specialist ? specialist.name : 'Unassigned'}`),
+        el('span', {}, `📊 ${assessCount} assessment${assessCount === 1 ? '' : 's'}`)
+      );
+
+      const blocks = [
+        el('header', {},
+          el('strong', {}, child.name),
+          center ? el('span', { class: 'tag' }, center.name) : null
+        ),
+        metaRow
+      ];
+
+      if (child.notes) {
+        blocks.push(el('p', { class: 'hint' }, child.notes));
+      }
+
+      const actions = el('div', { class: 'card-actions' });
+      if (!isSpecialist || true) {
+        const deleteBtn = el('button', { class: 'primary ghost small' }, 'Delete');
+        deleteBtn.addEventListener('click', () => {
+          if (!confirm('Remove this child? Existing assessments will stay, but will no longer be linked.')) return;
+          db.children = (db.children || []).filter(ch => ch.id !== child.id);
+          db.assessments = (db.assessments || []).map(a => a.childId === child.id ? { ...a, childId: null } : a);
+          persistAndRender();
+        });
+        actions.append(deleteBtn);
+      }
+      blocks.push(actions);
+
+      const card = el('div', { class: 'module-card' }, ...blocks);
+      grid.append(card);
+    });
+
+    if (!children.length) {
+      const message = isSpecialist
+        ? 'No children yet. Add a child above to start tracking progress.'
+        : 'No children found. Add a child to link assessments to individual learners.';
+      grid.append(el('div', { class: 'empty-state' }, message));
+    }
+
+    const totalEl = qi('children-total');
+    if (totalEl) totalEl.textContent = String(children.length);
+
+    const withAssessmentsEl = qi('children-with-assessments');
+    if (withAssessmentsEl) {
+      const withAssessments = children.filter(ch => countByChild.get(ch.id)).length;
+      withAssessmentsEl.textContent = String(withAssessments);
+    }
+
+    const avgEl = qi('children-avg-assessments');
+    if (avgEl) {
+      const totalAssessments = [...countByChild.values()].reduce((a, b) => a + b, 0);
+      avgEl.textContent = children.length ? (totalAssessments / children.length).toFixed(1) : '—';
     }
   }
 
@@ -1151,58 +1445,84 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
   const assessmentForm = qi('form-assessment');
   const assessmentFormPanel = assessmentForm?.closest('.form-panel');
   if (assessmentFormPanel) {
-    assessmentFormPanel.classList.toggle('hidden', isCenterAdmin);
+    // main admin & specialist can log; center admin = view-only
+    assessmentFormPanel.classList.toggle('hidden', false);
   }
-  if (assessmentForm) {
-    const handleAssessmentSubmit = e => {
-      e.preventDefault();
-      const trainee = qi('ass-trainee').value.trim();
-      const moduleId = qi('ass-module').value;
-      const specialistId = qi('ass-specialist').value;
-      const score = parseFloat(qi('ass-score').value || '0');
-      const date = qi('ass-date').value || new Date().toISOString().slice(0,10);
-      if (!trainee || !moduleId || !specialistId) return;
-      if (isCenterAdmin) {
-        const allowedIds = new Set(specialistsForRole().map(s => s.id));
-        if (!allowedIds.has(specialistId)) { alert('You can only log assessments for specialists at your center.'); return; }
-      }
-      db.assessments.push({ id: uid(), trainee, moduleId, specialistId, score, date });
-      persistAndRender();
-      e.target.reset();
-    };
+
+  function handleAssessmentSubmit(e) {
+    e.preventDefault();
+    const childId = qi('ass-child')?.value || '';
+    const moduleId = qi('ass-module')?.value || '';
+    let specialistId = qi('ass-specialist')?.value || '';
+    const score = Number(qi('ass-score')?.value || '0');
+    const date = qi('ass-date')?.value || new Date().toISOString().slice(0, 10);
+
+    if (isSpecialist && specialistIdForRole) {
+      specialistId = specialistIdForRole;
+    }
+
+    if (!childId || !moduleId || !specialistId || Number.isNaN(score)) {
+      alert('Please choose a child, module, specialist, and enter a valid score.');
+      return;
+    }
 
     if (isCenterAdmin) {
+      const allowed = new Set(specialistsForRole().map(s => s.id));
+      if (!allowed.has(specialistId)) {
+        alert('You can only log assessments for specialists at your center.');
+        return;
+      }
+    }
+
+    const child = (db.children || []).find(ch => ch.id === childId) || null;
+    const traineeName = child?.name || 'Unnamed child';
+
+    db.assessments.push({
+      id: uid(),
+      trainee: traineeName,
+      childId,
+      moduleId,
+      specialistId,
+      score,
+      date
+    });
+
+    persistAndRender();
+    e.target.reset();
+  }
+
+  if (assessmentForm) {
+    if (isCenterAdmin) {
+      // view-only for center admin
       assessmentForm.addEventListener('submit', e => e.preventDefault());
       assessmentForm.querySelectorAll('input, select, button').forEach(field => {
         field.disabled = true;
       });
       const submitBtn = assessmentForm.querySelector('button[type="submit"]');
-      if (submitBtn) {
-        submitBtn.textContent = 'Viewing only';
-      }
+      if (submitBtn) submitBtn.textContent = 'Viewing only';
     } else {
       assessmentForm.addEventListener('submit', handleAssessmentSubmit);
     }
   }
 
-  function renderAssessments(){
+  function renderAssessments() {
     const list = qi('assessments-list');
     if (!list) return;
-    list.innerHTML='';
+    list.innerHTML = '';
     const assessments = assessmentsForRole();
     const scoreValues = [];
     const moduleHitMap = new Map();
     let latestDate = '';
-    const formatDate = (value)=>{
+    const formatDate = (value) => {
       if (!value) return '—';
       const parsed = new Date(value);
       if (Number.isNaN(parsed.getTime())) return value;
       return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
-    assessments.forEach(a=>{
-      const m = db.modules.find(x=>x.id===a.moduleId);
-      const s = db.specialists.find(x=>x.id===a.specialistId);
+    assessments.forEach(a => {
+      const m = db.modules.find(x => x.id === a.moduleId);
+      const s = db.specialists.find(x => x.id === a.specialistId);
       if (!isNaN(a.score)) scoreValues.push(a.score);
       if (a.date) {
         if (!latestDate || a.date > latestDate) latestDate = a.date;
@@ -1211,30 +1531,42 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
         moduleHitMap.set(a.moduleId, (moduleHitMap.get(a.moduleId) || 0) + 1);
       }
       const rowChildren = [
-        el('div',{}, '👤'),
-        el('div',{},
-          el('strong',{}, a.trainee),
-          el('div',{class:'hint'}, (m? m.title:'—') + ' • ' + (s? s.name:'—')),
-          el('div',{}, el('span',{class:'pill'}, 'Score: '+(isNaN(a.score)?'—':`${a.score}%`)), ' ', el('span',{class:'pill'}, formatDate(a.date)))
+        el('div', {}, '👤'),
+        el('div', {},
+          el('strong', {}, a.trainee),
+          el('div', { class: 'hint' }, (m ? m.title : '—') + ' • ' + (s ? s.name : '—')),
+          el('div', {},
+            el('span', { class: 'pill' }, 'Score: ' + (isNaN(a.score) ? '—' : `${a.score}%`)), ' ',
+            el('span', { class: 'pill' }, formatDate(a.date))
+          )
         )
       ];
       if (!isCenterAdmin) {
-        rowChildren.push((()=>{ const b=el('button',{class:'primary ghost'},"Delete"); b.addEventListener('click',()=>{ db.assessments = db.assessments.filter(x=>x.id!==a.id); persistAndRender(); }); return b; })());
+        rowChildren.push((() => {
+          const b = el('button', { class: 'primary ghost' }, "Delete");
+          b.addEventListener('click', () => {
+            db.assessments = db.assessments.filter(x => x.id !== a.id);
+            persistAndRender();
+          });
+          return b;
+        })());
       }
-      list.append(el('div',{class:'recommendation'}, ...rowChildren));
+      list.append(el('div', { class: 'recommendation' }, ...rowChildren));
     });
 
     if (!assessments.length) {
       const message = isCenterAdmin
         ? 'No assessments recorded for your center yet.'
-        : 'No assessments logged yet. Capture the first outcome above.';
+        : isSpecialist
+          ? 'No assessments logged yet. Start by adding a child and logging their first session.'
+          : 'No assessments logged yet. Capture the first outcome above.';
       list.append(el('div', { class: 'empty-state' }, message));
     }
 
     const total = assessments.length;
     const totalEl = qi('assessments-total'); if (totalEl) totalEl.textContent = total;
     const avgEl = qi('assessments-average'); if (avgEl) {
-      avgEl.textContent = scoreValues.length ? `${Math.round(scoreValues.reduce((a,b)=>a+b,0)/scoreValues.length)}%` : '—';
+      avgEl.textContent = scoreValues.length ? `${Math.round(scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length)}%` : '—';
     }
     const lastEl = qi('assessments-last-date'); if (lastEl) lastEl.textContent = formatDate(latestDate);
     const topModuleEl = qi('assessments-top-module');
@@ -1242,14 +1574,14 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
       if (!moduleHitMap.size) {
         topModuleEl.textContent = '—';
       } else {
-        const [moduleId] = [...moduleHitMap.entries()].sort((a,b)=>b[1]-a[1])[0];
-        const moduleName = db.modules.find(m=>m.id===moduleId)?.title || '—';
+        const [moduleId] = [...moduleHitMap.entries()].sort((a, b) => b[1] - a[1])[0];
+        const moduleName = db.modules.find(m => m.id === moduleId)?.title || '—';
         topModuleEl.textContent = moduleName;
       }
     }
   }
 
-  function renderCenterOverview(){
+  function renderCenterOverview() {
     const networkOverview = qi('network-overview');
     const centerOverview = qi('center-overview');
     if (!networkOverview || !centerOverview) return;
@@ -1310,7 +1642,7 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
     const specialists = specialistsForRole();
     if (specialistsCountEl) specialistsCountEl.textContent = specialists.length;
 
-    const assessments = assessmentsForRole().slice().sort((a, b) => {
+    const centerAssessments = assessmentsForRole().slice().sort((a, b) => {
       const aDate = a.date || '';
       const bDate = b.date || '';
       if (aDate && bDate) return bDate.localeCompare(aDate);
@@ -1318,14 +1650,14 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
       if (bDate) return 1;
       return 0;
     });
-    if (assessmentsCountEl) assessmentsCountEl.textContent = assessments.length;
+    if (assessmentsCountEl) assessmentsCountEl.textContent = centerAssessments.length;
 
-    const numericScores = assessments
+    const numericScores = centerAssessments
       .map(item => toNumber(item.score))
       .filter(value => value !== null);
-    if (avgEl) avgEl.textContent = numericScores.length ? `${Math.round(numericScores.reduce((a,b)=>a+b,0)/numericScores.length)}%` : '—';
+    if (avgEl) avgEl.textContent = numericScores.length ? `${Math.round(numericScores.reduce((a, b) => a + b, 0) / numericScores.length)}%` : '—';
 
-    const formatDate = (value)=>{
+    const formatDate = (value) => {
       if (!value) return '—';
       const parsed = new Date(value);
       if (Number.isNaN(parsed.getTime())) return value;
@@ -1334,10 +1666,10 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
 
     if (recentList) {
       recentList.innerHTML = '';
-      if (!assessments.length) {
+      if (!centerAssessments.length) {
         recentList.append(el('div', { class: 'empty-state' }, 'No assessments recorded yet. Logs will appear here once your team submits them.'));
       } else {
-        assessments.slice(0, 4).forEach(entry => {
+        centerAssessments.slice(0, 4).forEach(entry => {
           const module = db.modules.find(x => x.id === entry.moduleId);
           const specialist = db.specialists.find(x => x.id === entry.specialistId);
           const scoreValue = toNumber(entry.score);
@@ -1361,12 +1693,13 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
   }
 
   // selectors + stats
-  function refreshSelectors(){
+  function refreshSelectors() {
     const centerSelect = qi('spec-center');
     if (centerSelect) {
       const centers = centersForRole();
-      centerSelect.innerHTML = `<option value="">— No center —</option>` + centers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
-      if (isCenterAdmin) {
+      centerSelect.innerHTML = `<option value="">— No center —</option>` +
+        centers.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+      if (isCenterAdmin && centerIdForRole) {
         centerSelect.value = centerIdForRole || '';
         centerSelect.disabled = true;
         centerSelect.classList.add('readonly');
@@ -1381,43 +1714,91 @@ const roster = el('div', { class: 'center-roster' }, rosterHeader, rosterList);
     const moduleSelect = qi('ass-module');
     if (moduleSelect) {
       const modules = modulesForRole();
-      moduleSelect.innerHTML = modules.length ? modules.map(m=>`<option value="${m.id}">${esc(m.title)}</option>`).join('') : '<option value="">No modules available</option>';
+      moduleSelect.innerHTML = modules.length
+        ? modules.map(m => `<option value="${m.id}">${esc(m.title)}</option>`).join('')
+        : '<option value="">No modules available</option>';
       moduleSelect.disabled = !modules.length;
     }
 
     const specialistSelect = qi('ass-specialist');
     if (specialistSelect) {
       const specialists = specialistsForRole();
-      specialistSelect.innerHTML = specialists.length ? specialists.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('') : '<option value="">No specialists</option>';
+      specialistSelect.innerHTML = specialists.length
+        ? specialists.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')
+        : '<option value="">No specialists</option>';
       specialistSelect.disabled = !specialists.length;
+      if (isSpecialist && specialists.length === 1) {
+        specialistSelect.value = specialists[0].id;
+        specialistSelect.disabled = true;
+        specialistSelect.closest('.input-group')?.classList.add('readonly');
+      } else {
+        specialistSelect.closest('.input-group')?.classList.remove('readonly');
+      }
+    }
+
+    const childSpecSelect = qi('child-specialist');
+    if (childSpecSelect) {
+      const specialists = specialistsForRole();
+      if (isSpecialist && specialists.length === 1) {
+        childSpecSelect.innerHTML = `<option value="${specialists[0].id}">${esc(specialists[0].name)}</option>`;
+        childSpecSelect.value = specialists[0].id;
+        childSpecSelect.disabled = true;
+        childSpecSelect.closest('.input-group')?.classList.add('readonly');
+      } else {
+        childSpecSelect.innerHTML = specialists.length
+          ? specialists.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')
+          : '<option value="">No specialists</option>';
+        childSpecSelect.disabled = !specialists.length;
+        if (!specialists.length) {
+          childSpecSelect.closest('.input-group')?.classList.add('readonly');
+        } else {
+          childSpecSelect.closest('.input-group')?.classList.remove('readonly');
+        }
+      }
+    }
+
+    const childSelect = qi('ass-child');
+    if (childSelect) {
+      const children = childrenForRole();
+      childSelect.innerHTML = children.length
+        ? children.map(ch => `<option value="${ch.id}">${esc(ch.name)}</option>`).join('')
+        : '<option value="">No children</option>';
+      childSelect.disabled = !children.length;
     }
   }
-  function refreshStats(){
-    qi('stat-centers').textContent = centersForRole().length;
-    qi('stat-specialists').textContent = specialistsForRole().length;
-    qi('stat-modules').textContent = modulesForRole().length;
-    qi('stat-assessments').textContent = assessmentsForRole().length;
+
+  function refreshStats() {
+    const centers = centersForRole();
+    const specialists = specialistsForRole();
+    const modules = modulesForRole();
+    const assessments = assessmentsForRole();
+    qi('stat-centers') && (qi('stat-centers').textContent = centers.length);
+    qi('stat-specialists') && (qi('stat-specialists').textContent = specialists.length);
+    qi('stat-modules') && (qi('stat-modules').textContent = modules.length);
+    qi('stat-assessments') && (qi('stat-assessments').textContent = assessments.length);
   }
 
-  function renderAll(){
+  function renderAll() {
     renderCenters();
     renderSpecialists();
     renderModules();
     renderAssessments();
+    renderChildren();
     renderCenterOverview();
     refreshSelectors();
     refreshStats();
   }
-    function persistAndRender(){
-      syncUsersWithEntities();
-      const persisted = saveData(db);
-      if (!persisted && !storageWarningShown) {
-        storageWarningShown = true;
-        alert(`Changes couldn't be saved because your browser storage is full. Remove a large image or choose a smaller PNG or JPG (under ${IMAGE_SIZE_LIMIT_LABEL}).`);
-      }
-      renderAll();
-      window.__refreshSpecPicker?.();
+
+  function persistAndRender() {
+    syncUsersWithEntities();
+    const persisted = saveData(db);
+    if (!persisted && !storageWarningShown) {
+      storageWarningShown = true;
+      alert(`Changes couldn't be saved because your browser storage is full. Remove a large image or choose a smaller PNG or JPG (under ${IMAGE_SIZE_LIMIT_LABEL}).`);
     }
+    renderAll();
+    window.__refreshSpecPicker?.();
+  }
 
   // init picker + initial render
   initSpecialistsPicker();
