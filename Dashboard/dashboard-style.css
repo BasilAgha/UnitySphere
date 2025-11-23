@@ -1611,3 +1611,35 @@ main {
     grid-template-columns: 1fr;
   }
 }
+
+/* === Location autocomplete (Nominatim) === */
+.input-group.location-autocomplete {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  background: #121323;
+  border: 1px solid #33384a;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+  border-radius: 0.5rem;
+}
+
+.autocomplete-item {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autocomplete-item:hover {
+  background: #1f2233;
+}

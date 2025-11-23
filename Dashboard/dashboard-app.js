@@ -332,64 +332,79 @@ function updateCentersMap(centers) {
       setStatus('Unable to load Google Maps. Verify your API key and network access.');
     });
 }
-function initCenterLocationAutocomplete() {
-  const locationInput = qi('center-location');
-  const latInput = qi('center-lat');
-  const lngInput = qi('center-lng');
-  const canvas = document.getElementById('centers-map-canvas');
+function initNominatimLocationAutocomplete() {
+  const input = qi('center-location');
+  const resultsBox = document.getElementById('location-results');
+  const latField = qi('center-lat');
+  const lngField = qi('center-lng');
 
-  if (!locationInput || !latInput || !lngInput || !canvas) return;
+  if (!input || !resultsBox || !latField || !lngField) return;
 
-  const apiKey = canvas.dataset.googleMapsKey || '';
-  if (!apiKey || apiKey.trim() === '' || apiKey.trim() === 'YOUR_API_KEY') {
-    // No key => autocomplete can’t work
-    return;
-  }
+  let debounceTimer = null;
 
-  ensureGoogleMaps(apiKey)
-    .then(maps => {
-      if (!maps.places || !maps.places.Autocomplete) {
-        console.warn('Google Places library not available. Check libraries=places in script URL.');
-        return;
-      }
+  const clearResults = () => {
+    resultsBox.innerHTML = '';
+    resultsBox.style.display = 'none';
+  };
 
-      const autocomplete = new maps.places.Autocomplete(locationInput, {
-        componentRestrictions: { country: 'jo' }, // 🇯🇴 restrict to Jordan
-        fields: ['geometry', 'formatted_address', 'name']
-      });
+  input.addEventListener('input', () => {
+    const query = input.value.trim();
+    clearTimeout(debounceTimer);
 
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (!place || !place.geometry || !place.geometry.location) {
-          alert('Please select a location from the suggestions.');
+    // reset lat/lng when user types a new query
+    latField.value = '';
+    lngField.value = '';
+
+    if (query.length < 3) {
+      clearResults();
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`;
+        const res = await fetch(url, {
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        const data = await res.json();
+
+        resultsBox.innerHTML = '';
+        if (!data || !data.length) {
+          clearResults();
           return;
         }
 
-        const loc = place.geometry.location;
-        const lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
-        const lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+        data.forEach(place => {
+          const item = document.createElement('div');
+          item.className = 'autocomplete-item';
+          item.textContent = place.display_name;
 
-        latInput.value = lat;
-        lngInput.value = lng;
+          item.addEventListener('click', () => {
+            input.value = place.display_name;
+            latField.value = place.lat;
+            lngField.value = place.lon;
+            clearResults();
+          });
 
-        if (place.formatted_address) {
-          locationInput.value = place.formatted_address;
-        }
+          resultsBox.appendChild(item);
+        });
 
-        // Optional: focus map on this new spot
-        try {
-          if (centersMapInstance) {
-            centersMapInstance.setCenter({ lat, lng });
-            centersMapInstance.setZoom(14);
-          }
-        } catch (err) {
-          console.warn('Unable to re-center map on autocomplete place', err);
-        }
-      });
-    })
-    .catch(err => {
-      console.warn('Unable to init center location autocomplete', err);
-    });
+        resultsBox.style.display = 'block';
+      } catch (err) {
+        console.warn('Nominatim autocomplete error', err);
+        clearResults();
+      }
+    }, 300);
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!resultsBox.contains(e.target) && e.target !== input) {
+      clearResults();
+    }
+  });
 }
 
 // ---- Seed data ----
@@ -876,7 +891,7 @@ if (isDashboardPage()) {
   const cancelBtn = qi('btn-cancel-center');
   const centerForm = qi('form-center');
     // Initialize Google-style search for center location (Jordan only)
-  initCenterLocationAutocomplete();
+  initNominatimLocationAutocomplete();
 
 
   if (addPanel && toggleBtn) {
