@@ -7,7 +7,7 @@ const LEGACY_STORAGE_KEYS = ['unitysphere-data', 'unitysphere-data-v1', 'unitysp
 const SESSION_VERSION_KEY = 'unitysphere-session-version';
 
 // === Google Sheets backend config ===
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-CMQMTXnmfDgJgSsZTgKzZt5rIIsMjkBNw916NxDoITQUR8lYjI_fz7Ma4A4nZETRog/exec';
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxiFbbFtCxE8nknVbiyRs2S-Sdjm_NR8gqkySliTKTOr2boTZyIgYrIBk7SBEpKd4qWWg/exec";
 
 /**
  * Save the full DB object to Google Sheets.
@@ -23,12 +23,13 @@ async function remoteSave(data) {
       },
       body: JSON.stringify({ action: "save", payload: data })
     });
-    return await res.json().catch(() => null); // in case Apps Script returns plain text
+    return await res.json().catch(() => null);
   } catch (err) {
     console.error("Remote save error:", err);
     return null;
   }
 }
+
 
 
 /**
@@ -638,4 +639,5 @@ function el(tag, attrs = {}, ...kids) {
 function esc(s) {
   return (s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
+
 
