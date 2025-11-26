@@ -1,0 +1,167 @@
+/* =================================
+   AUTH / LOGIN PAGE
+   ================================= */
+
+body.auth-page {
+  background:
+    radial-gradient(1000px 600px at 0% 0%, rgba(99, 102, 241, 0.18), transparent 60%),
+    radial-gradient(1000px 700px at 100% 100%, rgba(34, 211, 238, 0.18), transparent 60%),
+    #020617;
+  color: #e5e7eb;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+}
+
+body.auth-page .auth-wrapper {
+  width: min(960px, 100%);
+  background:
+    radial-gradient(circle at 0 0, rgba(37, 99, 235, 0.14), transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.18), transparent 55%),
+    #020617;
+  border-radius: 24px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-height: 420px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+/* LEFT – hero panel */
+
+body.auth-page .auth-hero {
+  padding: 2.4rem 2.6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.8rem;
+  background: linear-gradient(145deg, #1d4ed8, #4f46e5, #0ea5e9);
+  color: #f9fafb;
+}
+
+body.auth-page .auth-hero h1 {
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+body.auth-page .auth-hero p {
+  font-size: 0.98rem;
+  opacity: 0.96;
+  max-width: 26rem;
+}
+
+body.auth-page .chart-placeholder {
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 1));
+  border: 1px solid rgba(191, 219, 254, 0.34);
+  backdrop-filter: blur(8px);
+  display: grid;
+  gap: 0.35rem;
+  max-width: 320px;
+}
+
+/* RIGHT – form panel */
+
+body.auth-page .auth-form {
+  padding: 2.4rem 2.6rem;
+  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.96), rgba(3, 7, 18, 1));
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  color: #e5e7eb;
+}
+
+body.auth-page .auth-form h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+body.auth-page .auth-form > p {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+body.auth-page .input-group {
+  display: grid;
+  gap: 0.35rem;
+}
+
+body.auth-page label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+body.auth-page input[type="text"],
+body.auth-page input[type="email"],
+body.auth-page input[type="password"],
+body.auth-page select,
+body.auth-page textarea {
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  border-radius: 12px;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.92rem;
+  background: rgba(15, 23, 42, 0.96);
+  color: #f9fafb;
+  transition: border var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+body.auth-page input::placeholder {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+body.auth-page input:focus,
+body.auth-page select:focus,
+body.auth-page textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(15, 23, 42, 1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.28);
+}
+
+body.auth-page button.primary {
+  margin-top: 0.3rem;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  border: none;
+  padding: 0.8rem 2.1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.98rem;
+  cursor: pointer;
+  box-shadow: 0 18px 40px rgba(79, 70, 229, 0.55);
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+body.auth-page button.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 52px rgba(79, 70, 229, 0.7);
+}
+
+body.auth-page .switch-auth {
+  margin-top: 0.6rem;
+  font-size: 0.86rem;
+  color: #9ca3af;
+}
+
+/* responsive login */
+
+@media (max-width: 960px) {
+  body.auth-page .auth-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  body.auth-page .auth-hero {
+    display: none;
+  }
+
+  body.auth-page .auth-form {
+    padding: 2.2rem 1.6rem 2.3rem;
+  }
+}
