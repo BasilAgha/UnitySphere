@@ -15,20 +15,21 @@ const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-CMQMTXnmfD
  *   POST { action: 'save', payload: {...db} }
  */
 async function remoteSave(data) {
-  if (typeof fetch !== 'function' || !GOOGLE_SCRIPT_URL) return;
   try {
-    await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'save',
-        payload: data
-      })
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ action: "save", payload: data })
     });
+    return await res.json().catch(() => null); // in case Apps Script returns plain text
   } catch (err) {
-    console.warn('Remote save (Google Sheets) failed', err);
+    console.error("Remote save error:", err);
+    return null;
   }
 }
+
 
 /**
  * Load the full DB object from Google Sheets.
@@ -637,3 +638,4 @@ function el(tag, attrs = {}, ...kids) {
 function esc(s) {
   return (s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
+
