@@ -1243,16 +1243,10 @@ if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
 function persistAndRender() {
   syncUsersWithEntities();
 
-  const persisted = saveData(db);
-  if (!persisted && !storageWarningShown) {
-    storageWarningShown = true;
-    alert(
-      `Changes couldn't be saved locally because your browser storage is full. ` +
-      `Remove a large image or choose a smaller PNG or JPG (under ${IMAGE_SIZE_LIMIT_LABEL}).`
-    );
-  }
+  // Optional: keep this if you want the "fake" saveData from above
+  saveData(db);
 
-  // Also push a copy of the DB to Google Sheets (fire-and-forget)
+  // Always push to Google Sheets
   remoteSave(db);
 
   renderAll();
@@ -1282,5 +1276,6 @@ function persistAndRender() {
     });
   }
 }
+
 
 
