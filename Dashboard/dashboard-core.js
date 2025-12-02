@@ -20,17 +20,13 @@ const uid = () => Math.random().toString(36).substr(2, 9);
 // LOCAL DB STORAGE
 // =====================
 function loadData() {
-  try {
-    const raw = localStorage.getItem("unitysphere_db");
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (err) {
-    return null;
-  }
+  // No local cache – always start null, then fill from remote on login
+  return null;
 }
 
 function saveData(data) {
-  localStorage.setItem("unitysphere_db", JSON.stringify(data));
+  // No local save – just pretend it worked so other code doesn't break
+  return true;
 }
 
 // =====================
@@ -119,3 +115,4 @@ if (!db.version || db.version !== STORAGE_VERSION) {
   db.version = STORAGE_VERSION;
   saveData(db);
 }
+
