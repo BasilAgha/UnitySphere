@@ -51,17 +51,20 @@ let db = loadData() || {
 // =====================
 async function remoteSave(data) {
   try {
+    // Use text/plain to avoid CORS preflight (OPTIONS) requests which GAS often doesn't handle
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
-      contentType: "application/json",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
       body: JSON.stringify({ action: "save", payload: data })
     });
     return await res.json();
-  } catch (err) {
+  }
+  catch (err) {
     console.error("Remote save error:", err);
   }
 }
-
 // =====================
 // REMOTE LOAD
 // =====================
@@ -119,3 +122,4 @@ if (!db.version || db.version !== STORAGE_VERSION) {
   db.version = STORAGE_VERSION;
   saveData(db);
 }
+
