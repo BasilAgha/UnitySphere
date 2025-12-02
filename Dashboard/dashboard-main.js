@@ -3,7 +3,7 @@
 if (isDashboardPage()) {
   // guard
   const username = sessionStore?.getItem?.('us_username');
-  if (!username) location.href = 'index.html';
+  if (!username) location.href = 'login.html';
 
   let storageWarningShown = false;
 
@@ -132,7 +132,7 @@ if (isDashboardPage()) {
 
   qi('logout').addEventListener('click', () => {
     ['us_username', 'us_name', 'us_email', 'us_role', 'us_center', 'us_specialist', 'us_avatar'].forEach(k => sessionStorage.removeItem(k));
-    location.href = 'index.html';
+    location.href = 'login.html';
   });
 
   // assessments description tweaks for roles
@@ -1282,4 +1282,5 @@ function persistAndRender() {
     });
   }
 }
+
 
