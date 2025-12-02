@@ -35,6 +35,7 @@ if (isLoginPage()) {
 
     sessionStorage.setItem("us_role", user.role);
     sessionStorage.setItem("us_user", user.username);
+    sessionStorage.setItem("us_username", user.username); 
 
     if (user.role === "center-admin")
       sessionStorage.setItem("us_center", user.centerId);
@@ -45,3 +46,4 @@ if (isLoginPage()) {
     location.href = "dashboard.html";
   });
 }
+
