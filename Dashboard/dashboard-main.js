@@ -1,6 +1,6 @@
 // ================= CONFIG =================
 const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxm3PDFIlke6vL-60sxktvk9xJwDGHxh4TqvPc5uGAnWVbHzKRkluF8LHRntI3s4nBzXw/exec";
+  "https://script.google.com/macros/s/AKfycbzFvCaHToqUu-QYdyD2KYkQn_Z9qo8RVpwNUE1bxBHGV9T7QHW78an8Bl8FjiWeuFm17Q/exec";
 
 // Simple helpers
 function qi(id) {
@@ -128,6 +128,7 @@ if (isDashboardPage()) {
   // =====================================================
   var centersCache = [];
   var specialistsCache = [];
+  var childrenCache = [];
 
   // =====================================================
   //       CENTERS SECTION — SIMPLE SHEET MODEL
@@ -282,6 +283,7 @@ if (isDashboardPage()) {
     });
 
     renderCenters();
+    populateChildCenterSelect();
   }
 
   // ---- Add center form handler ----
@@ -916,7 +918,319 @@ if (isDashboardPage()) {
     });
   }
 
+
+  // =====================================================
+  //                     CHILDREN SYSTEM
+  // =====================================================
+
+  var childrenListWrap        = qi("children-list");
+  var childrenTotalEl         = qi("children-total");
+  var childrenWithCenterEl    = qi("children-with-center");
+  var childrenWithoutCenterEl = qi("children-without-center");
+  var childForm               = qi("admin-add-child-form");
+  var childCenterSelect       = qi("child-center");
+  var childSpecSelect         = qi("child-specialist");
+
+  function populateChildCenterSelect() {
+    if (!childCenterSelect) return;
+
+    childCenterSelect.innerHTML = "";
+    var optNone = document.createElement("option");
+    optNone.value = "";
+    optNone.textContent = "No center / freelance";
+    childCenterSelect.appendChild(optNone);
+
+    centersCache.forEach(function (c) {
+      if (!c.name) return;
+      var opt = document.createElement("option");
+      opt.value = c.name;
+      opt.textContent = c.name;
+      childCenterSelect.appendChild(opt);
+    });
+  }
+
+  function populateChildSpecialistSelect() {
+    if (!childSpecSelect) return;
+
+    childSpecSelect.innerHTML = "";
+    var optNone = document.createElement("option");
+    optNone.value = "";
+    optNone.textContent = "Unassigned specialist";
+    childSpecSelect.appendChild(optNone);
+
+    specialistsCache.forEach(function (s) {
+      var label = s.name || s.username || "(No name)";
+      if (s.type === "center" && s.center) {
+        label += " — " + s.center;
+      } else {
+        label += " — Freelance";
+      }
+
+      var opt = document.createElement("option");
+      opt.value = s.username;
+      opt.textContent = label;
+      childSpecSelect.appendChild(opt);
+    });
+  }
+
+  function updateChildrenStats() {
+    var total = childrenCache.length;
+    var withCenter = childrenCache.filter(function (c) { return c.center; }).length;
+    var withoutCenter = total - withCenter;
+
+    if (childrenTotalEl)         childrenTotalEl.textContent         = String(total);
+    if (childrenWithCenterEl)    childrenWithCenterEl.textContent    = String(withCenter);
+    if (childrenWithoutCenterEl) childrenWithoutCenterEl.textContent = String(withoutCenter);
+  }
+
+  function createChildCard(child, ctx) {
+    ctx = ctx || {};
+    var centerLabel = ctx.centerLabel || child.center || "No center / freelance";
+    var specLabel   = ctx.specLabel   || child.specLabel || "No specialist";
+
+    var card = document.createElement("article");
+    card.className = "module-card child-card";
+
+    card.innerHTML =
+      '<header>' +
+      '  <div>' +
+      '    <strong>' + (child.name || "Unnamed child") + '</strong>' +
+      '    <p class="hint">' + (child.notes || "No notes yet") + '</p>' +
+      '  </div>' +
+      '</header>' +
+      '<div class="module-meta">' +
+      '  <span>🏢 ' + centerLabel + '</span>' +
+      '  <span>🧑‍⚕️ ' + specLabel + '</span>' +
+      (child.age ? ('  <span>🎂 Age ' + child.age + '</span>') : '') +
+      '</div>';
+
+    return card;
+  }
+
+  function renderChildren() {
+    if (!childrenListWrap) return;
+
+    childrenListWrap.innerHTML = "";
+
+    if (!childrenCache.length) {
+      childrenListWrap.innerHTML =
+        '<div class="empty-state">' +
+        '  No children yet. Use “Save child” to create the first record in your "children" sheet.' +
+        '</div>';
+      updateChildrenStats();
+      return;
+    }
+
+    var specByUser = {};
+    specialistsCache.forEach(function (s) {
+      if (!s.username) return;
+      specByUser[s.username] = s;
+    });
+
+    // 1) GROUP BY CENTER
+    var byCenter = {};
+    childrenCache.forEach(function (ch) {
+      var spec = ch.spec ? specByUser[ch.spec] : null;
+
+      var centerName = ch.center;
+      if (!centerName && spec && spec.type === "center" && spec.center) {
+        centerName = spec.center;
+      }
+      if (!centerName) centerName = "No center / freelance";
+
+      if (!byCenter[centerName]) byCenter[centerName] = [];
+      byCenter[centerName].push({ child: ch, spec: spec });
+    });
+
+    var centerNames = Object.keys(byCenter).sort(function (a, b) {
+      if (a === "No center / freelance") return 1;
+      if (b === "No center / freelance") return -1;
+      return a.localeCompare(b, undefined, { sensitivity: "base" });
+    });
+
+    var titleCenter = document.createElement("h4");
+    titleCenter.className = "hint";
+    titleCenter.textContent = "By center";
+    childrenListWrap.appendChild(titleCenter);
+
+    centerNames.forEach(function (centerName) {
+      var label = document.createElement("p");
+      label.className = "hint";
+      label.style.marginTop = "0.6rem";
+      label.textContent = centerName;
+      childrenListWrap.appendChild(label);
+
+      var grid = document.createElement("div");
+      grid.className = "modules-grid";
+
+      byCenter[centerName].forEach(function (pair) {
+        var spec = pair.spec;
+        var specLabel = "No specialist";
+
+        if (spec) {
+          specLabel = (spec.name || spec.username || "Specialist");
+          if (spec.type === "center" && spec.center) {
+            specLabel += " — " + spec.center;
+          } else {
+            specLabel += " — Freelance";
+          }
+        }
+
+        grid.appendChild(
+          createChildCard(pair.child, {
+            centerLabel: centerName,
+            specLabel: specLabel
+          })
+        );
+      });
+
+      childrenListWrap.appendChild(grid);
+    });
+
+    // 2) GROUP BY SPECIALIST
+    var bySpec = {};
+    childrenCache.forEach(function (ch) {
+      var spec = ch.spec ? specByUser[ch.spec] : null;
+      var key;
+
+      if (spec) {
+        key = (spec.name || spec.username || "Specialist");
+        if (spec.type === "center" && spec.center) {
+          key += " — " + spec.center;
+        } else {
+          key += " — Freelance";
+        }
+      } else {
+        key = "Unassigned specialist";
+      }
+
+      if (!bySpec[key]) bySpec[key] = [];
+      bySpec[key].push({ child: ch, spec: spec });
+    });
+
+    var titleSpec = document.createElement("h4");
+    titleSpec.className = "hint";
+    titleSpec.style.marginTop = "1.2rem";
+    titleSpec.textContent = "By specialist";
+    childrenListWrap.appendChild(titleSpec);
+
+    Object.keys(bySpec)
+      .sort(function (a, b) {
+        if (a === "Unassigned specialist") return 1;
+        if (b === "Unassigned specialist") return -1;
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      })
+      .forEach(function (specLabel) {
+        var label = document.createElement("p");
+        label.className = "hint";
+        label.style.marginTop = "0.6rem";
+        label.textContent = specLabel;
+        childrenListWrap.appendChild(label);
+
+        var grid = document.createElement("div");
+        grid.className = "modules-grid";
+
+        bySpec[specLabel].forEach(function (pair) {
+          var centerName =
+            pair.child.center ||
+            (pair.spec && pair.spec.center) ||
+            "No center / freelance";
+
+          grid.appendChild(
+            createChildCard(pair.child, {
+              centerLabel: centerName,
+              specLabel: specLabel
+            })
+          );
+        });
+
+        childrenListWrap.appendChild(grid);
+      });
+
+    updateChildrenStats();
+  }
+
+  async function loadChildren() {
+    if (!childrenListWrap) return;
+
+    childrenListWrap.innerHTML =
+      '<div class="empty-state">Loading children…</div>';
+
+    var items;
+    try {
+      items = await apiGet({ action: "getchildren" });
+    } catch (err) {
+      console.error("Error loading children:", err);
+      childrenListWrap.innerHTML =
+        '<div class="empty-state">Error loading children. Please check the Apps Script endpoint.</div>';
+      if (childrenTotalEl)         childrenTotalEl.textContent         = "0";
+      if (childrenWithCenterEl)    childrenWithCenterEl.textContent    = "0";
+      if (childrenWithoutCenterEl) childrenWithoutCenterEl.textContent = "0";
+      return;
+    }
+
+    if (!Array.isArray(items)) items = [];
+
+    childrenCache = items.map(function (r) {
+      return {
+        row: Number(r.row),
+        name: r.name || "",
+        age: r.age || "",
+        notes: r.notes || "",
+        center: r.center || "",
+        spec: r.specialistUsername || ""
+      };
+    });
+
+    renderChildren();
+  }
+
+  if (childForm) {
+    childForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      var name  = (qi("child-name")  && qi("child-name").value  || "").trim();
+      var age   = (qi("child-age")   && qi("child-age").value   || "").trim();
+      var notes = (qi("child-notes") && qi("child-notes").value || "").trim();
+      var center =
+        childCenterSelect ? (childCenterSelect.value || "").trim() : "";
+      var spec =
+        childSpecSelect ? (childSpecSelect.value || "").trim() : "";
+
+      if (!name) {
+        alert("Child name is required.");
+        return;
+      }
+
+      var res;
+      try {
+        res = await apiPost({
+          action:     "addchild",
+          childName:  name,
+          childAge:   age,
+          childNotes: notes,
+          childCenter: center,
+          childSpec:  spec
+        });
+      } catch (err) {
+        console.error("Error adding child:", err);
+        alert("Error adding child. Please check the Apps Script endpoint.");
+        return;
+      }
+
+      if (res !== "ADDED") {
+        alert("Error adding child. Please check the sheet/Apps Script.");
+        return;
+      }
+
+      childForm.reset();
+      await loadChildren();
+      alert("Child added successfully.");
+    });
+  }
+
   // ---- Initial loads ----
   loadCenters();
   loadSpecialists();
+  loadChildren();
 }

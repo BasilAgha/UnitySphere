@@ -1,6 +1,6 @@
 // ================= CONFIG =================
 const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxm3PDFIlke6vL-60sxktvk9xJwDGHxh4TqvPc5uGAnWVbHzKRkluF8LHRntI3s4nBzXw/exec";
+  "https://script.google.com/macros/s/AKfycbzFvCaHToqUu-QYdyD2KYkQn_Z9qo8RVpwNUE1bxBHGV9T7QHW78an8Bl8FjiWeuFm17Q/exec";
 // Simple helpers
 const qi = (id) => document.getElementById(id);
 const qs = (s, r = document) => r.querySelector(s);

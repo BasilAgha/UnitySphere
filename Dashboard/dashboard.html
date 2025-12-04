@@ -539,22 +539,111 @@
           </div>
         </section>
 
-        <!-- ======================================
-             CHILDREN SECTION (UI only)
+                <!-- ======================================
+             CHILDREN SECTION
         ======================================= -->
         <section id="section-children" class="section">
           <div class="card full">
             <div class="card-header">
               <div>
                 <h2>Children</h2>
-                <p class="hint">UI layout restored. Not yet connected to a sheet in the simple setup.</p>
+                <p class="hint">
+                  View children linked with each center and specialist (including freelance).
+                </p>
               </div>
             </div>
-            <div class="empty-state">
-              Children tracking is part of the full model. In your current simple setup, only centers are persisted.
+
+            <div class="split-layout">
+              <!-- Stats -->
+              <aside class="summary-column">
+                <div class="insight-card">
+                  <span class="insight-label">Total children</span>
+                  <strong id="children-total">0</strong>
+                  <span class="hint">Across all centers and freelance</span>
+                </div>
+
+                <div class="insight-card">
+                  <span class="insight-label">With center</span>
+                  <strong id="children-with-center">0</strong>
+                  <span class="hint">Center-linked children</span>
+                </div>
+
+                <div class="insight-card">
+                  <span class="insight-label">Without center</span>
+                  <strong id="children-without-center">0</strong>
+                  <span class="hint">Freelance / unassigned center</span>
+                </div>
+              </aside>
+
+              <!-- Form + directory -->
+              <div class="content-column">
+                <!-- Add child -->
+                <div class="form-panel">
+                  <div>
+                    <h3>Add child</h3>
+                    <p class="hint">
+                      Assign a child to a center and/or specialist. Both are optional.
+                    </p>
+                  </div>
+
+                  <form id="admin-add-child-form" class="grid-2-col" autocomplete="off">
+                    <div class="input-group">
+                      <label for="child-name">Child name</label>
+                      <input id="child-name" required placeholder="Ali Ahmed">
+                    </div>
+
+                    <div class="input-group">
+                      <label for="child-age">Age</label>
+                      <input id="child-age" type="number" min="1" max="25" placeholder="8">
+                    </div>
+
+                    <div class="input-group">
+                      <label for="child-center">Center</label>
+                      <select id="child-center">
+                        <option value="">No center / freelance</option>
+                        <!-- centers added by JS -->
+                      </select>
+                    </div>
+
+                    <div class="input-group">
+                      <label for="child-specialist">Specialist</label>
+                      <select id="child-specialist">
+                        <option value="">Unassigned specialist</option>
+                        <!-- specialists added by JS -->
+                      </select>
+                    </div>
+
+                    <div class="input-group" style="grid-column: 1 / -1;">
+                      <label for="child-notes">Notes (diagnosis, goals, etc.)</label>
+                      <textarea
+                        id="child-notes"
+                        rows="2"
+                        placeholder="Sensory integration, attention focus, VR module goals..."
+                      ></textarea>
+                    </div>
+
+                    <button type="submit" class="primary">Save child</button>
+                  </form>
+                </div>
+
+                <!-- Directory -->
+                <div class="card-subsection">
+                  <div class="directory-header">
+                    <div>
+                      <h3>Children directory</h3>
+                      <p class="hint">
+                        Grouped by center and specialist (freelance included).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div id="children-list"></div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
+
 
         <!-- ======================================
              ASSESSMENTS SECTION (UI only)
