@@ -39,6 +39,8 @@ const assessAvgEl       = qi("spec-assess-avg");
 
 const childrenPreviewEl = qi("spec-children-preview");
 const childrenListEl    = qi("spec-children-list");
+const childSortSelect   = qi("spec-children-sort");
+
 
 const assessForm        = qi("spec-assess-form");
 const assessChildSelect = qi("assess-child-select");
@@ -178,6 +180,32 @@ function updateChildrenStats() {
     childrenCountEl.textContent = String(specChildren.length);
   }
 }
+/* ===============================
+   SPECIALIST — SORTING SUPPORT
+   =============================== */
+
+function sortChildren(list) {
+  const mode = childSortSelect ? childSortSelect.value : "name-asc";
+
+  return list.slice().sort((a, b) => {
+    switch (mode) {
+      case "name-asc":
+        return (a.name || "").localeCompare(b.name || "");
+      case "name-desc":
+        return (b.name || "").localeCompare(a.name || "");
+      case "age-asc":
+        return Number(a.age || 0) - Number(b.age || 0);
+      case "age-desc":
+        return Number(b.age || 0) - Number(a.age || 0);
+      default:
+        return 0;
+    }
+  });
+}
+
+if (childSortSelect) {
+  childSortSelect.addEventListener("change", renderSpecChildren);
+}
 
 function renderSpecChildren() {
   // Overview preview (up to 3 children)
@@ -187,9 +215,9 @@ function renderSpecChildren() {
       childrenPreviewEl.innerHTML =
         '<div class="empty-state">No children yet.</div>';
     } else {
-      specChildren.slice(0, 3).forEach((child) => {
+      sortChildren(specChildren).slice(0, 3).forEach((child) => {
         const card = document.createElement("article");
-        card.className = "module-card";
+        card.className = "module-card child-card";
         card.innerHTML =
           '<header>' +
           '  <strong>' + (child.name || "Unnamed child") + '</strong>' +
@@ -199,7 +227,6 @@ function renderSpecChildren() {
           '  <span>🏢 ' + (child.center || "No center / freelance") + '</span>' +
           (child.age ? ('  <span>🎂 Age ' + child.age + '</span>') : "") +
           '</div>';
-
         childrenPreviewEl.appendChild(card);
       });
     }
@@ -215,9 +242,9 @@ function renderSpecChildren() {
     return;
   }
 
-  // Group by center (just for better structure)
+  // Group by center
   const byCenter = {};
-  specChildren.forEach((c) => {
+  sortChildren(specChildren).forEach((c) => {
     const key = c.center || "No center / freelance";
     if (!byCenter[key]) byCenter[key] = [];
     byCenter[key].push(c);
@@ -241,18 +268,53 @@ function renderSpecChildren() {
 
       byCenter[centerKey].forEach((child) => {
         const card = document.createElement("article");
-        card.className = "module-card";
+        card.className = "module-card child-card";
 
-        card.innerHTML =
-          '<header>' +
-          '  <strong>' + (child.name || "Unnamed child") + '</strong>' +
-          '  <p class="hint">' + (child.notes || "No notes yet") + '</p>' +
-          '</header>' +
-          '<div class="module-meta">' +
-          '  <span>🏢 ' + centerKey + '</span>' +
-          (child.age ? ('  <span>🎂 Age ' + child.age + '</span>') : "") +
-          '</div>';
+        const header = document.createElement("header");
+        const title = document.createElement("strong");
+        title.textContent = child.name || "Unnamed child";
+        const note = document.createElement("p");
+        note.className = "hint";
+        note.textContent = child.notes || "No notes yet";
+        header.appendChild(title);
+        header.appendChild(note);
 
+        const meta = document.createElement("div");
+        meta.className = "module-meta";
+        const centerSpan = document.createElement("span");
+        centerSpan.textContent = "🏢 " + centerKey;
+        meta.appendChild(centerSpan);
+        if (child.age) {
+          const ageSpan = document.createElement("span");
+          ageSpan.textContent = "🎂 Age " + child.age;
+          meta.appendChild(ageSpan);
+        }
+
+        const actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "0.5rem";
+        actions.style.marginTop = "0.7rem";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "ghost small";
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () => {
+          openEditChildModal(child);
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "primary ghost small";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", () => {
+          deleteChildSpecialist(child);
+        });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+
+        card.appendChild(header);
+        card.appendChild(meta);
+        card.appendChild(actions);
         grid.appendChild(card);
       });
 
@@ -288,6 +350,169 @@ function populateAssessChildSelect() {
     opt.textContent = c.name + (c.center ? (" — " + c.center) : "");
     assessChildSelect.appendChild(opt);
   });
+}
+
+/* ===============================
+   SPECIALIST — ADD CHILD
+   =============================== */
+
+const addChildForm  = qi("spec-add-child-form");
+const addChildName  = qi("spec-child-name");
+const addChildAge   = qi("spec-child-age");
+const addChildNotes = qi("spec-child-notes");
+
+if (addChildForm) {
+  addChildForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name  = addChildName ? addChildName.value.trim() : "";
+    const age   = addChildAge ? addChildAge.value.trim() : "";
+    const notes = addChildNotes ? addChildNotes.value.trim() : "";
+
+    if (!name) {
+      alert("Child name is required.");
+      return;
+    }
+
+    let res;
+    try {
+      res = await apiPost({
+        action: "addchild",
+        childName:  name,
+        childAge:   age,
+        childNotes: notes,
+        childCenter: specCenter || "",
+        childSpec:  specUsername
+      });
+    } catch (err) {
+      console.error("Error adding child:", err);
+      alert("Error adding child.");
+      return;
+    }
+
+    if (res !== "ADDED") {
+      alert("Error adding child: " + res);
+      return;
+    }
+
+    addChildForm.reset();
+    await loadSpecChildren();
+    alert("Child added successfully.");
+  });
+}
+
+/* ===============================
+   SPECIALIST — EDIT CHILD
+   =============================== */
+
+const editModal = qi("spec-child-edit-modal");
+const editRow   = qi("spec-child-edit-row");
+const editName  = qi("spec-child-edit-name");
+const editAge   = qi("spec-child-edit-age");
+const editNotes = qi("spec-child-edit-notes");
+
+function openEditChildModal(child) {
+  if (!editModal || !editRow || !editName || !editAge || !editNotes) return;
+
+  editRow.value   = child.row;
+  editName.value  = child.name || "";
+  editAge.value   = child.age  || "";
+  editNotes.value = child.notes || "";
+
+  editModal.classList.add("active");
+}
+
+function closeEditChildModal() {
+  if (!editModal) return;
+  editModal.classList.remove("active");
+}
+
+const editCloseBtn  = qi("spec-child-edit-close");
+const editCancelBtn = qi("spec-child-edit-cancel");
+
+if (editCloseBtn) {
+  editCloseBtn.addEventListener("click", closeEditChildModal);
+}
+if (editCancelBtn) {
+  editCancelBtn.addEventListener("click", closeEditChildModal);
+}
+
+const editForm = qi("spec-child-edit-form");
+if (editForm) {
+  editForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!editRow || !editName || !editAge || !editNotes) return;
+
+    const row   = editRow.value;
+    const name  = editName.value.trim();
+    const age   = editAge.value.trim();
+    const notes = editNotes.value.trim();
+
+    if (!row || !name) {
+      alert("Invalid child record.");
+      return;
+    }
+
+    let res;
+    try {
+      res = await apiPost({
+        action: "updatechild",
+        row: row,
+        childName:  name,
+        childAge:   age,
+        childNotes: notes,
+        childCenter: specCenter || "",
+        childSpec:  specUsername
+      });
+    } catch (err) {
+      console.error("Error updating child:", err);
+      alert("Error updating child.");
+      return;
+    }
+
+    if (res !== "UPDATED") {
+      alert("Error updating child.");
+      return;
+    }
+
+    await loadSpecChildren();
+    closeEditChildModal();
+    alert("Child updated successfully.");
+  });
+}
+
+/* ===============================
+   SPECIALIST — DELETE CHILD
+   =============================== */
+
+async function deleteChildSpecialist(child) {
+  if (!child || !child.row) {
+    alert("Invalid child.");
+    return;
+  }
+
+  if (!window.confirm("Delete " + (child.name || "this child") + "?")) return;
+
+  let res;
+  try {
+    res = await apiPost({
+      action: "deletechild",
+      row: String(child.row)
+    });
+  } catch (err) {
+    console.error("Error deleting child:", err);
+    alert("Error deleting child.");
+    return;
+  }
+
+  if (res !== "DELETED") {
+    alert("Error deleting child.");
+    return;
+  }
+
+  await loadSpecChildren();
+  alert("Child deleted.");
 }
 
 /* =========================

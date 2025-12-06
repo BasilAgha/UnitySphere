@@ -101,8 +101,22 @@
             <p class="hint">Children assigned to you through centers or freelance.</p>
           </header>
 
-          <div id="spec-children-list"></div>
-        </div>
+          <!-- Sorting -->
+<div class="grid-inline" style="margin-bottom:1rem; max-width:400px;">
+  <div class="input-group">
+    <label>Sort by</label>
+    <select id="spec-children-sort">
+      <option value="name-asc">Name A–Z</option>
+      <option value="name-desc">Name Z–A</option>
+      <option value="age-asc">Age: Youngest</option>
+      <option value="age-desc">Age: Oldest</option>
+    </select>
+  </div>
+</div>
+
+<!-- Children List -->
+<div id="spec-children-list"></div>
+
       </section>
 
       <!-- ASSESSMENTS SECTION -->

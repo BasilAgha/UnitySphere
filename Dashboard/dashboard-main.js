@@ -930,6 +930,8 @@ if (isDashboardPage()) {
   var childForm               = qi("admin-add-child-form");
   var childCenterSelect       = qi("child-center");
   var childSpecSelect         = qi("child-specialist");
+  var adminChildSort          = qi("admin-children-sort");
+
 
   function populateChildCenterSelect() {
     if (!childCenterSelect) return;
@@ -982,6 +984,40 @@ if (isDashboardPage()) {
     if (childrenWithCenterEl)    childrenWithCenterEl.textContent    = String(withCenter);
     if (childrenWithoutCenterEl) childrenWithoutCenterEl.textContent = String(withoutCenter);
   }
+/* ===============================
+   ADMIN — CHILDREN SORTING
+   =============================== */
+
+function sortAdminChildren(list) {
+  if (!adminChildSort) return list.slice();
+  const mode = adminChildSort.value;
+
+  return list.slice().sort((a, b) => {
+    switch (mode) {
+      case "name-asc":
+        return a.name.localeCompare(b.name);
+      case "name-desc":
+        return b.name.localeCompare(a.name);
+      case "age-asc":
+        return Number(a.age || 0) - Number(b.age || 0);
+      case "age-desc":
+        return Number(b.age || 0) - Number(a.age || 0);
+      case "center-asc":
+        return (a.center || "").localeCompare(b.center || "");
+      case "specialist-asc":
+        return (a.spec || "").localeCompare(b.spec || "");
+      default:
+        return 0;
+    }
+  });
+}
+
+if (adminChildSort) {
+  adminChildSort.addEventListener("change", () => {
+    childrenCache = sortAdminChildren(childrenCache);
+    renderChildren();
+  });
+}
 
   function createChildCard(child, ctx) {
     ctx = ctx || {};
@@ -1172,17 +1208,20 @@ if (isDashboardPage()) {
     if (!Array.isArray(items)) items = [];
 
     childrenCache = items.map(function (r) {
-      return {
-        row: Number(r.row),
-        name: r.name || "",
-        age: r.age || "",
-        notes: r.notes || "",
-        center: r.center || "",
-        spec: r.specialistUsername || ""
-      };
-    });
+  return {
+    row: Number(r.row),
+    name: r.name || "",
+    age: r.age || "",
+    notes: r.notes || "",
+    center: r.center || "",
+    spec: r.specialistUsername || ""
+  };
+});
 
-    renderChildren();
+childrenCache = sortAdminChildren(childrenCache);
+
+renderChildren();
+
   }
 
   if (childForm) {

@@ -629,13 +629,26 @@
                 <!-- Directory -->
                 <div class="card-subsection">
                   <div class="directory-header">
-                    <div>
-                      <h3>Children directory</h3>
-                      <p class="hint">
-                        Grouped by center and specialist (freelance included).
-                      </p>
-                    </div>
-                  </div>
+  <div>
+    <h3>Children directory</h3>
+    <p class="hint">Grouped by center and specialist. Sorting available.</p>
+  </div>
+
+  <div class="grid-inline" style="max-width:480px;">
+    <div class="input-group">
+      <label>Sort by</label>
+      <select id="admin-children-sort">
+        <option value="name-asc">Name A–Z</option>
+        <option value="name-desc">Name Z–A</option>
+        <option value="age-asc">Age: Youngest</option>
+        <option value="age-desc">Age: Oldest</option>
+        <option value="center-asc">Center A–Z</option>
+        <option value="specialist-asc">Specialist A–Z</option>
+      </select>
+    </div>
+  </div>
+</div>
+
 
                   <div id="children-list"></div>
                 </div>
