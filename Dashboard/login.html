@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login | UnitySphere</title>
+
+  <!-- Reuse your dashboard theme -->
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+
+  <style>
+    /* Center the login card using your theme background */
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--color-bg);
+      color: var(--color-text);
+      margin: 0;
+      font-family: var(--font-family);
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 380px;
+      padding: 1rem;
+    }
+
+    .login-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      padding: 2rem;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      animation: fadeIn 0.4s ease;
+    }
+
+    .login-title {
+      font-size: 1.6rem;
+      margin-bottom: 0.2rem;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .login-subtitle {
+      text-align: center;
+      margin-bottom: 1.8rem;
+      color: var(--color-muted);
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0 16px 0;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-alt);
+      color: var(--color-text);
+      font-size: 1rem;
+    }
+
+    .login-card input:focus {
+      outline: 2px solid var(--color-primary);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+
+    .login-btn:hover {
+      background: var(--color-accent);
+    }
+
+    #error {
+      margin-top: 10px;
+      color: var(--color-danger);
+      text-align: center;
+      min-height: 20px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-title">UnitySphere</div>
+      <div class="login-subtitle">Sign in to continue</div>
+
+      <input id="username" placeholder="Username" autocomplete="off" />
+      <input id="password" type="password" placeholder="Password" autocomplete="off" />
+
+      <button class="login-btn" onclick="login()">Login</button>
+
+      <p id="error"></p>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Specialist Dashboard</title>
+
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+
+<body class="dashboard-page">
+  <div class="app-shell" id="dashboard">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">SP</div>
+        <div>
+          <strong>Specialist Panel</strong>
+          <span>My Children & Sessions</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-link active" data-section="overview">🏠 <span>Overview</span></button>
+        <button class="nav-link" data-section="children">👦 <span>My Children</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="current-user">
+          <div class="avatar avatar-static"></div>
+          <div>
+            <div id="currentUserName">Specialist</div>
+            <div class="hint">VR Therapy Specialist</div>
+          </div>
+        </div>
+        <button class="ghost small" id="logoutBtn">Log out</button>
+      </div>
+    </aside>
+
+    <!-- ============ MAIN AREA ============ -->
+    <div class="app-main">
+      <header class="app-header">
+        <div>
+          <h1>Specialist Dashboard</h1>
+          <p class="hint">Manage your children, sessions, and assessments.</p>
+        </div>
+        <div class="header-actions">
+          <button class="ghost" id="refreshAllBtn">Refresh</button>
+        </div>
+      </header>
+
+      <main>
+        <!-- ===== OVERVIEW ===== -->
+        <section id="section-overview" class="section active">
+          <div class="overview-grid">
+
+            <!-- Stats -->
+            <div class="stat-card">
+              <header><span>My Children</span></header>
+              <div class="stat-value" id="statChildren">0</div>
+              <div class="trend">Children linked to you</div>
+            </div>
+
+            <div class="stat-card">
+              <header><span>Sessions</span></header>
+              <div class="stat-value" id="statSessions">0</div>
+              <div class="trend">Total sessions logged</div>
+            </div>
+
+            <div class="stat-card">
+              <header><span>Assessments</span></header>
+              <div class="stat-value" id="statAssessments">0</div>
+              <div class="trend">Rows in assessment responses</div>
+            </div>
+
+            <div class="stat-card">
+              <header><span>Avg Score</span></header>
+              <div class="stat-value" id="statAvgScore">–</div>
+              <div class="trend">Recent assessment trend</div>
+            </div>
+
+            <!-- Quick panels -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h2>Recently Active Children</h2>
+              </div>
+              <div class="stacked-list" id="recentChildrenList">
+                <!-- filled by JS -->
+              </div>
+            </div>
+
+            <div class="card chart-card">
+              <div class="card-header">
+                <h2>Latest Sessions</h2>
+              </div>
+              <div class="stacked-list" id="recentSessionsList">
+                <!-- filled by JS -->
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ===== CHILDREN LIST ===== -->
+        <section id="section-children" class="section">
+          <div class="card full">
+            <div class="section-header">
+              <div>
+                <h2>My Children</h2>
+                <p class="hint">Children assigned to you.</p>
+              </div>
+              <button class="primary with-icon" id="btnAddChild">
+                <span class="icon">+</span>
+                <span>Add Child</span>
+              </button>
+            </div>
+
+            <div class="card-subsection">
+              <div class="grid-2-col">
+                <div class="input-group">
+                  <label for="filterChildName">Filter by name</label>
+                  <input id="filterChildName" type="text" placeholder="Search child name" />
+                </div>
+                <div class="input-group">
+                  <label for="filterChildStatus">Status</label>
+                  <select id="filterChildStatus">
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                    <option value="deleted">Deleted</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="modules-grid" id="childrenGrid"></div>
+            <div class="empty-state" id="childrenEmpty" style="display:none;">
+              No children yet. Add your first child above.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ MODALS ============ -->
+
+  <!-- Add / Edit Child -->
+  <div class="modal-backdrop" id="childModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="childModalTitle">Add Child</h2>
+          <p class="modal-subtitle">Create or update a child record.</p>
+        </div>
+        <button class="icon-button" data-close-modal="childModal">✕</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="childIdInput" />
+        <div class="input-group">
+          <label for="childNameInput">Name</label>
+          <input id="childNameInput" type="text" placeholder="Child name" />
+        </div>
+        <div class="input-group">
+          <label for="childAgeInput">Age</label>
+          <input id="childAgeInput" type="number" min="1" placeholder="Age in years" />
+        </div>
+        <div class="input-group">
+          <label for="childParentMobileInput">Parent Mobile</label>
+          <input id="childParentMobileInput" type="text" placeholder="Mobile number" />
+        </div>
+        <div class="input-group">
+          <label for="childNotesInput">Notes</label>
+          <textarea id="childNotesInput" rows="3" placeholder="Notes"></textarea>
+        </div>
+        <div class="input-group">
+          <label for="childStatusInput">Status</label>
+          <select id="childStatusInput">
+            <option value="active">Active</option>
+            <option value="deleted">Deleted</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="childModal">Cancel</button>
+        <button class="primary" id="childSaveBtn">Save Child</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Child Profile (sessions + assessments) -->
+  <div class="modal-backdrop" id="childProfileModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="childProfileTitle">Child Profile</h2>
+          <p class="modal-subtitle" id="childProfileSubtitle"></p>
+        </div>
+        <button class="icon-button" data-close-modal="childProfileModal">✕</button>
+      </div>
+
+      <div class="form-panel">
+        <div class="split-layout assessments">
+          <div class="summary-column">
+            <div class="insight-card">
+              <div class="insight-label">Total VR Time</div>
+              <div><strong id="childProfileTotalMinutes">0 min</strong></div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-label">Sessions</div>
+              <div><strong id="childProfileSessionCount">0</strong></div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-label">Assessments</div>
+              <div><strong id="childProfileAssessmentCount">0</strong></div>
+            </div>
+          </div>
+
+          <div class="content-column">
+            <div class="panel">
+              <div class="panel-header">
+                <strong>Sessions</strong>
+                <button class="ghost small" id="btnAddSession">Add Session</button>
+              </div>
+              <div class="stacked-list" id="childSessionsList"></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <strong>Assessments</strong>
+                <button class="ghost small" id="btnAddAssessment">Add Assessment</button>
+              </div>
+              <div class="stacked-list" id="childAssessmentsList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="childProfileModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Session -->
+  <div class="modal-backdrop" id="sessionModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="sessionModalTitle">Add Session</h2>
+          <p class="modal-subtitle">Log a VR therapy session for this child.</p>
+        </div>
+        <button class="icon-button" data-close-modal="sessionModal">✕</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="sessionIdInput" />
+        <input type="hidden" id="sessionChildIdInput" />
+        <div class="input-group">
+          <label for="sessionDateInput">Date</label>
+          <input id="sessionDateInput" type="date" />
+        </div>
+        <div class="input-group">
+          <label for="sessionModulesInput">VR Modules</label>
+          <select id="sessionModulesInput" multiple></select>
+          <span class="hint">Hold Ctrl (Cmd on Mac) to select multiple modules.</span>
+        </div>
+        <div class="input-group">
+          <label for="sessionDurationInput">Duration (minutes)</label>
+          <input id="sessionDurationInput" type="number" min="1" />
+        </div>
+        <div class="input-group">
+          <label for="sessionNotesInput">Notes</label>
+          <textarea id="sessionNotesInput" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="sessionModal">Cancel</button>
+        <button class="primary" id="sessionSaveBtn">Save Session</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Assessment -->
+  <div class="modal-backdrop" id="assessmentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="assessmentModalTitle">Add Assessment</h2>
+          <p class="modal-subtitle">Record scores for this child.</p>
+        </div>
+        <button class="icon-button" data-close-modal="assessmentModal">✕</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="assessmentChildIdInput" />
+        <div class="input-group">
+          <label for="assessmentDateInput">Date</label>
+          <input id="assessmentDateInput" type="date" />
+        </div>
+        <div class="input-group">
+          <label>Questions & Scores</label>
+          <div id="assessmentQuestionsContainer" class="stacked-list">
+            <!-- questions + score inputs filled by JS -->
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="assessmentNotesInput">General Notes (optional)</label>
+          <textarea id="assessmentNotesInput" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="assessmentModal">Cancel</button>
+        <button class="primary" id="assessmentSaveBtn">Save Assessment</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="specialist.js"></script>
+</body>
+</html>

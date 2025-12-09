@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard – VR Therapy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Your CSS (already uploaded to your project / web host) -->
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="dashboard-page">
+  <div class="app-shell">
+    <!-- ========= SIDEBAR ========= -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">VR</div>
+        <div>
+          <strong>VR Therapy Admin</strong>
+          <span>System Control Panel</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-link active" data-section="dashboard">
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-link" data-section="centers">
+          <span>Centers</span>
+        </button>
+        <button class="nav-link" data-section="specialists">
+          <span>Specialists</span>
+        </button>
+        <button class="nav-link" data-section="children">
+          <span>Children</span>
+        </button>
+        <button class="nav-link" data-section="modules">
+          <span>VR Modules</span>
+        </button>
+        <button class="nav-link" data-section="questions">
+          <span>Assessments</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="current-user">
+          <div class="avatar avatar-static"></div>
+          <div>
+            <div id="currentUserName" style="font-size:0.9rem;">Admin</div>
+            <div class="hint" style="font-size:0.78rem;">System Administrator</div>
+          </div>
+        </div>
+        <button class="ghost small" id="logoutBtn">Log out</button>
+      </div>
+    </aside>
+
+    <!-- ========= MAIN ========= -->
+    <div class="app-main">
+      <header class="app-header">
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p class="hint">Monitor centers, specialists, children, and VR modules.</p>
+        </div>
+        <div class="header-actions">
+          <button class="ghost" id="refreshAllBtn">Refresh data</button>
+        </div>
+      </header>
+
+      <main>
+        <!-- ===== DASHBOARD SECTION ===== -->
+        <section id="section-dashboard" class="section active">
+          <div class="overview-grid">
+            <!-- Stat cards -->
+            <div class="stat-card">
+              <header>
+                <span>Total Centers</span>
+                <span class="chip subtle">Network</span>
+              </header>
+              <div class="stat-value" id="statCenters">0</div>
+              <div class="trend" id="statCentersHint">Active centers running VR programs</div>
+            </div>
+
+            <div class="stat-card">
+              <header>
+                <span>Total Specialists</span>
+                <span class="chip subtle">Therapists</span>
+              </header>
+              <div class="stat-value" id="statSpecialists">0</div>
+              <div class="trend" id="statSpecialistsHint">Freelance + center-linked specialists</div>
+            </div>
+
+            <div class="stat-card">
+              <header>
+                <span>Total Children</span>
+                <span class="chip subtle">Participants</span>
+              </header>
+              <div class="stat-value" id="statChildren">0</div>
+              <div class="trend">Children across all centers</div>
+            </div>
+
+            <div class="stat-card">
+              <header>
+                <span>VR Modules</span>
+                <span class="chip subtle">Content</span>
+              </header>
+              <div class="stat-value" id="statModules">0</div>
+              <div class="trend">Available VR training modules</div>
+            </div>
+
+            <!-- Simple chart placeholder -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h2>System Activity Snapshot</h2>
+                <span class="badge badge-soft">Overview</span>
+              </div>
+              <div class="chart multi-line">
+                <div class="chart-lines">
+                  <div class="line line-one"></div>
+                  <div class="line line-two"></div>
+                </div>
+                <div class="chart-axis">
+                  <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Donut summary -->
+            <div class="card donut-card">
+              <div class="card-header">
+                <h2>Quick Breakdown</h2>
+              </div>
+              <div class="donut-wrapper">
+                <div class="donut"></div>
+                <ul class="chart-legend">
+                  <li><span class="legend-color legend-one"></span> Centers</li>
+                  <li><span class="legend-color legend-two"></span> Specialists</li>
+                  <li><span class="legend-color legend-three"></span> Children</li>
+                  <li><span class="legend-color legend-four"></span> Modules</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Recent insights -->
+            <div class="card recommendations">
+              <div class="card-header">
+                <h2>Admin Insights</h2>
+              </div>
+              <div class="recommendation">
+                <div class="recommendation-icon">📊</div>
+                <div class="recommendation-body">
+                  <strong>Review center distribution</strong>
+                  <span class="hint">
+                    Check if each center has enough specialists for their children load.
+                  </span>
+                </div>
+              </div>
+              <div class="recommendation">
+                <div class="recommendation-icon">🎧</div>
+                <div class="recommendation-body">
+                  <strong>VR modules adoption</strong>
+                  <span class="hint">
+                    Make sure every center has the right modules assigned for their use-cases.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== CENTERS SECTION ===== -->
+        <section id="section-centers" class="section">
+          <div class="card full">
+            <div class="section-header">
+              <div>
+                <h2>Centers</h2>
+                <p class="hint">Manage centers, their credentials, and basic stats.</p>
+              </div>
+              <div>
+                <button class="primary with-icon" id="btnAddCenter">
+                  <span class="icon">➕</span>
+                  <span class="label">Add Center</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="center-directory">
+              <div class="directory-header">
+                <h3>All Centers</h3>
+                <span class="hint" id="centersCountHint">0 centers</span>
+              </div>
+
+              <div class="card-grid" id="centersGrid">
+                <!-- Centers will be rendered here as .center-card -->
+              </div>
+
+              <div class="empty-state" id="centersEmpty" style="display:none;">
+                No centers yet. Click “Add Center” to create the first one.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== SPECIALISTS SECTION ===== -->
+        <section id="section-specialists" class="section">
+          <div class="card full">
+            <div class="section-header">
+              <div>
+                <h2>Specialists</h2>
+                <p class="hint">Manage freelance and center-linked specialists.</p>
+              </div>
+              <button class="primary with-icon" id="btnAddSpecialist">
+                <span class="icon">➕</span>
+                <span class="label">Add Specialist</span>
+              </button>
+            </div>
+
+            <div class="specialists-grid" id="specialistsGrid">
+              <!-- Specialist cards here -->
+            </div>
+
+            <div class="empty-state" id="specialistsEmpty" style="display:none;">
+              No specialists yet. Add your first therapist above.
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== CHILDREN SECTION ===== -->
+        <section id="section-children" class="section">
+          <div class="card full">
+            <div class="section-header">
+              <div>
+                <h2>Children</h2>
+                <p class="hint">View all children across centers and specialists.</p>
+              </div>
+            </div>
+
+            <div class="modules-grid" id="childrenGrid">
+              <!-- Children as cards, reusing modules-grid layout -->
+            </div>
+
+            <div class="empty-state" id="childrenEmpty" style="display:none;">
+              No children found yet.
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== MODULES SECTION ===== -->
+        <section id="section-modules" class="section">
+          <div class="card full">
+            <div class="section-header">
+              <div>
+                <h2>VR Modules</h2>
+                <p class="hint">Manage VR modules available to centers.</p>
+              </div>
+              <button class="primary with-icon" id="btnAddModule">
+                <span class="icon">➕</span>
+                <span class="label">Add Module</span>
+              </button>
+            </div>
+
+            <div class="modules-grid" id="modulesGrid">
+              <!-- Module cards -->
+            </div>
+
+            <div class="empty-state" id="modulesEmpty" style="display:none;">
+              No VR modules yet. Add content to start assigning to centers.
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== QUESTIONS SECTION ===== -->
+        <section id="section-questions" class="section">
+          <div class="card full">
+            <div class="section-header">
+              <div>
+                <h2>Assessment Questions</h2>
+                <p class="hint">Question bank used in child assessments.</p>
+              </div>
+              <button class="primary with-icon" id="btnAddQuestion">
+                <span class="icon">➕</span>
+                <span class="label">Add Question</span>
+              </button>
+            </div>
+
+            <div class="stacked-list" id="questionsList">
+              <!-- Questions list -->
+            </div>
+
+            <div class="empty-state" id="questionsEmpty" style="display:none;">
+              No questions yet. Add assessment questions to build your bank.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ========= MODALS ========= -->
+
+  <!-- Center Modal -->
+  <div class="modal-backdrop" id="centerModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="centerModalTitle">Add Center</h2>
+          <p class="modal-subtitle">Create or update a center profile.</p>
+        </div>
+        <button class="icon-button" data-close-modal="centerModal">✕</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="centerId" />
+        <div class="input-group">
+          <label for="centerNameInput">Name</label>
+          <input id="centerNameInput" type="text" placeholder="Center name" />
+        </div>
+        <div class="input-group">
+          <label for="centerUsernameInput">Username</label>
+          <input id="centerUsernameInput" type="text" placeholder="Login username" />
+        </div>
+        <div class="input-group">
+          <label for="centerPasswordInput">Password</label>
+          <input id="centerPasswordInput" type="password" placeholder="Login password" />
+        </div>
+        <div class="input-group">
+          <label for="centerDescInput">Description</label>
+          <textarea id="centerDescInput" rows="3" placeholder="Short description"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="centerModal">Cancel</button>
+        <button class="primary" id="centerSaveBtn">Save Center</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specialist Modal -->
+  <div class="modal-backdrop" id="specialistModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="specialistModalTitle">Add Specialist</h2>
+          <p class="modal-subtitle">Create or update a specialist profile.</p>
+        </div>
+        <button class="icon-button" data-close-modal="specialistModal">✕</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="specId" />
+        <div class="input-group">
+          <label for="specNameInput">Name</label>
+          <input id="specNameInput" type="text" placeholder="Specialist name" />
+        </div>
+        <div class="input-group">
+          <label for="specUsernameInput">Username</label>
+          <input id="specUsernameInput" type="text" placeholder="Login username" />
+        </div>
+        <div class="input-group">
+          <label for="specPasswordInput">Password</label>
+          <input id="specPasswordInput" type="password" placeholder="Login password" />
+        </div>
+        <div class="input-group">
+          <label for="specTypeInput">Type</label>
+          <select id="specTypeInput">
+            <option value="freelance">Freelance</option>
+            <option value="center">Linked to center</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="specCenterIdInput">Center ID (if linked)</label>
+          <input id="specCenterIdInput" type="text" placeholder="Center ID" />
+        </div>
+        <div class="input-group">
+          <label for="specDescInput">Description</label>
+          <textarea id="specDescInput" rows="3" placeholder="Specialist description"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="specialistModal">Cancel</button>
+        <button class="primary" id="specialistSaveBtn">Save Specialist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Module Modal -->
+  <div class="modal-backdrop" id="moduleModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="moduleModalTitle">Add Module</h2>
+          <p class="modal-subtitle">Create or update a VR module.</p>
+        </div>
+        <button class="icon-button" data-close-modal="moduleModal">✕</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="moduleId" />
+        <div class="input-group">
+          <label for="modNameInput">Name</label>
+          <input id="modNameInput" type="text" placeholder="Module name" />
+        </div>
+        <div class="input-group">
+          <label for="modPhotoInput">Photo URL</label>
+          <input id="modPhotoInput" type="text" placeholder="Thumbnail image URL" />
+        </div>
+        <div class="input-group">
+          <label for="modMinutesInput">Minutes to play</label>
+          <input id="modMinutesInput" type="number" min="1" placeholder="Duration (minutes)" />
+        </div>
+        <div class="input-group">
+          <label for="modDescInput">Description</label>
+          <textarea id="modDescInput" rows="3" placeholder="Short description"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="moduleModal">Cancel</button>
+        <button class="primary" id="moduleSaveBtn">Save Module</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Question Modal -->
+  <div class="modal-backdrop" id="questionModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="questionModalTitle">Add Question</h2>
+          <p class="modal-subtitle">Create or update an assessment question.</p>
+        </div>
+        <button class="icon-button" data-close-modal="questionModal">✕</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="questionId" />
+        <div class="input-group">
+          <label for="qTextInput">Question Text</label>
+          <textarea id="qTextInput" rows="3" placeholder="Write the question here"></textarea>
+        </div>
+        <div class="input-group">
+          <label for="qCategoryInput">Category</label>
+          <input id="qCategoryInput" type="text" placeholder="Optional category" />
+        </div>
+        <div class="input-group">
+          <label for="qDifficultyInput">Difficulty</label>
+          <input id="qDifficultyInput" type="text" placeholder="Optional difficulty (e.g., Easy, Medium)" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="questionModal">Cancel</button>
+        <button class="primary" id="questionSaveBtn">Save Question</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
