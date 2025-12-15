@@ -158,6 +158,12 @@ function initModalClose() {
       }
     });
   });
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      document.querySelectorAll(".modal-backdrop.active").forEach(backdrop => backdrop.classList.remove("active"));
+    }
+  });
 }
 
 
@@ -177,6 +183,73 @@ function switchSection(sectionName) {
   });
 }
 
+/*****************************************************
+ *  LOADING + TOASTS
+ *****************************************************/
+function setButtonLoading(btn, isLoading, loadingLabel = "Loading...") {
+  if (!btn) return;
+  if (isLoading) {
+    btn.dataset.originalText = btn.textContent;
+    btn.textContent = loadingLabel;
+    btn.classList.add("btn-loading");
+    btn.disabled = true;
+  } else {
+    btn.textContent = btn.dataset.originalText || btn.textContent;
+    btn.classList.remove("btn-loading");
+    btn.disabled = false;
+  }
+}
+
+function getToastStack() {
+  let stack = document.getElementById("toastStack");
+  if (!stack) {
+    stack = document.createElement("div");
+    stack.id = "toastStack";
+    stack.className = "toast-stack";
+    document.body.appendChild(stack);
+  }
+  return stack;
+}
+
+function showToast(message, type = "success", title = "Status") {
+  const stack = getToastStack();
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<div class="toast-title">${title}</div><div>${message}</div>`;
+  stack.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
+}
+
+/*****************************************************
+ *  COMPACT MODE
+ *****************************************************/
+const COMPACT_STORAGE_KEY = "dashboard:compact";
+
+function applyCompactMode(isCompact) {
+  const enable = Boolean(isCompact);
+  document.body.classList.toggle("compact", enable);
+  localStorage.setItem(COMPACT_STORAGE_KEY, enable ? "1" : "0");
+
+  document.querySelectorAll("[data-compact-toggle]").forEach(btn => {
+    btn.setAttribute("aria-pressed", enable ? "true" : "false");
+    btn.classList.toggle("active", enable);
+    const status = btn.querySelector("[data-compact-status]");
+    if (status) status.textContent = enable ? "On" : "Off";
+  });
+}
+
+function initCompactMode() {
+  const saved = localStorage.getItem(COMPACT_STORAGE_KEY) === "1";
+  applyCompactMode(saved);
+
+  document.querySelectorAll("[data-compact-toggle]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const next = !document.body.classList.contains("compact");
+      applyCompactMode(next);
+    });
+  });
+}
+
 
 /*****************************************************
  *  EXPORT functions for reuse
@@ -193,3 +266,7 @@ window.closeModal = closeModal;
 window.initModalClose = initModalClose;
 window.switchSection = switchSection;
 window.setText = setText;
+window.applyCompactMode = applyCompactMode;
+window.initCompactMode = initCompactMode;
+window.setButtonLoading = setButtonLoading;
+window.showToast = showToast;

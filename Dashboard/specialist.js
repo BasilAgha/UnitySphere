@@ -10,6 +10,7 @@ let childrenCache = [];
 // ------------- INIT -------------
 document.addEventListener("DOMContentLoaded", () => {
   initModalClose();
+  initCompactMode();
 
   // user chip
   const nameEl = document.getElementById("currentUserName");
@@ -29,9 +30,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // refresh button
   document.getElementById("refreshAllBtn")?.addEventListener("click", () => {
+    const btn = document.getElementById("refreshAllBtn");
+    setButtonLoading(btn, true, "Refreshing...");
     const active = document.querySelector(".section.active")?.id.replace("section-", "") || "overview";
     loadSection(active);
+    setTimeout(() => setButtonLoading(btn, false), 400);
   });
+
+  document.getElementById("specEmptyAddChild")?.addEventListener("click", openChildModalForCreate);
 
   // children filters
   document.getElementById("filterChildName")?.addEventListener("input", renderChildrenGrid);
@@ -237,6 +243,8 @@ function openChildModalForEdit(childId) {
 }
 
 async function saveChild() {
+  const saveBtn = document.getElementById("childSaveBtn");
+  setButtonLoading(saveBtn, true, "Saving...");
   const id = document.getElementById("childIdInput").value;
   const payload = {
     name: document.getElementById("childNameInput").value,
@@ -249,24 +257,29 @@ async function saveChild() {
     actor_role: "specialist"
   };
 
-  let res;
-  if (id) {
-    res = await apiRequest("updateChild", {
-      child_id: id,
-      status: document.getElementById("childStatusInput").value,
-      ...payload
-    });
-  } else {
-    res = await apiRequest("createChild", payload);
-  }
+  try {
+    let res;
+    if (id) {
+      res = await apiRequest("updateChild", {
+        child_id: id,
+        status: document.getElementById("childStatusInput").value,
+        ...payload
+      });
+    } else {
+      res = await apiRequest("createChild", payload);
+    }
 
-  if (!res?.success) {
-    alert(res.error || "Error saving child");
-    return;
+    if (!res?.success) {
+      showToast(res.error || "Error saving child", "error", "Save failed");
+      return;
+    }
+    closeModal("childModal");
+    showToast("Child saved");
+    await loadChildren();
+    await loadOverview();
+  } finally {
+    setButtonLoading(saveBtn, false);
   }
-  closeModal("childModal");
-  await loadChildren();
-  await loadOverview();
 }
 
 async function deleteChild(childId) {
@@ -279,9 +292,10 @@ async function deleteChild(childId) {
   });
 
   if (!res?.success) {
-    alert(res.error || "Error deleting child");
+    showToast(res.error || "Error deleting child", "error", "Delete failed");
     return;
   }
+  showToast("Child deleted");
   await loadChildren();
   await loadOverview();
 }
@@ -421,6 +435,8 @@ async function openSessionModalForEdit(sessionId, childId) {
 }
 
 async function saveSession() {
+  const saveBtn = document.getElementById("sessionSaveBtn");
+  setButtonLoading(saveBtn, true, "Saving...");
   const id = document.getElementById("sessionIdInput").value;
   const childId = document.getElementById("sessionChildIdInput").value;
   const date = document.getElementById("sessionDateInput").value;
@@ -431,47 +447,50 @@ async function saveSession() {
   const selectedModules = Array.from(modulesSelect.selectedOptions).map(o => o.value);
 
   if (!date || !selectedModules.length) {
-    alert("Please pick at least one module and a date.");
+    showToast("Please pick at least one module and a date.", "error", "Missing info");
+    setButtonLoading(saveBtn, false);
     return;
   }
 
-  let res;
-  if (id) {
-    // update only this single row (one module)
-    res = await apiRequest("updateSession", {
-      session_id: id,
-      date,
-      module_id: selectedModules[0],
-      duration_minutes: duration,
-      notes,
-      actor_username: specialistUser.username,
-      actor_role: "specialist"
-    });
-  } else {
-    // create: can be multiple modules (one row per module in backend)
-    res = await apiRequest("createSession", {
-      child_id: childId,
-      specialist_id: specialistId,
-      center_id: centerId,
-      date,
-      module_ids_json: JSON.stringify(selectedModules),
-      duration_minutes: duration,
-      notes,
-      actor_username: specialistUser.username,
-      actor_role: "specialist"
-    });
-  }
+  try {
+    let res;
+    if (id) {
+      res = await apiRequest("updateSession", {
+        session_id: id,
+        date,
+        module_id: selectedModules[0],
+        duration_minutes: duration,
+        notes,
+        actor_username: specialistUser.username,
+        actor_role: "specialist"
+      });
+    } else {
+      res = await apiRequest("createSession", {
+        child_id: childId,
+        specialist_id: specialistId,
+        center_id: centerId,
+        date,
+        module_ids_json: JSON.stringify(selectedModules),
+        duration_minutes: duration,
+        notes,
+        actor_username: specialistUser.username,
+        actor_role: "specialist"
+      });
+    }
 
-  if (!res?.success) {
-    alert(res.error || "Error saving session");
-    return;
-  }
+    if (!res?.success) {
+      showToast(res.error || "Error saving session", "error", "Save failed");
+      return;
+    }
 
-  closeModal("sessionModal");
-  // refresh child profile + sections
-  await openChildProfile(childId);
-  await loadOverview();
-  await loadChildren();
+    closeModal("sessionModal");
+    showToast("Session saved");
+    await openChildProfile(childId);
+    await loadOverview();
+    await loadChildren();
+  } finally {
+    setButtonLoading(saveBtn, false);
+  }
 }
 
 // ------------- ASSESSMENTS -------------
@@ -521,10 +540,13 @@ async function loadAssessmentQuestionsIntoForm() {
 }
 
 async function saveAssessment() {
+  const saveBtn = document.getElementById("assessmentSaveBtn");
+  setButtonLoading(saveBtn, true, "Saving...");
   const childId = document.getElementById("assessmentChildIdInput").value;
   const date = document.getElementById("assessmentDateInput").value;
   if (!childId || !date) {
-    alert("Child and date are required.");
+    showToast("Child and date are required.", "error", "Missing info");
+    setButtonLoading(saveBtn, false);
     return;
   }
 
@@ -539,26 +561,32 @@ async function saveAssessment() {
   });
 
   if (!answers.length) {
-    alert("Please enter at least one score.");
+    showToast("Please enter at least one score.", "error", "Missing info");
+    setButtonLoading(saveBtn, false);
     return;
   }
 
-  const res = await apiRequest("createAssessment", {
-    child_id: childId,
-    specialist_id: specialistId,
-    center_id: centerId,
-    date,
-    answers_json: JSON.stringify(answers),
-    actor_username: specialistUser.username,
-    actor_role: "specialist"
-  });
+  try {
+    const res = await apiRequest("createAssessment", {
+      child_id: childId,
+      specialist_id: specialistId,
+      center_id: centerId,
+      date,
+      answers_json: JSON.stringify(answers),
+      actor_username: specialistUser.username,
+      actor_role: "specialist"
+    });
 
-  if (!res?.success) {
-    alert(res.error || "Error saving assessment");
-    return;
+    if (!res?.success) {
+      showToast(res.error || "Error saving assessment", "error", "Save failed");
+      return;
+    }
+
+    closeModal("assessmentModal");
+    showToast("Assessment saved");
+    await openChildProfile(childId);
+    await loadOverview();
+  } finally {
+    setButtonLoading(saveBtn, false);
   }
-
-  closeModal("assessmentModal");
-  await openChildProfile(childId);
-  await loadOverview();
 }

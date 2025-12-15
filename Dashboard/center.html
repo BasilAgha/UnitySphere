@@ -25,10 +25,10 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="overview">🏠 <span>Overview</span></button>
-        <button class="nav-link" data-section="specialists">👨‍⚕️ <span>Specialists</span></button>
-        <button class="nav-link" data-section="children">👦 <span>Children</span></button>
-        <button class="nav-link" data-section="modules">🎮 <span>VR Modules</span></button>
+        <button class="nav-link active" data-section="overview">?? <span>Overview</span></button>
+        <button class="nav-link" data-section="specialists">????? <span>Specialists</span></button>
+        <button class="nav-link" data-section="children">?? <span>Children</span></button>
+        <button class="nav-link" data-section="modules">?? <span>VR Modules</span></button>
       </nav>
 
       <div class="sidebar-footer">
@@ -53,6 +53,10 @@
           <p class="hint">Manage your specialists, children, and modules.</p>
         </div>
         <div class="header-actions">
+          <button class="ghost compact-toggle" type="button" data-compact-toggle aria-pressed="false">
+            <span class="compact-label">Compact mode</span>
+            <span class="compact-status" data-compact-status>Off</span>
+          </button>
           <button class="ghost" id="refreshAllBtn">Refresh</button>
         </div>
       </header>
@@ -116,7 +120,13 @@
             </div>
 
             <div class="specialists-grid" id="specialistsGrid"></div>
-            <div class="empty-state" id="specialistsEmpty" style="display:none;">No specialists yet.</div>
+            <div class="empty-state" id="specialistsEmpty" style="display:none;">
+              <div class="empty-title">No specialists yet</div>
+              <div>Specialists deliver therapy in your center. Add one to start assigning children.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="centerEmptyAddSpecialist">Add Specialist</button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -131,7 +141,13 @@
             </div>
 
             <div class="modules-grid" id="childrenGrid"></div>
-            <div class="empty-state" id="childrenEmpty" style="display:none;">No children found.</div>
+            <div class="empty-state" id="childrenEmpty" style="display:none;">
+              <div class="empty-title">No children yet</div>
+              <div>Create child profiles to track sessions and assignments.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="centerEmptyAddChild">Add Child</button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -146,7 +162,13 @@
             </div>
 
             <div class="modules-grid" id="modulesGrid"></div>
-            <div class="empty-state" id="modulesEmpty" style="display:none;">No assigned modules.</div>
+            <div class="empty-state" id="modulesEmpty" style="display:none;">
+              <div class="empty-title">No VR modules assigned</div>
+              <div>Assign VR modules to this center so specialists can use them.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="centerEmptyAssignModule">Assign Module</button>
+              </div>
+            </div>
           </div>
         </section>
 

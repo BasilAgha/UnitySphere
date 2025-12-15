@@ -1,5 +1,18 @@
+﻿// Admin Dashboard Script - Cleaned and enhanced for UX, feedback, and table/card views
+
 // ===== CONFIG =====
 const API_URL = 'https://script.google.com/macros/s/AKfycbxErCCEs6YOSy18SufoYe4ZSYSbh6yOvvu7pAvpygqtTUE2m1LPZ_z9xH1TjK3abDlS/exec'; // TODO: replace with deployed Apps Script URL
+
+// ===== STATE =====
+const VIEW_PREF_KEY = 'admin:view:';
+const COMPACT_STORAGE_KEY = 'dashboard:compact';
+const toastStackId = 'toastStack';
+const sortState = {
+  centers: { key: null, dir: 'asc' },
+  specialists: { key: null, dir: 'asc' },
+  children: { key: null, dir: 'asc' },
+  modules: { key: null, dir: 'asc' }
+};
 
 // ===== GENERIC HELPER =====
 async function apiCall(action, params = {}) {
@@ -17,23 +30,120 @@ async function apiCall(action, params = {}) {
   return data;
 }
 
+// ===== UI HELPERS =====
+function setButtonLoading(btn, isLoading, loadingLabel = 'Loading...') {
+  if (!btn) return;
+  if (isLoading) {
+    btn.dataset.originalText = btn.textContent;
+    btn.textContent = loadingLabel;
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+  } else {
+    btn.textContent = btn.dataset.originalText || btn.textContent;
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+  }
+}
+
+function getToastStack() {
+  let stack = document.getElementById(toastStackId);
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = toastStackId;
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  return stack;
+}
+
+function showToast(message, type = 'success', title = 'Status') {
+  const stack = getToastStack();
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<div class="toast-title">${title}</div><div>${message}</div>`;
+  stack.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
+}
+
+function setViewPref(section, view) {
+  localStorage.setItem(VIEW_PREF_KEY + section, view);
+}
+
+function getViewPref(section) {
+  return localStorage.getItem(VIEW_PREF_KEY + section) || 'card';
+}
+
+function formatDateSafe(value) {
+  if (!value) return 'Not set';
+  try {
+    return new Date(value).toLocaleDateString();
+  } catch {
+    return value;
+  }
+}
+
+function getInitials(name = '') {
+  if (!name) return 'US';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function applyAvatarInitials(selector, name) {
+  document.querySelectorAll(selector).forEach(el => {
+    el.setAttribute('data-initials', getInitials(name));
+  });
+}
+
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
 }
+// ===== COMPACT MODE =====
+function applyCompactMode(isCompact) {
+  const enable = Boolean(isCompact);
+  document.body.classList.toggle('compact', enable);
+  localStorage.setItem(COMPACT_STORAGE_KEY, enable ? '1' : '0');
 
-// ===== NAVIGATION =====
-function showSection(sectionName) {
-  document.querySelectorAll('.section').forEach(sec => {
-    sec.classList.remove('active');
+  document.querySelectorAll('[data-compact-toggle]').forEach(btn => {
+    btn.setAttribute('aria-pressed', enable ? 'true' : 'false');
+    btn.classList.toggle('active', enable);
+    const status = btn.querySelector('[data-compact-status]');
+    if (status) status.textContent = enable ? 'On' : 'Off';
   });
-  document.getElementById(`section-${sectionName}`).classList.add('active');
+}
 
-  document.querySelectorAll('.nav-link').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.section === sectionName);
+function initCompactToggle() {
+  const saved = localStorage.getItem(COMPACT_STORAGE_KEY) === '1';
+  applyCompactMode(saved);
+
+  document.querySelectorAll('[data-compact-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyCompactMode(!document.body.classList.contains('compact'));
+    });
   });
+}
 
-  switch (sectionName) {
+// ===== VIEW SWITCHES =====
+function initViewSwitches() {
+  document.querySelectorAll('[data-view-switch]').forEach(switchEl => {
+    const section = switchEl.getAttribute('data-view-switch');
+    const saved = getViewPref(section);
+    switchEl.querySelectorAll('button').forEach(btn => {
+      const view = btn.getAttribute('data-view');
+      btn.classList.toggle('active', view === saved);
+      btn.addEventListener('click', () => {
+        switchEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        setViewPref(section, view);
+        refreshSection(section);
+      });
+    });
+  });
+}
+
+function refreshSection(section) {
+  switch (section) {
     case 'dashboard': loadDashboard(); break;
     case 'centers': loadCenters(); break;
     case 'specialists': loadSpecialists(); break;
@@ -41,6 +151,19 @@ function showSection(sectionName) {
     case 'modules': loadModules(); break;
     case 'questions': loadQuestions(); break;
   }
+}
+
+// ===== NAVIGATION =====
+function showSection(sectionName) {
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  const sectionEl = document.getElementById(`section-${sectionName}`);
+  if (sectionEl) sectionEl.classList.add('active');
+
+  document.querySelectorAll('.nav-link').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.section === sectionName);
+  });
+
+  refreshSection(sectionName);
 }
 
 // ===== DASHBOARD =====
@@ -54,13 +177,15 @@ async function loadDashboard() {
   setText('statModules', t.modules ?? 0);
   updateDonutChart(t);
 }
-
 // ===== CENTERS =====
 async function loadCenters() {
+  const view = getViewPref('centers');
   const grid = document.getElementById('centersGrid');
   const empty = document.getElementById('centersEmpty');
   const hint = document.getElementById('centersCountHint');
+  const tableWrap = document.getElementById('centersTableWrap');
   grid.innerHTML = '';
+  if (tableWrap) tableWrap.innerHTML = '';
 
   const data = await apiCall('listCenters');
   if (!data.success) return;
@@ -68,44 +193,97 @@ async function loadCenters() {
   const centers = data.centers || [];
   if (hint) hint.textContent = `${centers.length} center${centers.length !== 1 ? 's' : ''}`;
 
-  if (!centers.length) {
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
+  const hasData = centers.length > 0;
+  empty.style.display = hasData ? 'none' : 'block';
+  grid.style.display = view === 'card' ? 'grid' : 'none';
+  if (tableWrap) tableWrap.style.display = view === 'table' ? 'block' : 'none';
+  if (!hasData) return;
 
-  centers.forEach(c => {
-    const card = document.createElement('article');
-    card.className = 'center-card';
+  if (view === 'card') {
+    centers.forEach(c => {
+      const card = document.createElement('article');
+      card.className = 'center-card';
 
-    card.innerHTML = `
-      ${c.photo ? `<div class="center-photo" style="background-image:url('${c.photo}')"></div>` : ''}
-      <div class="card-body">
-        <div class="title">${c.name || 'Unnamed center'}</div>
-        <div class="place muted">Center ID: ${c.center_id}</div>
-        <div class="desc">
-          ${c.description || '<span class="muted">No description provided</span>'}
-        </div>
-      </div>
-      <footer>
-        <div class="center-footer">
-          <div class="center-credentials">
-            <span class="pill small">User: ${c.username}</span>
-            <span class="pill small">Specs: ${c.num_specialists}</span>
-            <span class="pill small">Children: ${c.num_children}</span>
-          </div>
-          <div class="card-actions">
-            <button class="ghost small" data-edit-center="${c.center_id}">Edit</button>
-            <button class="ghost small danger" data-delete-center="${c.center_id}">Delete</button>
+      card.innerHTML = `
+        ${c.photo ? `<div class="center-photo" style="background-image:url('${c.photo}')"></div>` : ''}
+        <div class="card-body">
+          <div class="title">${c.name || 'Center'}</div>
+          <div class="place muted">ID: ${c.center_id}</div>
+          <div class="desc">
+            ${c.description || '<span class="muted">No description provided</span>'}
           </div>
         </div>
-      </footer>
+        <footer>
+          <div class="center-footer">
+            <div class="center-credentials">
+              <span class="pill small">User: ${c.username}</span>
+              <span class="pill small">Specs: ${c.num_specialists}</span>
+              <span class="pill small">Children: ${c.num_children}</span>
+            </div>
+            <div class="card-actions">
+              <button class="ghost small" data-edit-center="${c.center_id}">Edit</button>
+              <button class="ghost small danger" data-delete-center="${c.center_id}">Delete</button>
+            </div>
+          </div>
+        </footer>
+      `;
+
+      grid.appendChild(card);
+    });
+    grid.addEventListener('click', handleCenterCardClick, { once: true });
+  } else if (tableWrap) {
+    const sort = sortState.centers;
+    const sorted = [...centers].sort((a, b) => {
+      if (!sort.key) return 0;
+      const av = a[sort.key] || '';
+      const bv = b[sort.key] || '';
+      return sort.dir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    const table = document.createElement('table');
+    table.className = 'management-table';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th data-sort="name">Center</th>
+          <th data-sort="center_id">ID</th>
+          <th data-sort="num_specialists">Specialists</th>
+          <th data-sort="num_children">Children</th>
+          <th data-sort="username">Username</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted
+          .map(
+            c => `
+              <tr>
+                <td>${c.name || 'Center'}</td>
+                <td class="meta-muted">${c.center_id || '—'}</td>
+                <td>${c.num_specialists ?? 0}</td>
+                <td>${c.num_children ?? 0}</td>
+                <td class="meta-muted">${c.username || '—'}</td>
+                <td class="table-actions">
+                  <button class="ghost small" data-edit-center="${c.center_id}">Edit</button>
+                  <button class="ghost small danger" data-delete-center="${c.center_id}">Delete</button>
+                </td>
+              </tr>
+            `
+          )
+          .join('')}
+      </tbody>
     `;
-
-    grid.appendChild(card);
-  });
-
-  grid.addEventListener('click', handleCenterCardClick, { once: true });
+    tableWrap.innerHTML = '';
+    tableWrap.appendChild(table);
+    table.addEventListener('click', handleCenterCardClick, { once: true });
+    table.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.getAttribute('data-sort');
+        const dir = sort.key === key && sort.dir === 'asc' ? 'desc' : 'asc';
+        sortState.centers = { key, dir };
+        loadCenters();
+      });
+    });
+  }
 }
 
 async function handleCenterCardClick(e) {
@@ -118,13 +296,16 @@ async function handleCenterCardClick(e) {
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-center');
     if (await confirmAction('Delete this center?')) {
-      await apiCall('deleteCenter', {
+      showToast('Removing center...', 'success', 'Working');
+      apiCall('deleteCenter', {
         center_id: id,
         actor_username: getCurrentUserName(),
         actor_role: 'admin'
+      }).then(() => {
+        showToast('Center deleted');
+        loadCenters();
+        setTimeout(loadDashboard, 300);
       });
-      loadCenters();
-      loadDashboard();
     }
   }
 }
@@ -142,6 +323,7 @@ function openCenterModalForCreate() {
 }
 
 async function openCenterModalForEdit(centerId) {
+  showToast('Loading center...', 'success', 'Working');
   const data = await apiCall('listCenters');
   if (!data.success) return;
   const center = (data.centers || []).find(c => c.center_id == centerId);
@@ -160,6 +342,8 @@ async function openCenterModalForEdit(centerId) {
 }
 
 async function saveCenter() {
+  const saveBtn = document.getElementById('centerSaveBtn');
+  setButtonLoading(saveBtn, true, 'Saving...');
   const id = document.getElementById('centerId').value;
   const payload = {
     name: document.getElementById('centerNameInput').value,
@@ -171,66 +355,125 @@ async function saveCenter() {
     actor_role: 'admin'
   };
 
-  let res;
-  if (id) {
-    res = await apiCall('updateCenter', { center_id: id, ...payload });
-  } else {
-    res = await apiCall('createCenter', payload);
-  }
+  try {
+    let res;
+    if (id) {
+      res = await apiCall('updateCenter', { center_id: id, ...payload });
+    } else {
+      res = await apiCall('createCenter', payload);
+    }
 
-  if (res.success) {
-    closeModal('centerModal');
-    loadCenters();
-    loadDashboard();
-  } else {
-    alert(res.error || 'Error saving center');
+    if (res.success) {
+      closeModal('centerModal');
+      showToast('Center saved successfully');
+      loadCenters();
+      loadDashboard();
+    } else {
+      showToast(res.error || 'Error saving center', 'error', 'Save failed');
+    }
+  } finally {
+    setButtonLoading(saveBtn, false);
   }
 }
-
 // ===== SPECIALISTS =====
 async function loadSpecialists() {
+  const view = getViewPref('specialists');
   const grid = document.getElementById('specialistsGrid');
   const empty = document.getElementById('specialistsEmpty');
+  const tableWrap = document.getElementById('specialistsTableWrap');
   grid.innerHTML = '';
+  if (tableWrap) tableWrap.innerHTML = '';
 
   const data = await apiCall('listSpecialists');
   if (!data.success) return;
 
   const specialists = data.specialists || [];
-  if (!specialists.length) {
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
+  const hasData = specialists.length > 0;
+  empty.style.display = hasData ? 'none' : 'block';
+  grid.style.display = view === 'card' ? 'grid' : 'none';
+  if (tableWrap) tableWrap.style.display = view === 'table' ? 'block' : 'none';
+  if (!hasData) return;
 
-  specialists.forEach(s => {
-    const card = document.createElement('article');
-    card.className = 'specialist-card';
+  if (view === 'card') {
+    specialists.forEach(s => {
+      const photo = s.photo || s.photo_url || s.photo_base64 || '';
+      const avatarStyle = photo ? `style="background-image:url('${photo}')"` : '';
+      const avatarClasses = `avatar avatar-static${photo ? ' has-photo' : ''}`;
+      const initials = photo ? '' : `data-initials="${getInitials(s.name || s.username)}"`;
 
-    const avatarUrl = s.photo || s.photo_url || s.photo_base64 || '';
-    const avatarStyle = avatarUrl ? ` style="background-image:url('${avatarUrl}')"` : '';
-
-    card.innerHTML = `
-      <div class="avatar avatar-static${avatarUrl ? ' has-photo' : ''}"${avatarStyle}></div>
-      <div>
-        <strong>${s.name || 'Unnamed specialist'}</strong>
-        <p>${s.description || '<span class="muted">No description provided</span>'}</p>
-      </div>
-      <div class="specialist-credentials">
-        <span class="chip subtle">${s.type === 'freelance' ? 'Freelance' : 'Center-linked'}</span>
-        ${s.center_id ? `<span class="chip subtle">Center: ${s.center_id}</span>` : ''}
-        <span class="chip subtle">Children: ${s.num_children}</span>
-        <span class="chip subtle">User: ${s.username}</span>
-      </div>
-      <div class="card-actions">
-        <button class="ghost small" data-edit-spec="${s.specialist_id}">Edit</button>
-        <button class="ghost small danger" data-delete-spec="${s.specialist_id}">Delete</button>
-      </div>
+      const card = document.createElement('article');
+      card.className = 'specialist-card';
+      card.innerHTML = `
+        <div class="${avatarClasses}" ${avatarStyle} ${initials}></div>
+        <strong>${s.name || s.username || 'Specialist'}</strong>
+        <p>${s.description || '<span class="muted">No description</span>'}</p>
+        <div class="specialist-credentials">
+          <span class="chip subtle">${s.type === 'freelance' ? 'Freelance' : 'Center-linked'}</span>
+          ${s.center_id ? `<span class="chip subtle">Center: ${s.center_id}</span>` : ''}
+          <span class="chip subtle">Children: ${s.num_children ?? 0}</span>
+          <span class="chip subtle">User: ${s.username}</span>
+        </div>
+        <div class="card-actions">
+          <button class="ghost small" data-edit-spec="${s.specialist_id}">Edit</button>
+          <button class="ghost small danger" data-delete-spec="${s.specialist_id}">Delete</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    grid.addEventListener('click', handleSpecialistCardClick, { once: true });
+  } else if (tableWrap) {
+    const sort = sortState.specialists;
+    const sorted = [...specialists].sort((a, b) => {
+      if (!sort.key) return 0;
+      const av = a[sort.key] || '';
+      const bv = b[sort.key] || '';
+      return sort.dir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    const table = document.createElement('table');
+    table.className = 'management-table';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th data-sort="name">Specialist</th>
+          <th data-sort="specialist_id">ID</th>
+          <th data-sort="center_id">Center</th>
+          <th data-sort="num_children">Children</th>
+          <th data-sort="username">Username</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted
+          .map(
+            s => `
+              <tr>
+                <td>${s.name || s.username || 'Specialist'}</td>
+                <td class="meta-muted">${s.specialist_id || '—'}</td>
+                <td class="meta-muted">${s.center_id || '—'}</td>
+                <td>${s.num_children ?? 0}</td>
+                <td class="meta-muted">${s.username || '—'}</td>
+                <td class="table-actions">
+                  <button class="ghost small" data-edit-spec="${s.specialist_id}">Edit</button>
+                  <button class="ghost small danger" data-delete-spec="${s.specialist_id}">Delete</button>
+                </td>
+              </tr>
+            `
+          )
+          .join('')}
+      </tbody>
     `;
-    grid.appendChild(card);
-  });
-
-  grid.addEventListener('click', handleSpecialistCardClick, { once: true });
+    tableWrap.innerHTML = '';
+    tableWrap.appendChild(table);
+    table.addEventListener('click', handleSpecialistCardClick, { once: true });
+    table.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.getAttribute('data-sort');
+        const dir = sort.key === key && sort.dir === 'asc' ? 'desc' : 'asc';
+        sortState.specialists = { key, dir };
+        loadSpecialists();
+      });
+    });
+  }
 }
 
 async function handleSpecialistCardClick(e) {
@@ -242,14 +485,17 @@ async function handleSpecialistCardClick(e) {
     openSpecialistModalForEdit(id);
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-spec');
-    if (await confirmAction('Soft delete this specialist?')) {
-      await apiCall('deleteSpecialist', {
+    if (await confirmAction('Delete this specialist?')) {
+      showToast('Removing specialist...', 'success', 'Working');
+      apiCall('deleteSpecialist', {
         specialist_id: id,
         actor_username: getCurrentUserName(),
         actor_role: 'admin'
+      }).then(() => {
+        showToast('Specialist deleted');
+        loadSpecialists();
+        setTimeout(loadDashboard, 300);
       });
-      loadSpecialists();
-      loadDashboard();
     }
   }
 }
@@ -269,6 +515,7 @@ function openSpecialistModalForCreate() {
 }
 
 async function openSpecialistModalForEdit(specId) {
+  showToast('Loading specialist...', 'success', 'Working');
   const data = await apiCall('listSpecialists');
   if (!data.success) return;
   const spec = (data.specialists || []).find(s => s.specialist_id == specId);
@@ -289,6 +536,8 @@ async function openSpecialistModalForEdit(specId) {
 }
 
 async function saveSpecialist() {
+  const saveBtn = document.getElementById('specialistSaveBtn');
+  setButtonLoading(saveBtn, true, 'Saving...');
   const id = document.getElementById('specId').value;
   const payload = {
     name: document.getElementById('specNameInput').value,
@@ -302,121 +551,232 @@ async function saveSpecialist() {
     actor_role: 'admin'
   };
 
-  let res;
-  if (id) {
-    res = await apiCall('updateSpecialist', { specialist_id: id, ...payload });
-  } else {
-    res = await apiCall('createSpecialist', payload);
-  }
+  try {
+    let res;
+    if (id) {
+      res = await apiCall('updateSpecialist', { specialist_id: id, ...payload });
+    } else {
+      res = await apiCall('createSpecialist', payload);
+    }
 
-  if (res.success) {
-    closeModal('specialistModal');
-    loadSpecialists();
-    loadDashboard();
-  } else {
-    alert(res.error || 'Error saving specialist');
+    if (res.success) {
+      closeModal('specialistModal');
+      showToast('Specialist saved');
+      loadSpecialists();
+      loadDashboard();
+    } else {
+      showToast(res.error || 'Error saving specialist', 'error', 'Save failed');
+    }
+  } finally {
+    setButtonLoading(saveBtn, false);
   }
 }
-
 // ===== CHILDREN =====
 async function loadChildren() {
+  const view = getViewPref('children');
   const grid = document.getElementById('childrenGrid');
   const empty = document.getElementById('childrenEmpty');
+  const tableWrap = document.getElementById('childrenTableWrap');
   grid.innerHTML = '';
+  if (tableWrap) tableWrap.innerHTML = '';
 
   const data = await apiCall('listChildren');
   if (!data.success) return;
   const children = data.children || [];
 
-  if (!children.length) {
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
+  const hasData = children.length > 0;
+  empty.style.display = hasData ? 'none' : 'block';
+  grid.style.display = view === 'card' ? 'grid' : 'none';
+  if (tableWrap) tableWrap.style.display = view === 'table' ? 'block' : 'none';
+  if (!hasData) return;
 
-  children.forEach(ch => {
-    const card = document.createElement('article');
-    card.className = 'module-card'; // reuse module card style
+  if (view === 'card') {
+    children.forEach(ch => {
+      const card = document.createElement('article');
+      card.className = 'module-card';
 
-    card.innerHTML = `
-      <header>
-        <div>
-          <strong>${ch.name || 'Child'}</strong>
-          <div class="hint">ID: ${ch.child_id}</div>
+      card.innerHTML = `
+        <header>
+          <div>
+            <strong>${ch.name || 'Child'}</strong>
+            <div class="hint">ID: ${ch.child_id}</div>
+          </div>
+          <span class="chip subtle">${ch.age ? ch.age + ' yrs' : 'Age N/A'}</span>
+        </header>
+        <div class="module-meta">
+          <span>Center: ${ch.center_id || '—'}</span>
+          <span>Specialist: ${ch.specialist_id || '—'}</span>
+          <span>Sessions: ${ch.num_sessions || 0}</span>
         </div>
-        <span class="chip subtle">${ch.age ? ch.age + ' yrs' : 'Age N/A'}</span>
-      </header>
-      <div class="module-meta">
-        <span>Center: ${ch.center_id || '—'}</span>
-        <span>Specialist: ${ch.specialist_id || '—'}</span>
-        <span>Sessions: ${ch.num_sessions || 0}</span>
-      </div>
-      <div class="hint">
-        Latest assessment: ${ch.latest_assessment_date ? new Date(ch.latest_assessment_date).toLocaleDateString() : 'None'}
-      </div>
-      <div>
-        <button class="ghost small" data-view-child="${ch.child_id}">View profile</button>
-      </div>
+        <div class="hint">
+          Latest assessment: ${formatDateSafe(ch.latest_assessment_date)}
+        </div>
+        <div class="card-actions">
+          <button class="ghost small" data-view-child="${ch.child_id}">View profile</button>
+        </div>
+      `;
+
+      grid.appendChild(card);
+    });
+    grid.addEventListener('click', handleChildCardClick, { once: true });
+  } else if (tableWrap) {
+    const sort = sortState.children;
+    const sorted = [...children].sort((a, b) => {
+      if (!sort.key) return 0;
+      const av = a[sort.key] || '';
+      const bv = b[sort.key] || '';
+      return sort.dir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    const table = document.createElement('table');
+    table.className = 'management-table';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th data-sort="name">Child</th>
+          <th data-sort="child_id">ID</th>
+          <th data-sort="center_id">Center</th>
+          <th data-sort="specialist_id">Specialist</th>
+          <th data-sort="num_sessions">Sessions</th>
+          <th data-sort="age">Age</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted
+          .map(
+            ch => `
+              <tr>
+                <td>${ch.name || 'Child'}</td>
+                <td class="meta-muted">${ch.child_id || '—'}</td>
+                <td class="meta-muted">${ch.center_id || '—'}</td>
+                <td class="meta-muted">${ch.specialist_id || '—'}</td>
+                <td>${ch.num_sessions ?? 0}</td>
+                <td>${ch.age ?? '—'}</td>
+              </tr>
+            `
+          )
+          .join('')}
+      </tbody>
     `;
-
-    grid.appendChild(card);
-  });
-
-  grid.addEventListener('click', handleChildCardClick, { once: true });
+    tableWrap.innerHTML = '';
+    tableWrap.appendChild(table);
+    table.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.getAttribute('data-sort');
+        const dir = sort.key === key && sort.dir === 'asc' ? 'desc' : 'asc';
+        sortState.children = { key, dir };
+        loadChildren();
+      });
+    });
+  }
 }
 
 async function handleChildCardClick(e) {
   const btn = e.target.closest('[data-view-child]');
   if (!btn) return;
   const childId = btn.getAttribute('data-view-child');
-  // for now just alert; later you can open a detailed child modal
-  alert(`Child profile view not yet implemented (child_id: ${childId})`);
+  showToast(`Child profile view (ID: ${childId}) coming soon`, 'success', 'Info');
 }
 
 // ===== MODULES =====
 async function loadModules() {
+  const view = getViewPref('modules');
   const grid = document.getElementById('modulesGrid');
   const empty = document.getElementById('modulesEmpty');
+  const tableWrap = document.getElementById('modulesTableWrap');
   grid.innerHTML = '';
+  if (tableWrap) tableWrap.innerHTML = '';
 
   const data = await apiCall('listModules');
   if (!data.success) return;
 
   const modules = data.modules || [];
-  if (!modules.length) {
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
+  const hasData = modules.length > 0;
+  empty.style.display = hasData ? 'none' : 'block';
+  grid.style.display = view === 'card' ? 'grid' : 'none';
+  if (tableWrap) tableWrap.style.display = view === 'table' ? 'block' : 'none';
+  if (!hasData) return;
 
-  modules.forEach(m => {
-    const card = document.createElement('article');
-    card.className = 'module-card';
+  if (view === 'card') {
+    modules.forEach(m => {
+      const card = document.createElement('article');
+      card.className = 'module-card';
 
-    card.innerHTML = `
-      <header>
-        <div>
-          <strong>${m.name || 'Module'}</strong>
-          <div class="hint">ID: ${m.module_id}</div>
+      card.innerHTML = `
+        <header>
+          <div>
+            <strong>${m.name || 'VR Module'}</strong>
+            <div class="hint">ID: ${m.module_id}</div>
+          </div>
+          <span class="chip subtle">${m.minutes_to_play || 0} min</span>
+        </header>
+        <div class="module-meta">
+          <span>Centers: ${m.num_centers_assigned || 0}</span>
+          <span>Status: ${m.status || 'active'}</span>
         </div>
-        <span class="chip subtle">${m.minutes_to_play || 0} min</span>
-      </header>
-      <div class="module-meta">
-        <span>Centers assigned: ${m.num_centers_assigned || 0}</span>
-        <span>Status: ${m.status || 'active'}</span>
-      </div>
-      <div class="hint">
-        ${m.description || '<span class="muted">No description.</span>'}
-      </div>
-      <div class="card-actions">
-        <button class="ghost small" data-edit-module="${m.module_id}">Edit</button>
-        <button class="ghost small danger" data-delete-module="${m.module_id}">Delete</button>
-      </div>
+        <div class="hint">
+          ${m.description || '<span class="muted">No description.</span>'}
+        </div>
+        <div class="card-actions">
+          <button class="ghost small" data-edit-module="${m.module_id}">Edit</button>
+          <button class="ghost small danger" data-delete-module="${m.module_id}">Delete</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    grid.addEventListener('click', handleModuleCardClick, { once: true });
+  } else if (tableWrap) {
+    const sort = sortState.modules;
+    const sorted = [...modules].sort((a, b) => {
+      if (!sort.key) return 0;
+      const av = a[sort.key] || '';
+      const bv = b[sort.key] || '';
+      return sort.dir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    const table = document.createElement('table');
+    table.className = 'management-table';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th data-sort="name">VR Module</th>
+          <th data-sort="module_id">ID</th>
+          <th data-sort="minutes_to_play">Minutes</th>
+          <th data-sort="num_centers_assigned">Centers</th>
+          <th data-sort="status">Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted
+          .map(
+            m => `
+              <tr>
+                <td>${m.name || 'VR Module'}</td>
+                <td class="meta-muted">${m.module_id || '—'}</td>
+                <td>${m.minutes_to_play ?? 0}</td>
+                <td>${m.num_centers_assigned ?? 0}</td>
+                <td class="meta-muted">${m.status || 'active'}</td>
+                <td class="table-actions">
+                  <button class="ghost small" data-edit-module="${m.module_id}">Edit</button>
+                  <button class="ghost small danger" data-delete-module="${m.module_id}">Delete</button>
+                </td>
+              </tr>
+            `
+          )
+          .join('')}
+      </tbody>
     `;
-    grid.appendChild(card);
-  });
-
-  grid.addEventListener('click', handleModuleCardClick, { once: true });
+    tableWrap.innerHTML = '';
+    tableWrap.appendChild(table);
+    table.addEventListener('click', handleModuleCardClick, { once: true });
+    table.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.getAttribute('data-sort');
+        const dir = sort.key === key && sort.dir === 'asc' ? 'desc' : 'asc';
+        sortState.modules = { key, dir };
+        loadModules();
+      });
+    });
+  }
 }
 
 async function handleModuleCardClick(e) {
@@ -428,70 +788,84 @@ async function handleModuleCardClick(e) {
     openModuleModalForEdit(id);
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-module');
-    if (await confirmAction('Soft delete this module?')) {
-      await apiCall('deleteModule', {
+    if (await confirmAction('Delete this module?')) {
+      showToast('Removing module...', 'success', 'Working');
+      apiCall('deleteModule', {
         module_id: id,
         actor_username: getCurrentUserName(),
         actor_role: 'admin'
+      }).then(() => {
+        showToast('Module deleted');
+        loadModules();
+        setTimeout(loadDashboard, 300);
       });
-      loadModules();
-      loadDashboard();
     }
   }
 }
 
 function openModuleModalForCreate() {
   document.getElementById('moduleId').value = '';
-  document.getElementById('moduleModalTitle').textContent = 'Add Module';
+  document.getElementById('moduleModalTitle').textContent = 'Add VR Module';
   document.getElementById('modNameInput').value = '';
-  document.getElementById('modPhotoInput').value = '';
+  document.getElementById('modulePhotoInput').value = '';
+  document.getElementById('modulePhotoFile').value = '';
+  setModulePhotoPreview('');
   document.getElementById('modMinutesInput').value = '';
   document.getElementById('modDescInput').value = '';
   openModal('moduleModal');
 }
 
 async function openModuleModalForEdit(moduleId) {
+  showToast('Loading module...', 'success', 'Working');
   const data = await apiCall('listModules');
   if (!data.success) return;
   const m = (data.modules || []).find(x => x.module_id == moduleId);
   if (!m) return;
 
   document.getElementById('moduleId').value = m.module_id;
-  document.getElementById('moduleModalTitle').textContent = 'Edit Module';
+  document.getElementById('moduleModalTitle').textContent = 'Edit VR Module';
   document.getElementById('modNameInput').value = m.name || '';
-  document.getElementById('modPhotoInput').value = m.photo_url || '';
+  document.getElementById('modulePhotoInput').value = m.photo_url || '';
+  document.getElementById('modulePhotoFile').value = '';
+  setModulePhotoPreview(m.photo_url || '');
   document.getElementById('modMinutesInput').value = m.minutes_to_play || '';
   document.getElementById('modDescInput').value = m.description || '';
   openModal('moduleModal');
 }
 
 async function saveModule() {
+  const saveBtn = document.getElementById('moduleSaveBtn');
+  setButtonLoading(saveBtn, true, 'Saving...');
   const id = document.getElementById('moduleId').value;
   const payload = {
     name: document.getElementById('modNameInput').value,
-    photo_url: document.getElementById('modPhotoInput').value,
+    photo_url: document.getElementById('modulePhotoInput').value,
     minutes_to_play: document.getElementById('modMinutesInput').value,
     description: document.getElementById('modDescInput').value,
     actor_username: getCurrentUserName(),
     actor_role: 'admin'
   };
 
-  let res;
-  if (id) {
-    res = await apiCall('updateModule', { module_id: id, ...payload });
-  } else {
-    res = await apiCall('createModule', payload);
-  }
+  try {
+    let res;
+    if (id) {
+      res = await apiCall('updateModule', { module_id: id, ...payload });
+    } else {
+      res = await apiCall('createModule', payload);
+    }
 
-  if (res.success) {
-    closeModal('moduleModal');
-    loadModules();
-    loadDashboard();
-  } else {
-    alert(res.error || 'Error saving module');
+    if (res.success) {
+      closeModal('moduleModal');
+      showToast('Module saved');
+      loadModules();
+      loadDashboard();
+    } else {
+      showToast(res.error || 'Error saving module', 'error', 'Save failed');
+    }
+  } finally {
+    setButtonLoading(saveBtn, false);
   }
 }
-
 // ===== QUESTIONS =====
 async function loadQuestions() {
   const list = document.getElementById('questionsList');
@@ -512,11 +886,11 @@ async function loadQuestions() {
     const item = document.createElement('div');
     item.className = 'recommendation';
     item.innerHTML = `
-      <div class="recommendation-icon">❓</div>
+      <div class="recommendation-icon">Q</div>
       <div class="recommendation-body">
         <strong>${q.question_text}</strong>
         <div class="hint">
-          Category: ${q.category || '—'} · Difficulty: ${q.difficulty || '—'} · ID: ${q.question_id}
+          Category: ${q.category || 'General'} | Difficulty: ${q.difficulty || 'N/A'} | ID: ${q.question_id}
         </div>
         <div style="margin-top:0.3rem;">
           <button class="ghost small" data-edit-question="${q.question_id}">Edit</button>
@@ -539,13 +913,16 @@ async function handleQuestionListClick(e) {
     openQuestionModalForEdit(id);
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-question');
-    if (await confirmAction('Soft delete this question?')) {
-      await apiCall('deleteQuestion', {
+    if (await confirmAction('Delete this question?')) {
+      showToast('Removing question...', 'success', 'Working');
+      apiCall('deleteQuestion', {
         question_id: id,
         actor_username: getCurrentUserName(),
         actor_role: 'admin'
+      }).then(() => {
+        showToast('Question deleted');
+        loadQuestions();
       });
-      loadQuestions();
     }
   }
 }
@@ -560,6 +937,7 @@ function openQuestionModalForCreate() {
 }
 
 async function openQuestionModalForEdit(questionId) {
+  showToast('Loading question...', 'success', 'Working');
   const data = await apiCall('listQuestions');
   if (!data.success) return;
   const q = (data.questions || []).find(x => x.question_id == questionId);
@@ -574,6 +952,8 @@ async function openQuestionModalForEdit(questionId) {
 }
 
 async function saveQuestion() {
+  const saveBtn = document.getElementById('questionSaveBtn');
+  setButtonLoading(saveBtn, true, 'Saving...');
   const id = document.getElementById('questionId').value;
   const payload = {
     question_text: document.getElementById('qTextInput').value,
@@ -583,18 +963,23 @@ async function saveQuestion() {
     actor_role: 'admin'
   };
 
-  let res;
-  if (id) {
-    res = await apiCall('updateQuestion', { question_id: id, ...payload });
-  } else {
-    res = await apiCall('createQuestion', payload);
-  }
+  try {
+    let res;
+    if (id) {
+      res = await apiCall('updateQuestion', { question_id: id, ...payload });
+    } else {
+      res = await apiCall('createQuestion', payload);
+    }
 
-  if (res.success) {
-    closeModal('questionModal');
-    loadQuestions();
-  } else {
-    alert(res.error || 'Error saving question');
+    if (res.success) {
+      closeModal('questionModal');
+      showToast('Question saved');
+      loadQuestions();
+    } else {
+      showToast(res.error || 'Error saving question', 'error', 'Save failed');
+    }
+  } finally {
+    setButtonLoading(saveBtn, false);
   }
 }
 
@@ -617,11 +1002,16 @@ function initModalCloseButtons() {
     });
   });
 
-  // close when clicking backdrop
   document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
     backdrop.addEventListener('click', e => {
       if (e.target === backdrop) backdrop.classList.remove('active');
     });
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop.active').forEach(backdrop => backdrop.classList.remove('active'));
+    }
   });
 }
 
@@ -649,6 +1039,7 @@ function initUserChip() {
   const name = getCurrentUserName();
   const el = document.getElementById('currentUserName');
   if (el) el.textContent = name || 'Admin';
+  applyAvatarInitials('.sidebar .avatar', name);
 
   const roleEl = document.getElementById('currentUserRole');
   const role = getCurrentUserRole();
@@ -661,16 +1052,18 @@ function initDynamicLabels() {
   const rolePretty = roleLabel ? roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1) : 'Admin';
 
   setText('welcomeName', name);
-  setText('brandName', name);
+  setText('brandName', 'UnitySphere');
   const avatar = document.querySelector('.sidebar .avatar');
   const photo = getCurrentUserData().photo || getCurrentUserData().photo_url || '';
   if (avatar) {
     if (photo) {
       avatar.style.backgroundImage = `url('${photo}')`;
       avatar.classList.add('has-photo');
+      avatar.removeAttribute('data-initials');
     } else {
       avatar.style.backgroundImage = '';
       avatar.classList.remove('has-photo');
+      avatar.setAttribute('data-initials', getInitials(name));
     }
   }
 
@@ -679,7 +1072,6 @@ function initDynamicLabels() {
     brandRole.textContent = `${rolePretty} workspace`;
   }
 }
-
 function openAccountSettings() {
   const user = getCurrentUserData();
   document.getElementById('accountNameInput').value = user.name || user.full_name || user.fullName || user.displayName || user.username || '';
@@ -737,6 +1129,30 @@ function handleCenterPhotoChange(e) {
 
 function setCenterPhotoPreview(src) {
   const preview = document.getElementById('centerPhotoPreview');
+  if (!preview) return;
+  if (src) {
+    preview.style.backgroundImage = `url('${src}')`;
+    preview.classList.add('has-photo');
+  } else {
+    preview.style.backgroundImage = '';
+    preview.classList.remove('has-photo');
+  }
+}
+
+function handleModulePhotoChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    document.getElementById('modulePhotoInput').value = dataUrl;
+    setModulePhotoPreview(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setModulePhotoPreview(src) {
+  const preview = document.getElementById('modulePhotoPreview');
   if (!preview) return;
   if (src) {
     preview.style.backgroundImage = `url('${src}')`;
@@ -833,7 +1249,7 @@ function updateDonutChart(totals = {}) {
   const total = slices.reduce((sum, s) => sum + (isFinite(s.value) ? s.value : 0), 0);
   let acc = 0;
   const gradient = slices
-    .map((slice, idx) => {
+    .map(slice => {
       const pct = total > 0 ? (slice.value / total) * 100 : 25;
       const start = acc;
       const end = acc + pct;
@@ -848,7 +1264,6 @@ function updateDonutChart(totals = {}) {
 function initAuthGuard() {
   const role = localStorage.getItem('role');
   if (role !== 'admin') {
-    // not an admin → redirect to login
     window.location.href = 'login.html';
   }
 }
@@ -859,8 +1274,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initUserChip();
   initDynamicLabels();
   initModalCloseButtons();
+  initCompactToggle();
+  initViewSwitches();
   document.getElementById('specPhotoFile')?.addEventListener('change', handleSpecPhotoChange);
   document.getElementById('centerPhotoFile')?.addEventListener('change', handleCenterPhotoChange);
+  document.getElementById('modulePhotoFile')?.addEventListener('change', handleModulePhotoChange);
   document.getElementById('accountPhotoFile')?.addEventListener('change', handleAccountPhotoChange);
   document.getElementById('accountSettingsBtn')?.addEventListener('click', openAccountSettings);
   document.getElementById('accountSaveBtn')?.addEventListener('click', saveAccountSettings);
@@ -877,6 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (active) {
       const id = active.id.replace('section-', '');
       showSection(id);
+      showToast('Section refreshed', 'success', 'Refreshed');
     } else {
       loadDashboard();
     }
@@ -887,6 +1306,14 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem('user');
     window.location.href = 'login.html';
   });
+
+  // empty-state CTAs
+  document.getElementById('centersEmptyAdd')?.addEventListener('click', openCenterModalForCreate);
+  document.getElementById('specialistsEmptyAdd')?.addEventListener('click', openSpecialistModalForCreate);
+  document.getElementById('childrenEmptyAddCenter')?.addEventListener('click', openCenterModalForCreate);
+  document.getElementById('childrenEmptyAddSpecialist')?.addEventListener('click', openSpecialistModalForCreate);
+  document.getElementById('modulesEmptyAdd')?.addEventListener('click', openModuleModalForCreate);
+  document.getElementById('questionsEmptyAdd')?.addEventListener('click', openQuestionModalForCreate);
 
   // center buttons
   document.getElementById('btnAddCenter')?.addEventListener('click', openCenterModalForCreate);
@@ -907,3 +1334,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // initial load
   loadDashboard();
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

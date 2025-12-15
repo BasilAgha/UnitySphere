@@ -23,8 +23,8 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="overview">🏠 <span>Overview</span></button>
-        <button class="nav-link" data-section="children">👦 <span>My Children</span></button>
+        <button class="nav-link active" data-section="overview">?? <span>Overview</span></button>
+        <button class="nav-link" data-section="children">?? <span>My Children</span></button>
       </nav>
 
       <div class="sidebar-footer">
@@ -47,6 +47,10 @@
           <p class="hint">Manage your children, sessions, and assessments.</p>
         </div>
         <div class="header-actions">
+          <button class="ghost compact-toggle" type="button" data-compact-toggle aria-pressed="false">
+            <span class="compact-label">Compact mode</span>
+            <span class="compact-status" data-compact-status>Off</span>
+          </button>
           <button class="ghost" id="refreshAllBtn">Refresh</button>
         </div>
       </header>
@@ -135,9 +139,13 @@
             </div>
 
             <div class="modules-grid" id="childrenGrid"></div>
-            <div class="empty-state" id="childrenEmpty" style="display:none;">
-              No children yet. Add your first child above.
-            </div>
+              <div class="empty-state" id="childrenEmpty" style="display:none;">
+                <div class="empty-title">No children yet</div>
+                <div>Add children assigned to you to track sessions and assessments.</div>
+                <div class="empty-actions">
+                  <button class="ghost small" id="specEmptyAddChild">Add Child</button>
+                </div>
+              </div>
           </div>
         </section>
       </main>

@@ -65,6 +65,10 @@
               </div>
         </div>
         <div class="header-actions">
+          <button class="ghost compact-toggle" type="button" data-compact-toggle aria-pressed="false">
+            <span class="compact-label">Compact mode</span>
+            <span class="compact-status" data-compact-status>Off</span>
+          </button>
           <button class="ghost" id="accountSettingsBtn">Account</button>
           <button class="ghost" id="refreshAllBtn">Refresh data</button>
         </div>
@@ -163,7 +167,11 @@
                 <h2>Centers</h2>
                 <p class="hint">Manage centers, their credentials, and basic stats.</p>
               </div>
-              <div>
+              <div class="section-actions">
+                <div class="view-switch" data-view-switch="centers">
+                  <button type="button" class="active" data-view="card">Cards</button>
+                  <button type="button" data-view="table">Table</button>
+                </div>
                 <button class="primary with-icon" id="btnAddCenter">
                   <span class="icon">+</span>
                   <span class="label">Add Center</span>
@@ -181,8 +189,14 @@
                 <!-- Centers will be rendered here as .center-card -->
               </div>
 
+              <div class="table-wrapper" id="centersTableWrap" style="display:none;"></div>
+
               <div class="empty-state" id="centersEmpty" style="display:none;">
-                No centers yet. Click Add Center to create the first one.
+                <div class="empty-title">No centers yet</div>
+                <div>Centers are hubs for specialists and children records. Create one to get started.</div>
+                <div class="empty-actions">
+                  <button class="ghost small" id="centersEmptyAdd">Add Center</button>
+                </div>
               </div>
             </div>
           </div>
@@ -196,18 +210,30 @@
                 <h2>Specialists</h2>
                 <p class="hint">Manage freelance and center-linked specialists.</p>
               </div>
-              <button class="primary with-icon" id="btnAddSpecialist">
-                <span class="icon">+</span>
-                <span class="label">Add Specialist</span>
-              </button>
+              <div class="section-actions">
+                <div class="view-switch" data-view-switch="specialists">
+                  <button type="button" class="active" data-view="card">Cards</button>
+                  <button type="button" data-view="table">Table</button>
+                </div>
+                <button class="primary with-icon" id="btnAddSpecialist">
+                  <span class="icon">+</span>
+                  <span class="label">Add Specialist</span>
+                </button>
+              </div>
             </div>
 
             <div class="specialists-grid" id="specialistsGrid">
               <!-- Specialist cards here -->
             </div>
 
+            <div class="table-wrapper" id="specialistsTableWrap" style="display:none;"></div>
+
             <div class="empty-state" id="specialistsEmpty" style="display:none;">
-              No specialists yet. Add your first therapist above.
+              <div class="empty-title">No specialists yet</div>
+              <div>Specialists deliver therapy and manage children. Add your first therapist to populate sessions.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="specialistsEmptyAdd">Add Specialist</button>
+              </div>
             </div>
           </div>
         </section>
@@ -220,14 +246,27 @@
                 <h2>Children</h2>
                 <p class="hint">View all children across centers and specialists.</p>
               </div>
+              <div class="section-actions">
+                <div class="view-switch" data-view-switch="children">
+                  <button type="button" class="active" data-view="card">Cards</button>
+                  <button type="button" data-view="table">Table</button>
+                </div>
+              </div>
             </div>
 
             <div class="modules-grid" id="childrenGrid">
               <!-- Children as cards, reusing modules-grid layout -->
             </div>
 
+            <div class="table-wrapper" id="childrenTableWrap" style="display:none;"></div>
+
             <div class="empty-state" id="childrenEmpty" style="display:none;">
-              No children found yet.
+              <div class="empty-title">No children yet</div>
+              <div>This space lists every child profile across centers. Add a center and specialist, then add children.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="childrenEmptyAddCenter">Add Center</button>
+                <button class="ghost small" id="childrenEmptyAddSpecialist">Add Specialist</button>
+              </div>
             </div>
           </div>
         </section>
@@ -240,18 +279,30 @@
                 <h2>VR Modules</h2>
                 <p class="hint">Manage VR modules available to centers.</p>
               </div>
-              <button class="primary with-icon" id="btnAddModule">
-                <span class="icon">+</span>
-                <span class="label">Add Module</span>
-              </button>
+              <div class="section-actions">
+                <div class="view-switch" data-view-switch="modules">
+                  <button type="button" class="active" data-view="card">Cards</button>
+                  <button type="button" data-view="table">Table</button>
+                </div>
+                <button class="primary with-icon" id="btnAddModule">
+                  <span class="icon">+</span>
+                  <span class="label">Add Module</span>
+                </button>
+              </div>
             </div>
 
             <div class="modules-grid" id="modulesGrid">
               <!-- Module cards -->
             </div>
 
+            <div class="table-wrapper" id="modulesTableWrap" style="display:none;"></div>
+
             <div class="empty-state" id="modulesEmpty" style="display:none;">
-              No VR modules yet. Add content to start assigning to centers.
+              <div class="empty-title">No VR modules yet</div>
+              <div>Modules are training experiences assignable to centers. Add one to start distributing content.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="modulesEmptyAdd">Add Module</button>
+              </div>
             </div>
           </div>
         </section>
@@ -275,7 +326,11 @@
             </div>
 
             <div class="empty-state" id="questionsEmpty" style="display:none;">
-              No questions yet. Add assessment questions to build your bank.
+              <div class="empty-title">No assessment questions</div>
+              <div>Questions power child assessments. Add prompts to build your question bank.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="questionsEmptyAdd">Add Question</button>
+              </div>
             </div>
           </div>
         </section>
@@ -402,9 +457,14 @@
           <label for="modNameInput">Name</label>
           <input id="modNameInput" type="text" placeholder="Module name" />
         </div>
-        <div class="input-group">
-          <label for="modPhotoInput">Photo URL</label>
-          <input id="modPhotoInput" type="text" placeholder="Thumbnail image URL" />
+        <input type="hidden" id="modulePhotoInput" />
+        <div class="photo-input">
+          <div class="avatar preview avatar-static" id="modulePhotoPreview"></div>
+          <div class="input-group">
+            <label for="modulePhotoFile">Thumbnail</label>
+            <input id="modulePhotoFile" type="file" accept="image/*" />
+            <p class="hint">Upload a module thumbnail (optional).</p>
+          </div>
         </div>
         <div class="input-group">
           <label for="modMinutesInput">Minutes to play</label>

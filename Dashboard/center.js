@@ -12,6 +12,14 @@ document.querySelectorAll(".nav-link").forEach(btn => {
   });
 });
 
+// ================= PREFERENCES =================
+initCompactMode();
+
+// ================= EMPTY STATE CTAs =================
+document.getElementById("centerEmptyAddSpecialist")?.addEventListener("click", () => showSection("specialists"));
+document.getElementById("centerEmptyAddChild")?.addEventListener("click", () => showSection("children"));
+document.getElementById("centerEmptyAssignModule")?.addEventListener("click", () => showSection("modules"));
+
 // ================= LOAD SECTIONS =================
 function loadSection(section) {
   switch (section) {
@@ -132,8 +140,11 @@ async function loadModules() {
 document.getElementById("logoutBtn").addEventListener("click", logout);
 
 document.getElementById("refreshAllBtn").addEventListener("click", () => {
-  const active = document.querySelector(".section.active")?.id.replace("section-", "");
-  loadSection(active || "overview");
+  const btn = document.getElementById("refreshAllBtn");
+  setButtonLoading(btn, true, "Refreshing...");
+  const active = document.querySelector(".section.active")?.id.replace("section-", "") || "overview";
+  loadSection(active);
+  setTimeout(() => setButtonLoading(btn, false), 400);
 });
 
 // Initial load
