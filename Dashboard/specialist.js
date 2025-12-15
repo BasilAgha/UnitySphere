@@ -270,7 +270,7 @@ async function saveChild() {
 }
 
 async function deleteChild(childId) {
-  if (!confirm("Soft delete this child?")) return;
+  if (!confirm("Delete this child?")) return;
 
   const res = await apiRequest("deleteChild", {
     child_id: childId,

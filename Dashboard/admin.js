@@ -52,6 +52,7 @@ async function loadDashboard() {
   setText('statSpecialists', t.specialists ?? 0);
   setText('statChildren', t.children ?? 0);
   setText('statModules', t.modules ?? 0);
+  updateDonutChart(t);
 }
 
 // ===== CENTERS =====
@@ -78,6 +79,7 @@ async function loadCenters() {
     card.className = 'center-card';
 
     card.innerHTML = `
+      ${c.photo ? `<div class="center-photo" style="background-image:url('${c.photo}')"></div>` : ''}
       <div class="card-body">
         <div class="title">${c.name || 'Unnamed center'}</div>
         <div class="place muted">Center ID: ${c.center_id}</div>
@@ -92,9 +94,9 @@ async function loadCenters() {
             <span class="pill small">Specs: ${c.num_specialists}</span>
             <span class="pill small">Children: ${c.num_children}</span>
           </div>
-          <div>
+          <div class="card-actions">
             <button class="ghost small" data-edit-center="${c.center_id}">Edit</button>
-            <button class="ghost small" data-delete-center="${c.center_id}">Delete</button>
+            <button class="ghost small danger" data-delete-center="${c.center_id}">Delete</button>
           </div>
         </div>
       </footer>
@@ -115,7 +117,7 @@ async function handleCenterCardClick(e) {
     openCenterModalForEdit(id);
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-center');
-    if (confirm('Soft delete this center?')) {
+    if (await confirmAction('Delete this center?')) {
       await apiCall('deleteCenter', {
         center_id: id,
         actor_username: getCurrentUserName(),
@@ -134,6 +136,8 @@ function openCenterModalForCreate() {
   document.getElementById('centerUsernameInput').value = '';
   document.getElementById('centerPasswordInput').value = '';
   document.getElementById('centerDescInput').value = '';
+  document.getElementById('centerPhotoInput').value = '';
+  setCenterPhotoPreview('');
   openModal('centerModal');
 }
 
@@ -149,6 +153,9 @@ async function openCenterModalForEdit(centerId) {
   document.getElementById('centerUsernameInput').value = center.username || '';
   document.getElementById('centerPasswordInput').value = center.password || '';
   document.getElementById('centerDescInput').value = center.description || '';
+  const photo = center.photo || center.photo_url || center.photo_base64 || '';
+  document.getElementById('centerPhotoInput').value = photo;
+  setCenterPhotoPreview(photo);
   openModal('centerModal');
 }
 
@@ -159,6 +166,7 @@ async function saveCenter() {
     username: document.getElementById('centerUsernameInput').value,
     password: document.getElementById('centerPasswordInput').value,
     description: document.getElementById('centerDescInput').value,
+    photo: document.getElementById('centerPhotoInput').value,
     actor_username: getCurrentUserName(),
     actor_role: 'admin'
   };
@@ -199,10 +207,11 @@ async function loadSpecialists() {
     const card = document.createElement('article');
     card.className = 'specialist-card';
 
-    const avatarUrl = 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=60';
+    const avatarUrl = s.photo || s.photo_url || s.photo_base64 || '';
+    const avatarStyle = avatarUrl ? ` style="background-image:url('${avatarUrl}')"` : '';
 
     card.innerHTML = `
-      <div class="avatar" style="background-image:url('${avatarUrl}')"></div>
+      <div class="avatar avatar-static${avatarUrl ? ' has-photo' : ''}"${avatarStyle}></div>
       <div>
         <strong>${s.name || 'Unnamed specialist'}</strong>
         <p>${s.description || '<span class="muted">No description provided</span>'}</p>
@@ -213,9 +222,9 @@ async function loadSpecialists() {
         <span class="chip subtle">Children: ${s.num_children}</span>
         <span class="chip subtle">User: ${s.username}</span>
       </div>
-      <div>
+      <div class="card-actions">
         <button class="ghost small" data-edit-spec="${s.specialist_id}">Edit</button>
-        <button class="ghost small" data-delete-spec="${s.specialist_id}">Delete</button>
+        <button class="ghost small danger" data-delete-spec="${s.specialist_id}">Delete</button>
       </div>
     `;
     grid.appendChild(card);
@@ -233,7 +242,7 @@ async function handleSpecialistCardClick(e) {
     openSpecialistModalForEdit(id);
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-spec');
-    if (confirm('Soft delete this specialist?')) {
+    if (await confirmAction('Soft delete this specialist?')) {
       await apiCall('deleteSpecialist', {
         specialist_id: id,
         actor_username: getCurrentUserName(),
@@ -254,6 +263,8 @@ function openSpecialistModalForCreate() {
   document.getElementById('specTypeInput').value = 'freelance';
   document.getElementById('specCenterIdInput').value = '';
   document.getElementById('specDescInput').value = '';
+  document.getElementById('specPhotoInput').value = '';
+  setSpecPhotoPreview('');
   openModal('specialistModal');
 }
 
@@ -271,6 +282,9 @@ async function openSpecialistModalForEdit(specId) {
   document.getElementById('specTypeInput').value = spec.type || 'freelance';
   document.getElementById('specCenterIdInput').value = spec.center_id || '';
   document.getElementById('specDescInput').value = spec.description || '';
+  const photo = spec.photo || spec.photo_url || spec.photo_base64 || '';
+  document.getElementById('specPhotoInput').value = photo;
+  setSpecPhotoPreview(photo);
   openModal('specialistModal');
 }
 
@@ -283,6 +297,7 @@ async function saveSpecialist() {
     type: document.getElementById('specTypeInput').value,
     center_id: document.getElementById('specCenterIdInput').value,
     description: document.getElementById('specDescInput').value,
+    photo: document.getElementById('specPhotoInput').value,
     actor_username: getCurrentUserName(),
     actor_role: 'admin'
   };
@@ -393,9 +408,9 @@ async function loadModules() {
       <div class="hint">
         ${m.description || '<span class="muted">No description.</span>'}
       </div>
-      <div>
+      <div class="card-actions">
         <button class="ghost small" data-edit-module="${m.module_id}">Edit</button>
-        <button class="ghost small" data-delete-module="${m.module_id}">Delete</button>
+        <button class="ghost small danger" data-delete-module="${m.module_id}">Delete</button>
       </div>
     `;
     grid.appendChild(card);
@@ -413,7 +428,7 @@ async function handleModuleCardClick(e) {
     openModuleModalForEdit(id);
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-module');
-    if (confirm('Soft delete this module?')) {
+    if (await confirmAction('Soft delete this module?')) {
       await apiCall('deleteModule', {
         module_id: id,
         actor_username: getCurrentUserName(),
@@ -505,7 +520,7 @@ async function loadQuestions() {
         </div>
         <div style="margin-top:0.3rem;">
           <button class="ghost small" data-edit-question="${q.question_id}">Edit</button>
-          <button class="ghost small" data-delete-question="${q.question_id}">Delete</button>
+          <button class="ghost small danger" data-delete-question="${q.question_id}">Delete</button>
         </div>
       </div>
     `;
@@ -524,7 +539,7 @@ async function handleQuestionListClick(e) {
     openQuestionModalForEdit(id);
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-question');
-    if (confirm('Soft delete this question?')) {
+    if (await confirmAction('Soft delete this question?')) {
       await apiCall('deleteQuestion', {
         question_id: id,
         actor_username: getCurrentUserName(),
@@ -611,19 +626,223 @@ function initModalCloseButtons() {
 }
 
 // ===== SESSION / USER =====
-function getCurrentUserName() {
+function getCurrentUserData() {
   try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.username || 'admin';
+    return JSON.parse(localStorage.getItem('user') || '{}');
   } catch {
-    return 'admin';
+    return {};
   }
+}
+
+function getCurrentUserName() {
+  const user = getCurrentUserData();
+  return user.name || user.full_name || user.fullName || user.displayName || user.username || 'Admin';
+}
+
+function getCurrentUserRole() {
+  const user = getCurrentUserData();
+  const fromStorage = localStorage.getItem('role');
+  return user.role || fromStorage || 'admin';
 }
 
 function initUserChip() {
   const name = getCurrentUserName();
   const el = document.getElementById('currentUserName');
   if (el) el.textContent = name || 'Admin';
+
+  const roleEl = document.getElementById('currentUserRole');
+  const role = getCurrentUserRole();
+  if (roleEl) roleEl.textContent = role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Admin';
+}
+
+function initDynamicLabels() {
+  const name = getCurrentUserName();
+  const roleLabel = getCurrentUserRole();
+  const rolePretty = roleLabel ? roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1) : 'Admin';
+
+  setText('welcomeName', name);
+  setText('brandName', name);
+  const avatar = document.querySelector('.sidebar .avatar');
+  const photo = getCurrentUserData().photo || getCurrentUserData().photo_url || '';
+  if (avatar) {
+    if (photo) {
+      avatar.style.backgroundImage = `url('${photo}')`;
+      avatar.classList.add('has-photo');
+    } else {
+      avatar.style.backgroundImage = '';
+      avatar.classList.remove('has-photo');
+    }
+  }
+
+  const brandRole = document.getElementById('brandRole');
+  if (brandRole) {
+    brandRole.textContent = `${rolePretty} workspace`;
+  }
+}
+
+function openAccountSettings() {
+  const user = getCurrentUserData();
+  document.getElementById('accountNameInput').value = user.name || user.full_name || user.fullName || user.displayName || user.username || '';
+  const photo = user.photo || user.photo_url || '';
+  document.getElementById('accountPhotoInput').value = photo;
+  setAccountPhotoPreview(photo);
+  openModal('accountModal');
+}
+
+function saveAccountSettings() {
+  const name = document.getElementById('accountNameInput').value;
+  const photo = document.getElementById('accountPhotoInput').value;
+  const user = { ...getCurrentUserData(), name, photo };
+  localStorage.setItem('user', JSON.stringify(user));
+  initUserChip();
+  initDynamicLabels();
+  closeModal('accountModal');
+}
+
+function handleSpecPhotoChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    document.getElementById('specPhotoInput').value = dataUrl;
+    setSpecPhotoPreview(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setSpecPhotoPreview(src) {
+  const preview = document.getElementById('specPhotoPreview');
+  if (!preview) return;
+  if (src) {
+    preview.style.backgroundImage = `url('${src}')`;
+    preview.classList.add('has-photo');
+  } else {
+    preview.style.backgroundImage = '';
+    preview.classList.remove('has-photo');
+  }
+}
+
+function handleCenterPhotoChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    document.getElementById('centerPhotoInput').value = dataUrl;
+    setCenterPhotoPreview(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setCenterPhotoPreview(src) {
+  const preview = document.getElementById('centerPhotoPreview');
+  if (!preview) return;
+  if (src) {
+    preview.style.backgroundImage = `url('${src}')`;
+    preview.classList.add('has-photo');
+  } else {
+    preview.style.backgroundImage = '';
+    preview.classList.remove('has-photo');
+  }
+}
+
+function handleAccountPhotoChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    document.getElementById('accountPhotoInput').value = dataUrl;
+    setAccountPhotoPreview(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setAccountPhotoPreview(src) {
+  const preview = document.getElementById('accountPhotoPreview');
+  if (!preview) return;
+  if (src) {
+    preview.style.backgroundImage = `url('${src}')`;
+    preview.classList.add('has-photo');
+  } else {
+    preview.style.backgroundImage = '';
+    preview.classList.remove('has-photo');
+  }
+}
+
+// Branded confirmation modal
+function confirmAction(message = 'Are you sure?') {
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirmModal');
+    const msgEl = document.getElementById('confirmMessage');
+    const okBtn = document.getElementById('confirmOk');
+    const cancelBtn = document.getElementById('confirmCancel');
+    if (!modal || !msgEl || !okBtn || !cancelBtn) return resolve(false);
+
+    msgEl.textContent = message;
+    modal.classList.add('active');
+
+    const cleanup = () => {
+      modal.classList.remove('active');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+    };
+
+    const onOk = () => {
+      cleanup();
+      resolve(true);
+    };
+    const onCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+    const onBackdrop = e => {
+      if (e.target === modal) onCancel();
+    };
+
+    okBtn.addEventListener('click', onOk, { once: true });
+    cancelBtn.addEventListener('click', onCancel, { once: true });
+    modal.addEventListener('click', onBackdrop);
+  });
+}
+
+// Quick Breakdown donut chart
+function updateDonutChart(totals = {}) {
+  const donut = document.getElementById('donutChart');
+  if (!donut) return;
+
+  const centers = Number(totals.centers || 0);
+  const specialists = Number(totals.specialists || 0);
+  const children = Number(totals.children || 0);
+  const modules = Number(totals.modules || 0);
+
+  setText('legendCenters', centers);
+  setText('legendSpecialists', specialists);
+  setText('legendChildren', children);
+  setText('legendModules', modules);
+
+  const slices = [
+    { value: centers, color: '#6366f1' },
+    { value: specialists, color: '#22c55e' },
+    { value: children, color: '#fbbf24' },
+    { value: modules, color: '#0ea5e9' }
+  ];
+
+  const total = slices.reduce((sum, s) => sum + (isFinite(s.value) ? s.value : 0), 0);
+  let acc = 0;
+  const gradient = slices
+    .map((slice, idx) => {
+      const pct = total > 0 ? (slice.value / total) * 100 : 25;
+      const start = acc;
+      const end = acc + pct;
+      acc = end;
+      return `${slice.color} ${start}% ${end}%`;
+    })
+    .join(', ');
+
+  donut.style.background = `conic-gradient(${gradient})`;
 }
 
 function initAuthGuard() {
@@ -638,7 +857,13 @@ function initAuthGuard() {
 document.addEventListener('DOMContentLoaded', () => {
   initAuthGuard();
   initUserChip();
+  initDynamicLabels();
   initModalCloseButtons();
+  document.getElementById('specPhotoFile')?.addEventListener('change', handleSpecPhotoChange);
+  document.getElementById('centerPhotoFile')?.addEventListener('change', handleCenterPhotoChange);
+  document.getElementById('accountPhotoFile')?.addEventListener('change', handleAccountPhotoChange);
+  document.getElementById('accountSettingsBtn')?.addEventListener('click', openAccountSettings);
+  document.getElementById('accountSaveBtn')?.addEventListener('click', saveAccountSettings);
 
   // nav
   document.querySelectorAll('.nav-link').forEach(btn => {

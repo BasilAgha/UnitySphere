@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin Dashboard – VR Therapy</title>
+  <title>Admin Dashboard - VR Therapy</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Your CSS (already uploaded to your project / web host) -->
   <link rel="stylesheet" href="base.css" />
@@ -15,8 +15,8 @@
       <div class="brand">
         <div class="brand-icon">VR</div>
         <div>
-          <strong>VR Therapy Admin</strong>
-          <span>System Control Panel</span>
+          <strong id="brandName">VR Therapy Admin</strong>
+          <span id="brandRole">System Control Panel</span>
         </div>
       </div>
 
@@ -41,26 +41,31 @@
         </button>
       </nav>
 
-      <div class="sidebar-footer">
+      <div class="sidebar-user">
         <div class="current-user">
           <div class="avatar avatar-static"></div>
           <div>
-            <div id="currentUserName" style="font-size:0.9rem;">Admin</div>
-            <div class="hint" style="font-size:0.78rem;">System Administrator</div>
+            <div id="currentUserName" class="user-name">Admin</div>
+            <div class="hint user-role" id="currentUserRole">System Administrator</div>
           </div>
         </div>
-        <button class="ghost small" id="logoutBtn">Log out</button>
+        <button class="ghost block" id="logoutBtn">Log out</button>
       </div>
     </aside>
 
     <!-- ========= MAIN ========= -->
-    <div class="app-main">
+      <div class="app-main">
       <header class="app-header">
         <div>
-          <h1>Admin Dashboard</h1>
-          <p class="hint">Monitor centers, specialists, children, and VR modules.</p>
+          <h1>Welcome back, <span id="welcomeName">Admin</span></h1>
+          <p class="hint">Everything you need to keep centers, specialists, and children supported.</p>
+          <div class="hero-actions">
+                <button class="primary" type="button" onclick="showSection('centers')">Open centers</button>
+                <button class="ghost" type="button" onclick="showSection('modules')">Review modules</button>
+              </div>
         </div>
         <div class="header-actions">
+          <button class="ghost" id="accountSettingsBtn">Account</button>
           <button class="ghost" id="refreshAllBtn">Refresh data</button>
         </div>
       </header>
@@ -68,6 +73,7 @@
       <main>
         <!-- ===== DASHBOARD SECTION ===== -->
         <section id="section-dashboard" class="section active">
+          
           <div class="overview-grid">
             <!-- Stat cards -->
             <div class="stat-card">
@@ -106,35 +112,18 @@
               <div class="trend">Available VR training modules</div>
             </div>
 
-            <!-- Simple chart placeholder -->
-            <div class="card chart-card">
-              <div class="card-header">
-                <h2>System Activity Snapshot</h2>
-                <span class="badge badge-soft">Overview</span>
-              </div>
-              <div class="chart multi-line">
-                <div class="chart-lines">
-                  <div class="line line-one"></div>
-                  <div class="line line-two"></div>
-                </div>
-                <div class="chart-axis">
-                  <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-                </div>
-              </div>
-            </div>
-
             <!-- Donut summary -->
             <div class="card donut-card">
               <div class="card-header">
                 <h2>Quick Breakdown</h2>
               </div>
               <div class="donut-wrapper">
-                <div class="donut"></div>
+                <div class="donut" id="donutChart"></div>
                 <ul class="chart-legend">
-                  <li><span class="legend-color legend-one"></span> Centers</li>
-                  <li><span class="legend-color legend-two"></span> Specialists</li>
-                  <li><span class="legend-color legend-three"></span> Children</li>
-                  <li><span class="legend-color legend-four"></span> Modules</li>
+                  <li><span class="legend-color legend-one"></span> Centers: <span id="legendCenters">0</span></li>
+                  <li><span class="legend-color legend-two"></span> Specialists: <span id="legendSpecialists">0</span></li>
+                  <li><span class="legend-color legend-three"></span> Children: <span id="legendChildren">0</span></li>
+                  <li><span class="legend-color legend-four"></span> Modules: <span id="legendModules">0</span></li>
                 </ul>
               </div>
             </div>
@@ -145,7 +134,7 @@
                 <h2>Admin Insights</h2>
               </div>
               <div class="recommendation">
-                <div class="recommendation-icon">📊</div>
+                <div class="recommendation-icon">Ops</div>
                 <div class="recommendation-body">
                   <strong>Review center distribution</strong>
                   <span class="hint">
@@ -154,7 +143,7 @@
                 </div>
               </div>
               <div class="recommendation">
-                <div class="recommendation-icon">🎧</div>
+                <div class="recommendation-icon">VR</div>
                 <div class="recommendation-body">
                   <strong>VR modules adoption</strong>
                   <span class="hint">
@@ -176,7 +165,7 @@
               </div>
               <div>
                 <button class="primary with-icon" id="btnAddCenter">
-                  <span class="icon">➕</span>
+                  <span class="icon">+</span>
                   <span class="label">Add Center</span>
                 </button>
               </div>
@@ -193,7 +182,7 @@
               </div>
 
               <div class="empty-state" id="centersEmpty" style="display:none;">
-                No centers yet. Click “Add Center” to create the first one.
+                No centers yet. Click Add Center to create the first one.
               </div>
             </div>
           </div>
@@ -208,7 +197,7 @@
                 <p class="hint">Manage freelance and center-linked specialists.</p>
               </div>
               <button class="primary with-icon" id="btnAddSpecialist">
-                <span class="icon">➕</span>
+                <span class="icon">+</span>
                 <span class="label">Add Specialist</span>
               </button>
             </div>
@@ -252,7 +241,7 @@
                 <p class="hint">Manage VR modules available to centers.</p>
               </div>
               <button class="primary with-icon" id="btnAddModule">
-                <span class="icon">➕</span>
+                <span class="icon">+</span>
                 <span class="label">Add Module</span>
               </button>
             </div>
@@ -276,7 +265,7 @@
                 <p class="hint">Question bank used in child assessments.</p>
               </div>
               <button class="primary with-icon" id="btnAddQuestion">
-                <span class="icon">➕</span>
+                <span class="icon">+</span>
                 <span class="label">Add Question</span>
               </button>
             </div>
@@ -304,10 +293,19 @@
           <h2 id="centerModalTitle">Add Center</h2>
           <p class="modal-subtitle">Create or update a center profile.</p>
         </div>
-        <button class="icon-button" data-close-modal="centerModal">✕</button>
+        <button class="icon-button" data-close-modal="centerModal">x</button>
       </div>
       <div class="form-panel">
         <input type="hidden" id="centerId" />
+        <input type="hidden" id="centerPhotoInput" />
+        <div class="photo-input">
+          <div class="avatar preview avatar-static" id="centerPhotoPreview"></div>
+          <div class="input-group">
+            <label for="centerPhotoFile">Photo</label>
+            <input id="centerPhotoFile" type="file" accept="image/*" />
+            <p class="hint">Upload a center photo (optional).</p>
+          </div>
+        </div>
         <div class="input-group">
           <label for="centerNameInput">Name</label>
           <input id="centerNameInput" type="text" placeholder="Center name" />
@@ -340,10 +338,19 @@
           <h2 id="specialistModalTitle">Add Specialist</h2>
           <p class="modal-subtitle">Create or update a specialist profile.</p>
         </div>
-        <button class="icon-button" data-close-modal="specialistModal">✕</button>
+        <button class="icon-button" data-close-modal="specialistModal">x</button>
       </div>
       <div class="form-panel">
         <input type="hidden" id="specId" />
+        <input type="hidden" id="specPhotoInput" />
+        <div class="photo-input">
+          <div class="avatar preview avatar-static" id="specPhotoPreview"></div>
+          <div class="input-group">
+            <label for="specPhotoFile">Photo</label>
+            <input id="specPhotoFile" type="file" accept="image/*" />
+            <p class="hint">Upload a profile photo (optional).</p>
+          </div>
+        </div>
         <div class="input-group">
           <label for="specNameInput">Name</label>
           <input id="specNameInput" type="text" placeholder="Specialist name" />
@@ -387,7 +394,7 @@
           <h2 id="moduleModalTitle">Add Module</h2>
           <p class="modal-subtitle">Create or update a VR module.</p>
         </div>
-        <button class="icon-button" data-close-modal="moduleModal">✕</button>
+        <button class="icon-button" data-close-modal="moduleModal">x</button>
       </div>
       <div class="form-panel">
         <input type="hidden" id="moduleId" />
@@ -423,7 +430,7 @@
           <h2 id="questionModalTitle">Add Question</h2>
           <p class="modal-subtitle">Create or update an assessment question.</p>
         </div>
-        <button class="icon-button" data-close-modal="questionModal">✕</button>
+        <button class="icon-button" data-close-modal="questionModal">x</button>
       </div>
       <div class="form-panel">
         <input type="hidden" id="questionId" />
@@ -443,6 +450,55 @@
       <div class="modal-actions">
         <button class="ghost" data-close-modal="questionModal">Cancel</button>
         <button class="primary" id="questionSaveBtn">Save Question</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-backdrop" id="confirmModal">
+    <div class="modal confirm-modal">
+      <div class="modal-header">
+        <div>
+          <h2>Confirm action</h2>
+          <p class="modal-subtitle" id="confirmMessage">Are you sure?</p>
+        </div>
+        <button class="icon-button" data-close-modal="confirmModal">x</button>
+      </div>
+      <div class="modal-actions confirm-actions">
+        <button class="ghost" id="confirmCancel">Cancel</button>
+        <button class="primary" id="confirmOk">Yes, proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Settings Modal -->
+  <div class="modal-backdrop" id="accountModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Account Settings</h2>
+          <p class="modal-subtitle">Update your display name and photo.</p>
+        </div>
+        <button class="icon-button" data-close-modal="accountModal">x</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="accountPhotoInput" />
+        <div class="photo-input">
+          <div class="avatar preview avatar-static" id="accountPhotoPreview"></div>
+          <div class="input-group">
+            <label for="accountPhotoFile">Photo</label>
+            <input id="accountPhotoFile" type="file" accept="image/*" />
+            <p class="hint">Upload a profile photo (optional).</p>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="accountNameInput">Display name</label>
+          <input id="accountNameInput" type="text" placeholder="Your name" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="accountModal">Cancel</button>
+        <button class="primary" id="accountSaveBtn">Save</button>
       </div>
     </div>
   </div>
