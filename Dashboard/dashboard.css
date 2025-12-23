@@ -1293,6 +1293,21 @@ main {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.table-wrapper .management-table {
+  font-size: 0.9rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table-wrapper .management-table th,
+.table-wrapper .management-table td {
+  padding: 0.7rem 0.6rem;
+}
+
+.table-wrapper .management-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .meta-muted {
   color: var(--color-muted);
   font-size: 0.85em;
@@ -1489,12 +1504,12 @@ main {
   padding: 1.2rem 1.3rem 1rem;
   display: grid;
   gap: 0.75rem;
-  text-align: center;
+  text-align: left;
   box-shadow: var(--shadow-medium);
 }
 
 .specialist-card .avatar {
-  margin: 0 auto 0.2rem;
+  margin: 0 0 0.2rem;
   width: 72px;
   height: 72px;
   border-radius: 999px;
@@ -1508,20 +1523,25 @@ main {
   content: none;
 }
 
+.specialist-card strong {
+  display: block;
+}
+
 .specialist-card p {
   font-size: 0.9rem;
   color: var(--color-muted);
+  margin: 0;
 }
 
 .specialist-credentials {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.4rem;
 }
 
 .specialist-card .card-actions {
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.6rem;
 }
 

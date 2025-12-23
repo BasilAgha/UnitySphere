@@ -25,10 +25,10 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="overview">?? <span>Overview</span></button>
-        <button class="nav-link" data-section="specialists">????? <span>Specialists</span></button>
-        <button class="nav-link" data-section="children">?? <span>Children</span></button>
-        <button class="nav-link" data-section="modules">?? <span>VR Modules</span></button>
+        <button class="nav-link active" data-section="overview">Overview</button>
+        <button class="nav-link" data-section="specialists">Specialists</button>
+        <button class="nav-link" data-section="children">Children</button>
+        <button class="nav-link" data-section="modules">VR Modules</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -53,10 +53,6 @@
           <p class="hint">Manage your specialists, children, and modules.</p>
         </div>
         <div class="header-actions">
-          <button class="ghost compact-toggle" type="button" data-compact-toggle aria-pressed="false">
-            <span class="compact-label">Compact mode</span>
-            <span class="compact-status" data-compact-status>Off</span>
-          </button>
           <button class="ghost" id="refreshAllBtn">Refresh</button>
         </div>
       </header>
@@ -122,10 +118,6 @@
             <div class="specialists-grid" id="specialistsGrid"></div>
             <div class="empty-state" id="specialistsEmpty" style="display:none;">
               <div class="empty-title">No specialists yet</div>
-              <div>Specialists deliver therapy in your center. Add one to start assigning children.</div>
-              <div class="empty-actions">
-                <button class="ghost small" id="centerEmptyAddSpecialist">Add Specialist</button>
-              </div>
             </div>
           </div>
         </section>
@@ -138,15 +130,15 @@
                 <h2>Children</h2>
                 <p class="hint">All children assigned to this center.</p>
               </div>
+              <button class="primary with-icon" id="btnAddChild">
+                <span class="icon">+</span>
+                <span>Add Child</span>
+              </button>
             </div>
 
             <div class="modules-grid" id="childrenGrid"></div>
             <div class="empty-state" id="childrenEmpty" style="display:none;">
               <div class="empty-title">No children yet</div>
-              <div>Create child profiles to track sessions and assignments.</div>
-              <div class="empty-actions">
-                <button class="ghost small" id="centerEmptyAddChild">Add Child</button>
-              </div>
             </div>
           </div>
         </section>
@@ -164,15 +156,92 @@
             <div class="modules-grid" id="modulesGrid"></div>
             <div class="empty-state" id="modulesEmpty" style="display:none;">
               <div class="empty-title">No VR modules assigned</div>
-              <div>Assign VR modules to this center so specialists can use them.</div>
-              <div class="empty-actions">
-                <button class="ghost small" id="centerEmptyAssignModule">Assign Module</button>
-              </div>
             </div>
           </div>
         </section>
 
       </main>
+    </div>
+  </div>
+
+  <!-- ============ MODALS ============ -->
+
+  <!-- Specialist Modal -->
+  <div class="modal-backdrop" id="specialistModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="specialistModalTitle">Add Specialist</h2>
+          <p class="modal-subtitle">Create or update a specialist profile.</p>
+        </div>
+        <button class="icon-button" data-close-modal="specialistModal">x</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="specIdInput" />
+        <div class="input-group">
+          <label for="specNameInput">Name</label>
+          <input id="specNameInput" type="text" placeholder="Specialist name" />
+        </div>
+        <div class="input-group">
+          <label for="specUsernameInput">Username</label>
+          <input id="specUsernameInput" type="text" placeholder="Login username" />
+        </div>
+        <div class="input-group">
+          <label for="specPasswordInput">Password</label>
+          <input id="specPasswordInput" type="password" placeholder="Login password" />
+        </div>
+        <div class="input-group">
+          <label for="specDescriptionInput">Description</label>
+          <textarea id="specDescriptionInput" rows="3" placeholder="Specialist description"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="specialistModal">Cancel</button>
+        <button class="primary" id="specSaveBtn">Save Specialist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Child Modal -->
+  <div class="modal-backdrop" id="childModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="childModalTitle">Add Child</h2>
+          <p class="modal-subtitle">Create or update a child record.</p>
+        </div>
+        <button class="icon-button" data-close-modal="childModal">x</button>
+      </div>
+      <div class="form-panel">
+        <input type="hidden" id="childIdInput" />
+        <div class="input-group">
+          <label for="childNameInput">Name</label>
+          <input id="childNameInput" type="text" placeholder="Child name" />
+        </div>
+        <div class="input-group">
+          <label for="childAgeInput">Age</label>
+          <input id="childAgeInput" type="number" min="1" placeholder="Age in years" />
+        </div>
+        <div class="input-group">
+          <label for="childParentMobileInput">Parent Mobile</label>
+          <input id="childParentMobileInput" type="text" placeholder="Mobile number" />
+        </div>
+        <div class="input-group">
+          <label for="childNotesInput">Notes</label>
+          <textarea id="childNotesInput" rows="3" placeholder="Notes"></textarea>
+        </div>
+        <div class="input-group">
+          <label for="childStatusInput">Status</label>
+          <select id="childStatusInput">
+            <option value="active">Active</option>
+            <option value="deleted">Deleted</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="childModal">Cancel</button>
+        <button class="primary" id="childSaveBtn">Save Child</button>
+      </div>
     </div>
   </div>
 

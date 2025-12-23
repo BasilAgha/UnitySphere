@@ -5,8 +5,13 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxErCCEs6YOSy18SufoYe4Z
 
 // ===== STATE =====
 const VIEW_PREF_KEY = 'admin:view:';
-const COMPACT_STORAGE_KEY = 'dashboard:compact';
 const toastStackId = 'toastStack';
+let questionsCache = [];
+const questionFilters = {
+  category: '',
+  difficulty: '',
+  status: ''
+};
 const sortState = {
   centers: { key: null, dir: 'asc' },
   specialists: { key: null, dir: 'asc' },
@@ -28,6 +33,14 @@ async function apiCall(action, params = {}) {
     console.error('API error:', action, data.error);
   }
   return data;
+}
+
+function apiRequest(action, params = {}) {
+  return apiCall(action, {
+    ...params,
+    actor_username: getCurrentUserName(),
+    actor_role: 'admin'
+  });
 }
 
 // ===== UI HELPERS =====
@@ -82,6 +95,12 @@ function formatDateSafe(value) {
   }
 }
 
+function getSelectedChildrenIds() {
+  return Array.from(document.querySelectorAll('.child-select:checked'))
+    .map(cb => cb.dataset.childId)
+    .filter(Boolean);
+}
+
 function getInitials(name = '') {
   if (!name) return 'US';
   const parts = name.trim().split(/\s+/);
@@ -98,30 +117,6 @@ function applyAvatarInitials(selector, name) {
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
-}
-// ===== COMPACT MODE =====
-function applyCompactMode(isCompact) {
-  const enable = Boolean(isCompact);
-  document.body.classList.toggle('compact', enable);
-  localStorage.setItem(COMPACT_STORAGE_KEY, enable ? '1' : '0');
-
-  document.querySelectorAll('[data-compact-toggle]').forEach(btn => {
-    btn.setAttribute('aria-pressed', enable ? 'true' : 'false');
-    btn.classList.toggle('active', enable);
-    const status = btn.querySelector('[data-compact-status]');
-    if (status) status.textContent = enable ? 'On' : 'Off';
-  });
-}
-
-function initCompactToggle() {
-  const saved = localStorage.getItem(COMPACT_STORAGE_KEY) === '1';
-  applyCompactMode(saved);
-
-  document.querySelectorAll('[data-compact-toggle]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      applyCompactMode(!document.body.classList.contains('compact'));
-    });
-  });
 }
 
 // ===== VIEW SWITCHES =====
@@ -507,7 +502,8 @@ function openSpecialistModalForCreate() {
   document.getElementById('specUsernameInput').value = '';
   document.getElementById('specPasswordInput').value = '';
   document.getElementById('specTypeInput').value = 'freelance';
-  document.getElementById('specCenterIdInput').value = '';
+  populateSpecialistCenterSelect();
+  setSpecialistCenterSelectState(false);
   document.getElementById('specDescInput').value = '';
   document.getElementById('specPhotoInput').value = '';
   setSpecPhotoPreview('');
@@ -527,7 +523,8 @@ async function openSpecialistModalForEdit(specId) {
   document.getElementById('specUsernameInput').value = spec.username || '';
   document.getElementById('specPasswordInput').value = spec.password || '';
   document.getElementById('specTypeInput').value = spec.type || 'freelance';
-  document.getElementById('specCenterIdInput').value = spec.center_id || '';
+  await populateSpecialistCenterSelect(spec.center_id || '');
+  setSpecialistCenterSelectState(spec.type === 'center');
   document.getElementById('specDescInput').value = spec.description || '';
   const photo = spec.photo || spec.photo_url || spec.photo_base64 || '';
   document.getElementById('specPhotoInput').value = photo;
@@ -539,12 +536,19 @@ async function saveSpecialist() {
   const saveBtn = document.getElementById('specialistSaveBtn');
   setButtonLoading(saveBtn, true, 'Saving...');
   const id = document.getElementById('specId').value;
+  const type = document.getElementById('specTypeInput').value;
+  const centerId = document.getElementById('specCenterIdInput').value;
+  if (type === 'center' && !centerId) {
+    showToast('Select a center for linked specialists', 'error', 'Missing center');
+    setButtonLoading(saveBtn, false);
+    return;
+  }
   const payload = {
     name: document.getElementById('specNameInput').value,
     username: document.getElementById('specUsernameInput').value,
     password: document.getElementById('specPasswordInput').value,
-    type: document.getElementById('specTypeInput').value,
-    center_id: document.getElementById('specCenterIdInput').value,
+    type,
+    center_id: centerId,
     description: document.getElementById('specDescInput').value,
     photo: document.getElementById('specPhotoInput').value,
     actor_username: getCurrentUserName(),
@@ -569,6 +573,42 @@ async function saveSpecialist() {
     }
   } finally {
     setButtonLoading(saveBtn, false);
+  }
+}
+
+function setSpecialistCenterSelectState(isLinked) {
+  const select = document.getElementById('specCenterIdInput');
+  if (!select) return;
+  const enable = Boolean(isLinked);
+  select.disabled = !enable;
+  select.required = enable;
+  if (!enable) select.value = '';
+}
+
+async function populateSpecialistCenterSelect(selectedId = '') {
+  const select = document.getElementById('specCenterIdInput');
+  if (!select) return;
+  select.innerHTML = '<option value="">Select a center</option>';
+  const data = await apiCall('listCenters');
+  if (!data.success) return;
+  (data.centers || []).forEach(center => {
+    const option = document.createElement('option');
+    option.value = center.center_id || '';
+    option.textContent = center.name || center.center_id || 'Center';
+    select.appendChild(option);
+  });
+  if (selectedId) {
+    select.value = selectedId;
+  }
+}
+
+function handleSpecTypeChange(e) {
+  const type = e.target.value;
+  if (type === 'center') {
+    populateSpecialistCenterSelect();
+    setSpecialistCenterSelectState(true);
+  } else {
+    setSpecialistCenterSelectState(false);
   }
 }
 // ===== CHILDREN =====
@@ -632,6 +672,9 @@ async function loadChildren() {
     table.innerHTML = `
       <thead>
         <tr>
+          <th id="selectAllChildren">
+            <input type="checkbox" aria-label="Select all children">
+          </th>
           <th data-sort="name">Child</th>
           <th data-sort="child_id">ID</th>
           <th data-sort="center_id">Center</th>
@@ -645,12 +688,15 @@ async function loadChildren() {
           .map(
             ch => `
               <tr>
+                <td>
+                  <input type="checkbox" class="child-select" data-child-id="${ch.child_id}">
+                </td>
                 <td>${ch.name || 'Child'}</td>
-                <td class="meta-muted">${ch.child_id || '—'}</td>
-                <td class="meta-muted">${ch.center_id || '—'}</td>
-                <td class="meta-muted">${ch.specialist_id || '—'}</td>
+                <td class="meta-muted">${ch.child_id || '-'}</td>
+                <td class="meta-muted">${ch.center_id || '-'}</td>
+                <td class="meta-muted">${ch.specialist_id || '-'}</td>
                 <td>${ch.num_sessions ?? 0}</td>
-                <td>${ch.age ?? '—'}</td>
+                <td>${ch.age ?? '-'}</td>
               </tr>
             `
           )
@@ -659,6 +705,23 @@ async function loadChildren() {
     `;
     tableWrap.innerHTML = '';
     tableWrap.appendChild(table);
+    const selectAllCell = table.querySelector('#selectAllChildren');
+    const selectAll = selectAllCell ? selectAllCell.querySelector('input[type="checkbox"]') : null;
+    if (selectAll) {
+      selectAll.addEventListener('change', () => {
+        const checked = selectAll.checked;
+        table.querySelectorAll('.child-select').forEach(cb => {
+          cb.checked = checked;
+        });
+      });
+      table.addEventListener('change', e => {
+        if (!e.target.classList.contains('child-select')) return;
+        const all = table.querySelectorAll('.child-select');
+        const checked = table.querySelectorAll('.child-select:checked');
+        selectAll.checked = all.length > 0 && checked.length === all.length;
+        selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
+      });
+    }
     table.querySelectorAll('th[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const key = th.getAttribute('data-sort');
@@ -868,13 +931,18 @@ async function saveModule() {
 }
 // ===== QUESTIONS =====
 async function loadQuestions() {
-  const list = document.getElementById('questionsList');
+  await loadAssessmentLibrary();
+}
+
+async function loadAssessmentLibrary() {
+  const tableBody = document.getElementById('questionsTableBody');
   const empty = document.getElementById('questionsEmpty');
-  list.innerHTML = '';
+  if (tableBody) tableBody.innerHTML = '';
 
   const data = await apiCall('listQuestions');
   if (!data.success) return;
   const qs = data.questions || [];
+  questionsCache = qs;
 
   if (!qs.length) {
     empty.style.display = 'block';
@@ -882,49 +950,153 @@ async function loadQuestions() {
   }
   empty.style.display = 'none';
 
+  populateQuestionFilters(qs);
+  renderQuestionsTable(applyQuestionFilters(qs));
+}
+
+function renderQuestionsTable(qs) {
+  const tableBody = document.getElementById('questionsTableBody');
+  if (!tableBody) return;
+  tableBody.innerHTML = '';
+
   qs.forEach(q => {
-    const item = document.createElement('div');
-    item.className = 'recommendation';
-    item.innerHTML = `
-      <div class="recommendation-icon">Q</div>
-      <div class="recommendation-body">
-        <strong>${q.question_text}</strong>
-        <div class="hint">
-          Category: ${q.category || 'General'} | Difficulty: ${q.difficulty || 'N/A'} | ID: ${q.question_id}
-        </div>
-        <div style="margin-top:0.3rem;">
-          <button class="ghost small" data-edit-question="${q.question_id}">Edit</button>
-          <button class="ghost small danger" data-delete-question="${q.question_id}">Delete</button>
-        </div>
-      </div>
+    const statusValue = String(q.status || 'active').toLowerCase();
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${q.question_text || '-'}</td>
+      <td class="meta-muted">${q.category || 'General'}</td>
+      <td class="meta-muted">${q.difficulty || 'N/A'}</td>
+      <td class="meta-muted">${q.status || 'Active'}</td>
+      <td class="table-actions">
+        <button class="ghost small" data-edit-question="${q.question_id}">Edit</button>
+        ${renderAssessmentActions({ ...q, status: statusValue })}
+      </td>
     `;
-    list.appendChild(item);
+    tableBody.appendChild(row);
   });
 
-  list.addEventListener('click', handleQuestionListClick, { once: true });
+  if (!tableBody.dataset.listener) {
+    tableBody.addEventListener('click', handleQuestionListClick);
+    tableBody.dataset.listener = 'true';
+  }
+}
+
+function populateQuestionFilters(qs) {
+  const categorySelect = document.getElementById('questionFilterCategory');
+  const difficultySelect = document.getElementById('questionFilterDifficulty');
+  const statusSelect = document.getElementById('questionFilterStatus');
+  if (!categorySelect || !difficultySelect || !statusSelect) return;
+
+  const currentCategory = categorySelect.value;
+  const currentDifficulty = difficultySelect.value;
+  const currentStatus = statusSelect.value;
+
+  const categories = Array.from(
+    new Set(qs.map(q => q.category).filter(Boolean))
+  ).sort((a, b) => String(a).localeCompare(String(b)));
+  const difficulties = Array.from(
+    new Set(qs.map(q => q.difficulty).filter(Boolean))
+  ).sort((a, b) => String(a).localeCompare(String(b)));
+
+  categorySelect.innerHTML = '<option value="">All categories</option>';
+  categories.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = category;
+    categorySelect.appendChild(option);
+  });
+
+  difficultySelect.innerHTML = '<option value="">All difficulties</option>';
+  difficulties.forEach(difficulty => {
+    const option = document.createElement('option');
+    option.value = difficulty;
+    option.textContent = difficulty;
+    difficultySelect.appendChild(option);
+  });
+
+  statusSelect.innerHTML = `
+    <option value="">All statuses</option>
+    <option value="Active">Active</option>
+    <option value="Archived">Archived</option>
+  `;
+
+  if (currentCategory) categorySelect.value = currentCategory;
+  if (currentDifficulty) difficultySelect.value = currentDifficulty;
+  if (currentStatus) statusSelect.value = currentStatus;
+}
+
+function applyQuestionFilters(qs) {
+  const category = questionFilters.category;
+  const difficulty = questionFilters.difficulty;
+  const status = questionFilters.status;
+  return qs.filter(q => {
+    const matchesCategory = !category || q.category === category;
+    const matchesDifficulty = !difficulty || q.difficulty === difficulty;
+    const questionStatus = String(q.status || 'Active');
+    const matchesStatus =
+      !status || questionStatus.toLowerCase() === status.toLowerCase();
+    return matchesCategory && matchesDifficulty && matchesStatus;
+  });
+}
+
+function handleQuestionFilterChange() {
+  const categorySelect = document.getElementById('questionFilterCategory');
+  const difficultySelect = document.getElementById('questionFilterDifficulty');
+  const statusSelect = document.getElementById('questionFilterStatus');
+  questionFilters.category = categorySelect ? categorySelect.value : '';
+  questionFilters.difficulty = difficultySelect ? difficultySelect.value : '';
+  questionFilters.status = statusSelect ? statusSelect.value : '';
+  renderQuestionsTable(applyQuestionFilters(questionsCache));
 }
 
 async function handleQuestionListClick(e) {
   const editBtn = e.target.closest('[data-edit-question]');
-  const delBtn = e.target.closest('[data-delete-question]');
 
   if (editBtn) {
     const id = editBtn.getAttribute('data-edit-question');
     openQuestionModalForEdit(id);
-  } else if (delBtn) {
-    const id = delBtn.getAttribute('data-delete-question');
-    if (await confirmAction('Delete this question?')) {
-      showToast('Removing question...', 'success', 'Working');
-      apiCall('deleteQuestion', {
-        question_id: id,
-        actor_username: getCurrentUserName(),
-        actor_role: 'admin'
-      }).then(() => {
-        showToast('Question deleted');
-        loadQuestions();
-      });
-    }
   }
+}
+
+function renderAssessmentActions(question) {
+  if (question.status === 'active') {
+    return `<button class="ghost small danger"
+      onclick="archiveAssessmentQuestion('${question.question_id}')">
+      Archive</button>`;
+  }
+  if (question.status === 'archived') {
+    return `<button class="ghost small"
+      onclick="activateAssessmentQuestion('${question.question_id}')">
+      Activate</button>`;
+  }
+  return '';
+}
+
+async function archiveAssessmentQuestion(questionId) {
+  if (!confirm('Archive this assessment question?')) return;
+  const res = await apiRequest('updateQuestion', {
+    question_id: questionId,
+    status: 'archived'
+  });
+  if (!res.success) {
+    showToast('Failed to archive question', 'error');
+    return;
+  }
+  showToast('Question archived');
+  loadAssessmentLibrary();
+}
+
+async function activateAssessmentQuestion(questionId) {
+  const res = await apiRequest('updateQuestion', {
+    question_id: questionId,
+    status: 'active'
+  });
+  if (!res.success) {
+    showToast('Failed to activate question', 'error');
+    return;
+  }
+  showToast('Question activated');
+  loadAssessmentLibrary();
 }
 
 function openQuestionModalForCreate() {
@@ -933,6 +1105,7 @@ function openQuestionModalForCreate() {
   document.getElementById('qTextInput').value = '';
   document.getElementById('qCategoryInput').value = '';
   document.getElementById('qDifficultyInput').value = '';
+  document.getElementById('qStatusInput').value = 'active';
   openModal('questionModal');
 }
 
@@ -948,6 +1121,7 @@ async function openQuestionModalForEdit(questionId) {
   document.getElementById('qTextInput').value = q.question_text || '';
   document.getElementById('qCategoryInput').value = q.category || '';
   document.getElementById('qDifficultyInput').value = q.difficulty || '';
+  document.getElementById('qStatusInput').value = String(q.status || 'active').toLowerCase();
   openModal('questionModal');
 }
 
@@ -959,6 +1133,7 @@ async function saveQuestion() {
     question_text: document.getElementById('qTextInput').value,
     category: document.getElementById('qCategoryInput').value,
     difficulty: document.getElementById('qDifficultyInput').value,
+    status: document.getElementById('qStatusInput').value,
     actor_username: getCurrentUserName(),
     actor_role: 'admin'
   };
@@ -1274,14 +1449,17 @@ document.addEventListener('DOMContentLoaded', () => {
   initUserChip();
   initDynamicLabels();
   initModalCloseButtons();
-  initCompactToggle();
   initViewSwitches();
   document.getElementById('specPhotoFile')?.addEventListener('change', handleSpecPhotoChange);
+  document.getElementById('specTypeInput')?.addEventListener('change', handleSpecTypeChange);
   document.getElementById('centerPhotoFile')?.addEventListener('change', handleCenterPhotoChange);
   document.getElementById('modulePhotoFile')?.addEventListener('change', handleModulePhotoChange);
   document.getElementById('accountPhotoFile')?.addEventListener('change', handleAccountPhotoChange);
   document.getElementById('accountSettingsBtn')?.addEventListener('click', openAccountSettings);
   document.getElementById('accountSaveBtn')?.addEventListener('click', saveAccountSettings);
+  document.getElementById('questionFilterCategory')?.addEventListener('change', handleQuestionFilterChange);
+  document.getElementById('questionFilterDifficulty')?.addEventListener('change', handleQuestionFilterChange);
+  document.getElementById('questionFilterStatus')?.addEventListener('change', handleQuestionFilterChange);
 
   // nav
   document.querySelectorAll('.nav-link').forEach(btn => {
@@ -1310,10 +1488,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // empty-state CTAs
   document.getElementById('centersEmptyAdd')?.addEventListener('click', openCenterModalForCreate);
   document.getElementById('specialistsEmptyAdd')?.addEventListener('click', openSpecialistModalForCreate);
-  document.getElementById('childrenEmptyAddCenter')?.addEventListener('click', openCenterModalForCreate);
-  document.getElementById('childrenEmptyAddSpecialist')?.addEventListener('click', openSpecialistModalForCreate);
   document.getElementById('modulesEmptyAdd')?.addEventListener('click', openModuleModalForCreate);
-  document.getElementById('questionsEmptyAdd')?.addEventListener('click', openQuestionModalForCreate);
 
   // center buttons
   document.getElementById('btnAddCenter')?.addEventListener('click', openCenterModalForCreate);
