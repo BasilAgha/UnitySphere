@@ -6,6 +6,8 @@ const specialistId = specialistUser.specialist_id;
 const centerId = specialistUser.center_id;
 let centerModulesCache = null;
 let childrenCache = [];
+let assessmentQuestionsCache = [];
+let currentChildProfile = null;
 
 // ------------- INIT -------------
 document.addEventListener("DOMContentLoaded", () => {
@@ -55,6 +57,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // assessment save
   document.getElementById("assessmentSaveBtn")?.addEventListener("click", saveAssessment);
 
+  // assessments page
+  document.getElementById("startAssessmentBtn")?.addEventListener("click", handleStartAssessment);
+  document.getElementById("exportAssessmentsBtn")?.addEventListener("click", exportAssessmentsCsv);
+  setExportButtonState([]);
+
   // child profile buttons (delegated when modal opens)
   document.getElementById("btnAddSession")?.addEventListener("click", () => {
     const childId = document.getElementById("childProfileModal")?.dataset.childId;
@@ -73,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function loadSection(section) {
   if (section === "overview") loadOverview();
   if (section === "children") loadChildren();
+  if (section === "assessments") loadAssessments();
 }
 
 // ------------- OVERVIEW -------------
@@ -155,6 +163,65 @@ async function loadChildren() {
 
   childrenCache = res.children || [];
   renderChildrenGrid();
+}
+
+// ------------- ASSESSMENTS PAGE -------------
+async function loadAssessments() {
+  await Promise.all([loadAssessmentsChildren(), loadAssessmentsQuestions()]);
+}
+
+async function loadAssessmentsChildren() {
+  const select = document.getElementById("assessmentsChildSelect");
+  if (!select) return;
+  select.innerHTML = "<option value=\"\">Select a child</option>";
+
+  const res = await apiRequest("listChildren", { specialist_id: specialistId });
+  if (!res?.success) return;
+  const list = res.children || [];
+  list.forEach(ch => {
+    const option = document.createElement("option");
+    option.value = ch.child_id;
+    option.textContent = ch.name || `Child ${ch.child_id}`;
+    select.appendChild(option);
+  });
+}
+
+async function loadAssessmentsQuestions() {
+  const list = document.getElementById("assessmentsQuestionsList");
+  if (!list) return;
+  list.innerHTML = "";
+
+  const questions = await ensureAssessmentQuestionsCache();
+  if (!questions) return;
+
+  if (!questions.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-title">No assessment questions yet</div></div>`;
+    return;
+  }
+
+  questions.forEach(q => {
+    const item = document.createElement("div");
+    item.className = "recommendation";
+    item.innerHTML = `
+      <div class="recommendation-body">
+        <strong>${q.question_text}</strong>
+        <span class="hint">
+          Category: ${q.category || "General"} | Difficulty: ${q.difficulty || "N/A"}
+        </span>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function handleStartAssessment() {
+  const select = document.getElementById("assessmentsChildSelect");
+  const childId = select ? select.value : "";
+  if (!childId) {
+    showToast("Please select a child before starting an assessment.", "error", "Missing child");
+    return;
+  }
+  openAssessmentModalForCreate(childId);
 }
 
 function renderChildrenGrid() {
@@ -308,6 +375,8 @@ async function openChildProfile(childId) {
   const child = res.child;
   const sessions = res.sessions || [];
   const assessments = res.assessments || [];
+  currentChildProfile = { child, assessments };
+  setExportButtonState(assessments);
 
   const modal = document.getElementById("childProfileModal");
   modal.dataset.childId = child.child_id;
@@ -507,13 +576,11 @@ async function loadAssessmentQuestionsIntoForm() {
   const container = document.getElementById("assessmentQuestionsContainer");
   container.innerHTML = "";
 
-  const res = await apiRequest("listQuestions");
-  if (!res?.success) {
+  const qs = await ensureAssessmentQuestionsCache();
+  if (!qs) {
     container.textContent = "Error loading questions.";
     return;
   }
-
-  const qs = res.questions || [];
   if (!qs.length) {
     container.textContent = "No questions configured yet.";
     return;
@@ -537,6 +604,95 @@ async function loadAssessmentQuestionsIntoForm() {
     `;
     container.appendChild(row);
   });
+}
+
+async function ensureAssessmentQuestionsCache() {
+  if (assessmentQuestionsCache.length) return assessmentQuestionsCache;
+  const res = await apiRequest("listQuestions");
+  if (!res?.success) {
+    showToast(res.error || "Error loading questions", "error");
+    return null;
+  }
+  assessmentQuestionsCache = res.questions || [];
+  return assessmentQuestionsCache;
+}
+
+function setExportButtonState(assessments) {
+  const btn = document.getElementById("exportAssessmentsBtn");
+  if (!btn) return;
+  const hasAssessments = Boolean(assessments && assessments.length);
+  btn.disabled = !hasAssessments;
+  btn.title = hasAssessments ? "" : "No assessments to export";
+}
+
+function escapeCsv(value) {
+  const str = value == null ? "" : String(value);
+  const escaped = str.replace(/"/g, "\"\"");
+  return /[",\n\r]/.test(escaped) ? `"${escaped}"` : escaped;
+}
+
+function formatCsvDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toISOString().slice(0, 10);
+}
+
+async function exportAssessmentsCsv() {
+  if (!currentChildProfile || !currentChildProfile.assessments?.length) {
+    showToast("No assessments to export", "error");
+    return;
+  }
+  const questions = await ensureAssessmentQuestionsCache();
+  if (!questions) return;
+
+  const questionMap = new Map(
+    questions.map(q => [String(q.question_id), q])
+  );
+  const child = currentChildProfile.child;
+  const specialistName = specialistUser.name || specialistUser.username || "Specialist";
+  const rows = [
+    [
+      "Child Name",
+      "Child ID",
+      "Assessment Date",
+      "Question Text",
+      "Question Category",
+      "Question Difficulty",
+      "Score",
+      "Specialist Name",
+      "Center ID"
+    ]
+  ];
+
+  currentChildProfile.assessments.forEach(a => {
+    const q = questionMap.get(String(a.question_id)) || {};
+    rows.push([
+      child.name || "",
+      child.child_id || "",
+      formatCsvDate(a.date),
+      q.question_text || "",
+      q.category || "",
+      q.difficulty || "",
+      a.score ?? "",
+      specialistName,
+      a.center_id || centerId || ""
+    ]);
+  });
+
+  const csv = rows.map(row => row.map(escapeCsv).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeName = (child.name || "child").replace(/[^a-z0-9-_]+/gi, "_");
+  const today = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `assessment_history_${safeName}_${today}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showToast("Assessment CSV exported");
 }
 
 async function saveAssessment() {

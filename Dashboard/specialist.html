@@ -23,8 +23,9 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="overview">?? <span>Overview</span></button>
-        <button class="nav-link" data-section="children">?? <span>My Children</span></button>
+        <button class="nav-link active" data-section="overview">Overview</button>
+        <button class="nav-link" data-section="children">My Children</button>
+        <button class="nav-link" data-section="assessments">Assessments</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -148,6 +149,31 @@
               </div>
           </div>
         </section>
+
+        <!-- ===== ASSESSMENTS ===== -->
+        <section id="section-assessments" class="section">
+          <div class="card full">
+            <div class="section-header">
+              <div>
+                <h2>Assessments</h2>
+                <p class="hint">Assign and complete assessments per child.</p>
+              </div>
+              <button class="primary with-icon" id="startAssessmentBtn">
+                <span class="icon">+</span>
+                <span>Start Assessment</span>
+              </button>
+            </div>
+
+            <div class="card-subsection">
+              <div class="input-group">
+                <label for="assessmentsChildSelect">Child</label>
+                <select id="assessmentsChildSelect"></select>
+              </div>
+            </div>
+
+            <div class="stacked-list" id="assessmentsQuestionsList"></div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -237,7 +263,10 @@
             <div class="panel">
               <div class="panel-header">
                 <strong>Assessments</strong>
-                <button class="ghost small" id="btnAddAssessment">Add Assessment</button>
+                <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                  <button class="ghost small" id="exportAssessmentsBtn" type="button">Export Assessments (CSV)</button>
+                  <button class="ghost small" id="btnAddAssessment">Add Assessment</button>
+                </div>
               </div>
               <div class="stacked-list" id="childAssessmentsList"></div>
             </div>

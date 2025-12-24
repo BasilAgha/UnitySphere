@@ -2,6 +2,7 @@ let center = {};
 let centerId = null;
 let childrenCache = [];
 let specialistsCache = [];
+let allModulesCache = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   authGuard("center");
@@ -31,8 +32,10 @@ function bindNavigation() {
 function bindCenterButtons() {
   document.getElementById("btnAddSpecialist")?.addEventListener("click", openAddSpecialistModal);
   document.getElementById("btnAddChild")?.addEventListener("click", openAddChildModal);
+  document.getElementById("btnAssignModules")?.addEventListener("click", openAssignModulesModal);
   document.getElementById("childSaveBtn")?.addEventListener("click", saveChild);
   document.getElementById("specSaveBtn")?.addEventListener("click", saveSpecialist);
+  document.getElementById("assignModulesSaveBtn")?.addEventListener("click", saveAssignedModules);
   document.getElementById("refreshAllBtn")?.addEventListener("click", () => {
     const btn = document.getElementById("refreshAllBtn");
     setButtonLoading(btn, true, "Refreshing...");
@@ -75,6 +78,7 @@ function wrapModalClose() {
     baseClose(id);
     if (id === "childModal") resetChildModal();
     if (id === "specialistModal") resetSpecialistModal();
+    if (id === "assignModulesModal") resetAssignModulesModal();
   };
 }
 
@@ -102,6 +106,14 @@ function resetSpecialistModal() {
   document.getElementById("specPasswordInput").value = "";
   document.getElementById("specDescriptionInput").value = "";
   setButtonLoading(document.getElementById("specSaveBtn"), false);
+}
+
+function resetAssignModulesModal() {
+  const modal = document.getElementById("assignModulesModal");
+  if (!modal) return;
+  const list = document.getElementById("assignModulesList");
+  if (list) list.innerHTML = "";
+  setButtonLoading(document.getElementById("assignModulesSaveBtn"), false);
 }
 
 function getInitials(name = "") {
@@ -318,6 +330,7 @@ async function loadModules() {
   if (handleApiFailure(res)) return;
 
   const list = res.modules || [];
+  allModulesCache = allModulesCache.length ? allModulesCache : [];
   if (!list.length) {
     if (empty) empty.style.display = "block";
     return;
@@ -335,6 +348,124 @@ async function loadModules() {
     `;
     grid.appendChild(card);
   });
+}
+
+async function openAssignModulesModal() {
+  const modal = document.getElementById("assignModulesModal");
+  const list = document.getElementById("assignModulesList");
+  if (!modal || !list) {
+    showToast("Assign modules modal not available", "error");
+    return;
+  }
+
+  list.innerHTML = "";
+  const [modulesRes, assignedRes] = await Promise.all([
+    apiRequest("listModules"),
+    apiRequest("listCenterModules", { center_id: centerId })
+  ]);
+
+  if (handleApiFailure(modulesRes)) return;
+  if (handleApiFailure(assignedRes)) return;
+
+  const rawModules = modulesRes.modules || [];
+  const moduleById = new Map();
+  rawModules.forEach(m => {
+    const id = String(m.module_id || "");
+    if (!id || moduleById.has(id)) return;
+    moduleById.set(id, m);
+  });
+  const allModules = Array.from(moduleById.values());
+  allModulesCache = allModules;
+  const assignedModules = assignedRes.modules || [];
+  const assignedIds = new Set(assignedModules.map(m => String(m.module_id)));
+  const assignmentByModule = new Map(
+    assignedModules.map(m => [String(m.module_id), String(m.assignment_id || "")])
+  );
+
+  if (!allModules.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-title">No modules available</div></div>`;
+    openModal("assignModulesModal");
+    return;
+  }
+
+  allModules.forEach(m => {
+    const id = String(m.module_id || "");
+    const item = document.createElement("div");
+    item.className = "panel";
+    const assignmentId = assignmentByModule.get(id) || "";
+    item.innerHTML = `
+      <label style="display:flex; gap:0.6rem; align-items:flex-start;">
+        <input type="checkbox" class="assign-module-checkbox" value="${id}" data-assignment-id="${assignmentId}" ${assignedIds.has(id) ? "checked" : ""}>
+        <div>
+          <strong>${m.name || "Module"}</strong>
+          <div class="hint">${m.description || "No description"}</div>
+        </div>
+      </label>
+    `;
+    list.appendChild(item);
+  });
+
+  openModal("assignModulesModal");
+}
+
+async function saveAssignedModules() {
+  const saveBtn = document.getElementById("assignModulesSaveBtn");
+  setButtonLoading(saveBtn, true, "Saving...");
+  const list = document.getElementById("assignModulesList");
+  if (!list) {
+    setButtonLoading(saveBtn, false);
+    return;
+  }
+  const checkboxes = Array.from(list.querySelectorAll(".assign-module-checkbox"));
+  const selectedIds = new Set(
+    checkboxes.filter(cb => cb.checked).map(cb => String(cb.value))
+  );
+  const assignedPairs = checkboxes
+    .map(cb => ({
+      moduleId: String(cb.value),
+      assignmentId: String(cb.dataset.assignmentId || "")
+    }))
+    .filter(item => item.assignmentId);
+
+  try {
+    const toAssign = Array.from(selectedIds).filter(
+      id => !assignedPairs.some(p => p.moduleId === id)
+    );
+    const toRemove = assignedPairs.filter(p => !selectedIds.has(p.moduleId));
+
+    const assignResults = await Promise.all(
+      toAssign.map(moduleId =>
+        apiRequest("assignModuleToCenter", {
+          module_id: moduleId,
+          center_id: centerId,
+          actor_username: center.username || getCurrentUsername(),
+          actor_role: "center"
+        })
+      )
+    );
+    const removeResults = await Promise.all(
+      toRemove.map(item =>
+        apiRequest("removeModuleFromCenter", {
+          assignment_id: item.assignmentId,
+          actor_username: center.username || getCurrentUsername(),
+          actor_role: "center"
+        })
+      )
+    );
+    const allResults = [...assignResults, ...removeResults];
+    const failed = allResults.find(res => !res?.success);
+    if (failed) {
+      handleApiFailure(failed);
+      return;
+    }
+
+    closeModal("assignModulesModal");
+    showToast("Modules updated");
+    loadSection("modules");
+    loadOverview();
+  } finally {
+    setButtonLoading(saveBtn, false);
+  }
 }
 
 function openAddSpecialistModal() {

@@ -151,6 +151,10 @@
                 <h2>Assigned VR Modules</h2>
                 <p class="hint">Modules assigned to your center.</p>
               </div>
+              <button class="primary with-icon" id="btnAssignModules">
+                <span class="icon">+</span>
+                <span>Assign Modules</span>
+              </button>
             </div>
 
             <div class="modules-grid" id="modulesGrid"></div>
@@ -241,6 +245,26 @@
       <div class="modal-actions">
         <button class="ghost" data-close-modal="childModal">Cancel</button>
         <button class="primary" id="childSaveBtn">Save Child</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Modules Modal -->
+  <div class="modal-backdrop" id="assignModulesModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Assign Modules</h2>
+          <p class="modal-subtitle">Select modules to assign to your center.</p>
+        </div>
+        <button class="icon-button" data-close-modal="assignModulesModal">x</button>
+      </div>
+      <div class="form-panel">
+        <div id="assignModulesList" class="stacked-list"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" data-close-modal="assignModulesModal">Cancel</button>
+        <button class="primary" id="assignModulesSaveBtn">Save Assignments</button>
       </div>
     </div>
   </div>
