@@ -3,6 +3,8 @@ let centerId = null;
 let childrenCache = [];
 let specialistsCache = [];
 let allModulesCache = [];
+let assignModulesSelection = null;
+let assignModulesAssignmentMap = new Map();
 
 document.addEventListener("DOMContentLoaded", () => {
   authGuard("center");
@@ -11,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   wrapModalClose();
   initModalClose();
+  initCompactMode();
 
   bindNavigation();
   bindCenterButtons();
@@ -32,10 +35,19 @@ function bindNavigation() {
 function bindCenterButtons() {
   document.getElementById("btnAddSpecialist")?.addEventListener("click", openAddSpecialistModal);
   document.getElementById("btnAddChild")?.addEventListener("click", openAddChildModal);
-  document.getElementById("btnAssignModules")?.addEventListener("click", openAssignModulesModal);
+  document.getElementById("btnAssignModules")?.addEventListener("click", e => openAssignModulesModal(e.currentTarget));
+  document.getElementById("specialistsEmptyAdd")?.addEventListener("click", openAddSpecialistModal);
+  document.getElementById("childrenEmptyAdd")?.addEventListener("click", openAddChildModal);
+  document.getElementById("modulesEmptyAssign")?.addEventListener("click", e => openAssignModulesModal(e.currentTarget));
   document.getElementById("childSaveBtn")?.addEventListener("click", saveChild);
   document.getElementById("specSaveBtn")?.addEventListener("click", saveSpecialist);
   document.getElementById("assignModulesSaveBtn")?.addEventListener("click", saveAssignedModules);
+  document.getElementById("assignModulesSelectAll")?.addEventListener("click", () => {
+    toggleAssignModulesSelection(true);
+  });
+  document.getElementById("assignModulesClearAll")?.addEventListener("click", () => {
+    toggleAssignModulesSelection(false);
+  });
   document.getElementById("refreshAllBtn")?.addEventListener("click", () => {
     const btn = document.getElementById("refreshAllBtn");
     setButtonLoading(btn, true, "Refreshing...");
@@ -71,6 +83,18 @@ function handleApiFailure(res) {
   return false;
 }
 
+function setModalError(id, message) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (message) {
+    el.textContent = message;
+    el.style.display = "block";
+  } else {
+    el.textContent = "";
+    el.style.display = "none";
+  }
+}
+
 function wrapModalClose() {
   const baseClose = window.closeModal;
   if (typeof baseClose !== "function") return;
@@ -93,6 +117,7 @@ function resetChildModal() {
   document.getElementById("childNotesInput").value = "";
   const status = document.getElementById("childStatusInput");
   if (status) status.value = "active";
+  setModalError("childModalError", "");
   setButtonLoading(document.getElementById("childSaveBtn"), false);
 }
 
@@ -105,6 +130,7 @@ function resetSpecialistModal() {
   document.getElementById("specUsernameInput").value = "";
   document.getElementById("specPasswordInput").value = "";
   document.getElementById("specDescriptionInput").value = "";
+  setModalError("specModalError", "");
   setButtonLoading(document.getElementById("specSaveBtn"), false);
 }
 
@@ -126,8 +152,12 @@ function getInitials(name = "") {
 
 function setUserAvatar() {
   const name = center.name || center.username || "Center";
+  const photo = center.photo || center.photo_url || "";
+  if (typeof applyAvatarFallbackToSelector === "function") {
+    applyAvatarFallbackToSelector(".sidebar .avatar", name, photo);
+    return;
+  }
   document.querySelectorAll(".sidebar .avatar").forEach(avatar => {
-    const photo = center.photo || center.photo_url || "";
     if (photo) {
       avatar.style.backgroundImage = `url('${photo}')`;
       avatar.classList.add("has-photo");
@@ -140,58 +170,20 @@ function setUserAvatar() {
   });
 }
 
-function renderChildrenPerSpecialist(list) {
-  const chart = document.getElementById("chartChildrenPerSpecialist");
-  if (!chart) return;
-  chart.innerHTML = "";
-  if (!list.length) {
-    chart.innerHTML = `<div class="hint">No specialists yet</div>`;
-    return;
-  }
-  const maxCount = Math.max(...list.map(s => Number(s.num_children || 0)), 1);
-  const container = document.createElement("div");
-  container.className = "stacked-list";
-  list.forEach(s => {
-    const count = Number(s.num_children || 0);
-    const item = document.createElement("div");
-    item.className = "panel";
-    item.innerHTML = `
-      <div class="panel-header">
-        <strong>${s.name || s.username || "Specialist"}</strong>
-        <span class="meta-muted">${count} children</span>
-      </div>
-      <div class="progress-bar">
-        <span style="width:${Math.round((count / maxCount) * 100)}%"></span>
-      </div>
-    `;
-    container.appendChild(item);
-  });
-  chart.appendChild(container);
-}
+function updateCenterSummary({ specialistsCount, childrenCount, assignedCount, totalModules }) {
+  const avgEl = document.getElementById("summaryAvgChildren");
+  const assignedEl = document.getElementById("summaryModulesAssigned");
+  const coverageEl = document.getElementById("summaryModulesCoverage");
+  const coverageBar = document.getElementById("summaryModulesCoverageBar");
 
-function renderModuleUsage(list) {
-  const chart = document.getElementById("chartModuleUsage");
-  if (!chart) return;
-  chart.innerHTML = "";
-  if (!list.length) {
-    chart.innerHTML = `<div class="hint">No modules assigned</div>`;
-    return;
+  if (avgEl) {
+    const avg = specialistsCount ? (childrenCount / specialistsCount).toFixed(1) : "0";
+    avgEl.textContent = avg;
   }
-  const container = document.createElement("div");
-  container.className = "stacked-list";
-  list.forEach(m => {
-    const count = Number(m.total_sessions || m.num_sessions || m.sessions || 0);
-    const item = document.createElement("div");
-    item.className = "panel";
-    item.innerHTML = `
-      <div class="panel-header">
-        <strong>${m.name || "Module"}</strong>
-        <span class="meta-muted">${count} sessions</span>
-      </div>
-    `;
-    container.appendChild(item);
-  });
-  chart.appendChild(container);
+  if (assignedEl) assignedEl.textContent = `${assignedCount}`;
+  const coverage = totalModules ? Math.round((assignedCount / totalModules) * 100) : 0;
+  if (coverageEl) coverageEl.textContent = `${coverage}%`;
+  if (coverageBar) coverageBar.style.width = `${coverage}%`;
 }
 
 async function loadOverview() {
@@ -199,12 +191,20 @@ async function loadOverview() {
   setText("statChildren", 0);
   setText("statModules", 0);
   setText("statSessions", 0);
-  const chartChildren = document.getElementById("chartChildrenPerSpecialist");
-  const chartModules = document.getElementById("chartModuleUsage");
-  if (chartChildren) chartChildren.innerHTML = "";
-  if (chartModules) chartModules.innerHTML = "";
+  updateCenterSummary({
+    specialistsCount: 0,
+    childrenCount: 0,
+    assignedCount: 0,
+    totalModules: 0
+  });
 
-  const stats = await apiRequest("getCenterStats", { center_id: centerId });
+  const [stats, specialistsRes, modulesRes, allModulesRes] = await Promise.all([
+    apiRequest("getCenterStats", { center_id: centerId }),
+    apiRequest("listSpecialists", { center_id: centerId }),
+    apiRequest("listCenterModules", { center_id: centerId }),
+    apiRequest("listModules")
+  ]);
+
   if (!handleApiFailure(stats)) {
     const totals = stats.totals || {};
     setText("statSpecialists", totals.specialists ?? 0);
@@ -213,19 +213,20 @@ async function loadOverview() {
     setText("statSessions", totals.sessions ?? 0);
   }
 
-  const specialistsRes = await apiRequest("listSpecialists", { center_id: centerId });
-  if (handleApiFailure(specialistsRes)) {
-    if (chartChildren) chartChildren.innerHTML = `<div class="hint">Unable to load specialists</div>`;
-  } else {
-    renderChildrenPerSpecialist(specialistsRes.specialists || []);
+  if (handleApiFailure(specialistsRes) || handleApiFailure(modulesRes) || handleApiFailure(allModulesRes)) {
+    return;
   }
 
-  const modulesRes = await apiRequest("listCenterModules", { center_id: centerId });
-  if (handleApiFailure(modulesRes)) {
-    if (chartModules) chartModules.innerHTML = `<div class="hint">Unable to load modules</div>`;
-  } else {
-    renderModuleUsage(modulesRes.modules || []);
-  }
+  const totals = stats?.totals || {};
+  const specialists = specialistsRes.specialists || [];
+  const assignedModules = modulesRes.modules || [];
+  const allModules = allModulesRes.modules || [];
+  updateCenterSummary({
+    specialistsCount: totals.specialists ?? specialists.length ?? 0,
+    childrenCount: totals.children ?? 0,
+    assignedCount: assignedModules.length,
+    totalModules: allModules.length
+  });
 }
 
 async function loadSpecialists() {
@@ -270,7 +271,7 @@ async function loadSpecialists() {
     btn.addEventListener("click", () => openEditSpecialistModal(btn.dataset.editSpecialist));
   });
   grid.querySelectorAll("[data-delete-specialist]").forEach(btn => {
-    btn.addEventListener("click", () => deleteSpecialist(btn.dataset.deleteSpecialist));
+    btn.addEventListener("click", () => deleteSpecialist(btn.dataset.deleteSpecialist, btn));
   });
 }
 
@@ -315,7 +316,7 @@ async function loadChildren() {
     btn.addEventListener("click", () => openEditChildModal(btn.dataset.editChild));
   });
   grid.querySelectorAll("[data-delete-child]").forEach(btn => {
-    btn.addEventListener("click", () => deleteChild(btn.dataset.deleteChild));
+    btn.addEventListener("click", () => deleteChild(btn.dataset.deleteChild, btn));
   });
 }
 
@@ -350,19 +351,92 @@ async function loadModules() {
   });
 }
 
-async function openAssignModulesModal() {
+function updateAssignModulesCounts(assignedCount, unassignedCount) {
+  const assignedEl = document.getElementById("assignModulesAssignedCount");
+  const unassignedEl = document.getElementById("assignModulesUnassignedCount");
+  if (assignedEl) assignedEl.textContent = `${assignedCount}`;
+  if (unassignedEl) unassignedEl.textContent = `${unassignedCount}`;
+}
+
+function renderAssignModulesLists() {
+  const assignedList = document.getElementById("assignModulesAssigned");
+  const unassignedList = document.getElementById("assignModulesUnassigned");
+  if (!assignedList || !unassignedList) return;
+  assignedList.innerHTML = "";
+  unassignedList.innerHTML = "";
+
+  let assignedCount = 0;
+  let unassignedCount = 0;
+
+  allModulesCache.forEach(m => {
+    const id = String(m.module_id || "");
+    const checked = assignModulesSelection?.has(id);
+    const assignmentId = assignModulesAssignmentMap.get(id) || "";
+    const item = document.createElement("div");
+    item.className = "panel";
+    item.innerHTML = `
+      <label style="display:flex; gap:0.6rem; align-items:flex-start;">
+        <input type="checkbox" class="assign-module-checkbox" value="${id}" data-assignment-id="${assignmentId}" ${checked ? "checked" : ""}>
+        <div>
+          <strong>${m.name || "Module"}</strong>
+          <div class="hint">${m.description || "No description"}</div>
+        </div>
+      </label>
+    `;
+    if (checked) {
+      assignedCount += 1;
+      assignedList.appendChild(item);
+    } else {
+      unassignedCount += 1;
+      unassignedList.appendChild(item);
+    }
+  });
+
+  updateAssignModulesCounts(assignedCount, unassignedCount);
+}
+
+function syncAssignModulesSelectionFromUI() {
+  const list = document.getElementById("assignModulesList");
+  if (!list) return;
+  const checkboxes = Array.from(list.querySelectorAll(".assign-module-checkbox"));
+  assignModulesSelection = new Set(
+    checkboxes.filter(cb => cb.checked).map(cb => String(cb.value))
+  );
+}
+
+function toggleAssignModulesSelection(selectAll) {
+  const list = document.getElementById("assignModulesList");
+  if (!list) return;
+  const checkboxes = Array.from(list.querySelectorAll(".assign-module-checkbox"));
+  checkboxes.forEach(cb => {
+    cb.checked = selectAll;
+  });
+  assignModulesSelection = new Set(
+    selectAll ? checkboxes.map(cb => String(cb.value)) : []
+  );
+  renderAssignModulesLists();
+}
+
+async function openAssignModulesModal(btn) {
   const modal = document.getElementById("assignModulesModal");
   const list = document.getElementById("assignModulesList");
-  if (!modal || !list) {
+  const assignedList = document.getElementById("assignModulesAssigned");
+  const unassignedList = document.getElementById("assignModulesUnassigned");
+  if (!modal || !list || !assignedList || !unassignedList) {
     showToast("Assign modules modal not available", "error");
     return;
   }
 
-  list.innerHTML = "";
+  setButtonLoading(btn, true, "Loading...");
+  assignedList.innerHTML = "";
+  unassignedList.innerHTML = "";
+
   const [modulesRes, assignedRes] = await Promise.all([
     apiRequest("listModules"),
     apiRequest("listCenterModules", { center_id: centerId })
   ]);
+
+  setButtonLoading(btn, false);
 
   if (handleApiFailure(modulesRes)) return;
   if (handleApiFailure(assignedRes)) return;
@@ -374,36 +448,41 @@ async function openAssignModulesModal() {
     if (!id || moduleById.has(id)) return;
     moduleById.set(id, m);
   });
-  const allModules = Array.from(moduleById.values());
-  allModulesCache = allModules;
+  allModulesCache = Array.from(moduleById.values());
   const assignedModules = assignedRes.modules || [];
   const assignedIds = new Set(assignedModules.map(m => String(m.module_id)));
-  const assignmentByModule = new Map(
+  assignModulesAssignmentMap = new Map(
     assignedModules.map(m => [String(m.module_id), String(m.assignment_id || "")])
   );
 
-  if (!allModules.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-title">No modules available</div></div>`;
+  if (!allModulesCache.length) {
+    assignedList.innerHTML = `<div class="empty-state"><div class="empty-title">No modules available</div><div>Ask an admin to add VR modules before assigning them.</div></div>`;
+    unassignedList.innerHTML = "";
+    updateAssignModulesCounts(0, 0);
     openModal("assignModulesModal");
     return;
   }
 
-  allModules.forEach(m => {
-    const id = String(m.module_id || "");
-    const item = document.createElement("div");
-    item.className = "panel";
-    const assignmentId = assignmentByModule.get(id) || "";
-    item.innerHTML = `
-      <label style="display:flex; gap:0.6rem; align-items:flex-start;">
-        <input type="checkbox" class="assign-module-checkbox" value="${id}" data-assignment-id="${assignmentId}" ${assignedIds.has(id) ? "checked" : ""}>
-        <div>
-          <strong>${m.name || "Module"}</strong>
-          <div class="hint">${m.description || "No description"}</div>
-        </div>
-      </label>
-    `;
-    list.appendChild(item);
-  });
+  if (!assignModulesSelection) {
+    assignModulesSelection = new Set(assignedIds);
+  }
+
+  renderAssignModulesLists();
+
+  if (!list.dataset.listener) {
+    list.addEventListener("change", e => {
+      const target = e.target;
+      if (!target.classList.contains("assign-module-checkbox")) return;
+      const id = String(target.value);
+      if (target.checked) {
+        assignModulesSelection.add(id);
+      } else {
+        assignModulesSelection.delete(id);
+      }
+      renderAssignModulesLists();
+    });
+    list.dataset.listener = "true";
+  }
 
   openModal("assignModulesModal");
 }
@@ -420,6 +499,7 @@ async function saveAssignedModules() {
   const selectedIds = new Set(
     checkboxes.filter(cb => cb.checked).map(cb => String(cb.value))
   );
+  assignModulesSelection = new Set(selectedIds);
   const assignedPairs = checkboxes
     .map(cb => ({
       moduleId: String(cb.value),
@@ -509,6 +589,7 @@ async function saveSpecialist() {
 
   const saveBtn = document.getElementById("specSaveBtn");
   setButtonLoading(saveBtn, true, "Saving...");
+  setModalError("specModalError", "");
 
   const specialistId = document.getElementById("specIdInput").value;
   const name = document.getElementById("specNameInput").value.trim();
@@ -517,7 +598,9 @@ async function saveSpecialist() {
   const description = document.getElementById("specDescriptionInput").value || "";
 
   if (!name || !username || !password) {
-    showToast("Name, username, and password are required", "error");
+    const message = "Name, username, and password are required.";
+    setModalError("specModalError", message);
+    showToast(message, "error");
     setButtonLoading(saveBtn, false);
     return;
   }
@@ -536,7 +619,12 @@ async function saveSpecialist() {
     const res = specialistId
       ? await apiRequest("updateSpecialist", { specialist_id: specialistId, ...payload })
       : await apiRequest("createSpecialist", payload);
-    if (handleApiFailure(res)) return;
+    if (!res?.success) {
+      const message = res?.error || "Unable to save specialist. Try again.";
+      setModalError("specModalError", message);
+      showToast(message, "error");
+      return;
+    }
     closeModal("specialistModal");
     showToast(specialistId ? "Specialist updated" : "Specialist saved");
     loadSection("specialists");
@@ -546,18 +634,23 @@ async function saveSpecialist() {
   }
 }
 
-async function deleteSpecialist(specId) {
+async function deleteSpecialist(specId, btn) {
   if (!confirm("Delete this specialist?")) return;
+  setButtonLoading(btn, true, "Deleting...");
   const res = await apiRequest("deleteSpecialist", {
     specialist_id: specId,
     center_id: centerId,
     actor_username: center.username || getCurrentUsername(),
     actor_role: "center"
   });
-  if (handleApiFailure(res)) return;
+  if (handleApiFailure(res)) {
+    setButtonLoading(btn, false);
+    return;
+  }
   showToast("Specialist deleted");
   loadSection("specialists");
   loadOverview();
+  setButtonLoading(btn, false);
 }
 
 function openAddChildModal() {
@@ -603,11 +696,14 @@ async function saveChild() {
 
   const saveBtn = document.getElementById("childSaveBtn");
   setButtonLoading(saveBtn, true, "Saving...");
+  setModalError("childModalError", "");
 
   const childId = document.getElementById("childIdInput").value;
   const name = document.getElementById("childNameInput").value.trim();
   if (!name) {
-    showToast("Child name is required", "error");
+    const message = "Child name is required.";
+    setModalError("childModalError", message);
+    showToast(message, "error");
     setButtonLoading(saveBtn, false);
     return;
   }
@@ -627,7 +723,12 @@ async function saveChild() {
     const res = childId
       ? await apiRequest("updateChild", { child_id: childId, ...payload })
       : await apiRequest("createChild", payload);
-    if (handleApiFailure(res)) return;
+    if (!res?.success) {
+      const message = res?.error || "Unable to save child. Try again.";
+      setModalError("childModalError", message);
+      showToast(message, "error");
+      return;
+    }
     closeModal("childModal");
     showToast(childId ? "Child updated" : "Child saved");
     loadSection("children");
@@ -637,18 +738,23 @@ async function saveChild() {
   }
 }
 
-async function deleteChild(childId) {
+async function deleteChild(childId, btn) {
   if (!confirm("Delete this child?")) return;
+  setButtonLoading(btn, true, "Deleting...");
   const res = await apiRequest("deleteChild", {
     child_id: childId,
     center_id: centerId,
     actor_username: center.username || getCurrentUsername(),
     actor_role: "center"
   });
-  if (handleApiFailure(res)) return;
+  if (handleApiFailure(res)) {
+    setButtonLoading(btn, false);
+    return;
+  }
   showToast("Child deleted");
   loadSection("children");
   loadOverview();
+  setButtonLoading(btn, false);
 }
 
 function removeChildCenterInput() {

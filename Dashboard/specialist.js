@@ -17,12 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // user chip
   const nameEl = document.getElementById("currentUserName");
   if (nameEl) nameEl.textContent = specialistUser.name || specialistUser.username || "Specialist";
+  setSpecialistAvatar();
 
   // nav
   document.querySelectorAll(".nav-link").forEach(btn => {
     btn.addEventListener("click", () => {
       const section = btn.dataset.section;
       switchSection(section);
+      updateSectionContext(section);
       loadSection(section);
     });
   });
@@ -35,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn = document.getElementById("refreshAllBtn");
     setButtonLoading(btn, true, "Refreshing...");
     const active = document.querySelector(".section.active")?.id.replace("section-", "") || "overview";
+    updateSectionContext(active);
     loadSection(active);
     setTimeout(() => setButtonLoading(btn, false), 400);
   });
@@ -71,10 +74,54 @@ document.addEventListener("DOMContentLoaded", () => {
     const childId = document.getElementById("childProfileModal")?.dataset.childId;
     if (childId) openAssessmentModalForCreate(childId);
   });
+  initChildProfileTabs();
 
   // initial section
+  updateSectionContext("overview");
   loadSection("overview");
 });
+
+function initChildProfileTabs() {
+  const modal = document.getElementById("childProfileModal");
+  if (!modal) return;
+  modal.querySelectorAll(".tab-button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setChildProfileTab(btn.dataset.tab);
+    });
+  });
+}
+
+function setChildProfileTab(tab) {
+  const modal = document.getElementById("childProfileModal");
+  if (!modal) return;
+  const next = tab || "overview";
+  modal.dataset.activeTab = next;
+  modal.querySelectorAll(".tab-button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tab === next);
+  });
+  modal.querySelectorAll("[data-tab-panel]").forEach(panel => {
+    panel.classList.toggle("active", panel.dataset.tabPanel === next);
+  });
+}
+
+function setSpecialistAvatar() {
+  const name = specialistUser.name || specialistUser.username || "Specialist";
+  const photo = specialistUser.photo || specialistUser.photo_url || "";
+  if (typeof applyAvatarFallbackToSelector === "function") {
+    applyAvatarFallbackToSelector(".sidebar .avatar", name, photo);
+  }
+}
+
+function updateSectionContext(section) {
+  const label = document.getElementById("currentSectionLabel");
+  if (!label) return;
+  const map = {
+    overview: "Overview",
+    children: "Children",
+    assessments: "Assessments"
+  };
+  label.textContent = map[section] || "Overview";
+}
 
 // ------------- SECTION LOADER -------------
 function loadSection(section) {
@@ -195,7 +242,16 @@ async function loadAssessmentsQuestions() {
   if (!questions) return;
 
   if (!questions.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-title">No assessment questions yet</div></div>`;
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-title">No assessment questions yet</div>
+        <div>Assessment questions have not been published. Ask an admin to add questions, then refresh.</div>
+        <div class="empty-actions">
+          <button class="ghost small" type="button" id="assessmentsEmptyRefresh">Refresh</button>
+        </div>
+      </div>
+    `;
+    document.getElementById("assessmentsEmptyRefresh")?.addEventListener("click", loadAssessmentsQuestions);
     return;
   }
 
@@ -214,14 +270,17 @@ async function loadAssessmentsQuestions() {
   });
 }
 
-function handleStartAssessment() {
+async function handleStartAssessment() {
   const select = document.getElementById("assessmentsChildSelect");
   const childId = select ? select.value : "";
   if (!childId) {
     showToast("Please select a child before starting an assessment.", "error", "Missing child");
     return;
   }
-  openAssessmentModalForCreate(childId);
+  const btn = document.getElementById("startAssessmentBtn");
+  setButtonLoading(btn, true, "Loading...");
+  await openAssessmentModalForCreate(childId);
+  setButtonLoading(btn, false);
 }
 
 function renderChildrenGrid() {
@@ -265,7 +324,9 @@ function renderChildrenGrid() {
       <div style="margin-top:0.4rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
         <button class="ghost small" data-edit-child="${ch.child_id}">Edit</button>
         <button class="ghost small" data-view-child="${ch.child_id}">View Profile</button>
-        <button class="ghost small" data-delete-child="${ch.child_id}">Delete</button>
+        <button class="ghost small" data-add-session="${ch.child_id}">Add Session</button>
+        <button class="ghost small" data-add-assessment="${ch.child_id}">Add Assessment</button>
+        <button class="ghost small danger" data-delete-child="${ch.child_id}">Delete</button>
       </div>
     `;
     grid.appendChild(card);
@@ -276,10 +337,16 @@ function renderChildrenGrid() {
     btn.addEventListener("click", () => openChildModalForEdit(btn.dataset.editChild))
   );
   grid.querySelectorAll("[data-view-child]").forEach(btn =>
-    btn.addEventListener("click", () => openChildProfile(btn.dataset.viewChild))
+    btn.addEventListener("click", () => openChildProfile(btn.dataset.viewChild, btn))
+  );
+  grid.querySelectorAll("[data-add-session]").forEach(btn =>
+    btn.addEventListener("click", () => openSessionModalForCreate(btn.dataset.addSession))
+  );
+  grid.querySelectorAll("[data-add-assessment]").forEach(btn =>
+    btn.addEventListener("click", () => openAssessmentModalForCreate(btn.dataset.addAssessment))
   );
   grid.querySelectorAll("[data-delete-child]").forEach(btn =>
-    btn.addEventListener("click", () => deleteChild(btn.dataset.deleteChild))
+    btn.addEventListener("click", () => deleteChild(btn.dataset.deleteChild, btn))
   );
 }
 
@@ -349,8 +416,9 @@ async function saveChild() {
   }
 }
 
-async function deleteChild(childId) {
+async function deleteChild(childId, btn) {
   if (!confirm("Delete this child?")) return;
+  setButtonLoading(btn, true, "Deleting...");
 
   const res = await apiRequest("deleteChild", {
     child_id: childId,
@@ -360,17 +428,24 @@ async function deleteChild(childId) {
 
   if (!res?.success) {
     showToast(res.error || "Error deleting child", "error", "Delete failed");
+    setButtonLoading(btn, false);
     return;
   }
   showToast("Child deleted");
   await loadChildren();
   await loadOverview();
+  setButtonLoading(btn, false);
 }
 
 // ------------- CHILD PROFILE MODAL -------------
-async function openChildProfile(childId) {
+async function openChildProfile(childId, btn) {
+  setButtonLoading(btn, true, "Loading...");
   const res = await apiRequest("getChildProfile", { child_id: childId });
-  if (!res?.success) return;
+  if (!res?.success) {
+    showToast(res?.error || "Unable to load child profile", "error");
+    setButtonLoading(btn, false);
+    return;
+  }
 
   const child = res.child;
   const sessions = res.sessions || [];
@@ -394,6 +469,17 @@ async function openChildProfile(childId) {
   // sessions list
   const sessionsList = document.getElementById("childSessionsList");
   sessionsList.innerHTML = "";
+  if (!sessions.length) {
+    sessionsList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-title">No sessions yet</div>
+        <div>Log the first VR session to start tracking progress.</div>
+        <div class="empty-actions">
+          <button class="ghost small" type="button" data-add-session="${childId}">Add Session</button>
+        </div>
+      </div>
+    `;
+  } else {
   sessions.forEach(s => {
     const item = document.createElement("div");
     item.className = "recommendation";
@@ -412,8 +498,12 @@ async function openChildProfile(childId) {
     `;
     sessionsList.appendChild(item);
   });
+  }
   sessionsList.querySelectorAll("[data-edit-session]").forEach(btn =>
-    btn.addEventListener("click", () => openSessionModalForEdit(btn.dataset.editSession, childId))
+    btn.addEventListener("click", () => openSessionModalForEdit(btn.dataset.editSession, childId, btn))
+  );
+  sessionsList.querySelectorAll("[data-add-session]").forEach(btn =>
+    btn.addEventListener("click", () => openSessionModalForCreate(btn.dataset.addSession))
   );
 
   // assessments list (group by date)
@@ -446,8 +536,24 @@ async function openChildProfile(childId) {
       `;
       assessmentsList.appendChild(item);
     });
+  if (!assessments.length) {
+    assessmentsList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-title">No assessments yet</div>
+        <div>Add an assessment to capture scores for this child.</div>
+        <div class="empty-actions">
+          <button class="ghost small" type="button" data-add-assessment="${childId}">Add Assessment</button>
+        </div>
+      </div>
+    `;
+  }
+  assessmentsList.querySelectorAll("[data-add-assessment]").forEach(btn =>
+    btn.addEventListener("click", () => openAssessmentModalForCreate(btn.dataset.addAssessment))
+  );
 
+  setChildProfileTab(modal.dataset.activeTab || "overview");
   openModal("childProfileModal");
+  setButtonLoading(btn, false);
 }
 
 // ------------- MODULES (CENTER-SCOPED) -------------
@@ -485,12 +591,21 @@ function openSessionModalForCreate(childId) {
   openModal("sessionModal");
 }
 
-async function openSessionModalForEdit(sessionId, childId) {
+async function openSessionModalForEdit(sessionId, childId, btn) {
+  setButtonLoading(btn, true, "Loading...");
   // get child profile and find that session row
   const res = await apiRequest("getChildProfile", { child_id: childId });
-  if (!res?.success) return;
+  if (!res?.success) {
+    showToast("Unable to load session details", "error");
+    setButtonLoading(btn, false);
+    return;
+  }
   const s = (res.sessions || []).find(x => x.session_id == sessionId);
-  if (!s) return;
+  if (!s) {
+    showToast("Session not found", "error");
+    setButtonLoading(btn, false);
+    return;
+  }
 
   document.getElementById("sessionModalTitle").textContent = "Edit Session";
   document.getElementById("sessionIdInput").value = s.session_id;
@@ -501,6 +616,7 @@ async function openSessionModalForEdit(sessionId, childId) {
 
   await populateSessionModulesSelect(s.module_id);
   openModal("sessionModal");
+  setButtonLoading(btn, false);
 }
 
 async function saveSession() {
@@ -579,10 +695,14 @@ async function loadAssessmentQuestionsIntoForm() {
   const qs = await ensureAssessmentQuestionsCache();
   if (!qs) {
     container.textContent = "Error loading questions.";
+    const saveBtn = document.getElementById("assessmentSaveBtn");
+    if (saveBtn) saveBtn.disabled = true;
     return;
   }
   if (!qs.length) {
     container.textContent = "No questions configured yet.";
+    const saveBtn = document.getElementById("assessmentSaveBtn");
+    if (saveBtn) saveBtn.disabled = true;
     return;
   }
 
@@ -604,6 +724,22 @@ async function loadAssessmentQuestionsIntoForm() {
     `;
     container.appendChild(row);
   });
+  container.querySelectorAll("[data-q-score]").forEach(input => {
+    input.addEventListener("input", updateAssessmentProgress);
+  });
+  updateAssessmentProgress();
+}
+
+function updateAssessmentProgress() {
+  const inputs = Array.from(document.querySelectorAll("[data-q-score]"));
+  const total = inputs.length;
+  const filled = inputs.filter(input => input.value !== "").length;
+  const text = document.getElementById("assessmentProgressText");
+  const bar = document.getElementById("assessmentProgressBar");
+  if (text) text.textContent = `Question ${filled} of ${total}`;
+  if (bar) bar.style.width = total ? `${Math.round((filled / total) * 100)}%` : "0%";
+  const saveBtn = document.getElementById("assessmentSaveBtn");
+  if (saveBtn) saveBtn.disabled = total === 0 || filled < total;
 }
 
 async function ensureAssessmentQuestionsCache() {
@@ -622,7 +758,12 @@ function setExportButtonState(assessments) {
   if (!btn) return;
   const hasAssessments = Boolean(assessments && assessments.length);
   btn.disabled = !hasAssessments;
-  btn.title = hasAssessments ? "" : "No assessments to export";
+  if (!btn.dataset.baseTitle) {
+    btn.dataset.baseTitle = btn.title || "Exports question text, category, difficulty, scores, and dates.";
+  }
+  btn.title = hasAssessments
+    ? btn.dataset.baseTitle
+    : `${btn.dataset.baseTitle} (No assessments to export)`;
 }
 
 function escapeCsv(value) {
@@ -639,12 +780,18 @@ function formatCsvDate(value) {
 }
 
 async function exportAssessmentsCsv() {
+  const btn = document.getElementById("exportAssessmentsBtn");
+  setButtonLoading(btn, true, "Exporting...");
   if (!currentChildProfile || !currentChildProfile.assessments?.length) {
     showToast("No assessments to export", "error");
+    setButtonLoading(btn, false);
     return;
   }
   const questions = await ensureAssessmentQuestionsCache();
-  if (!questions) return;
+  if (!questions) {
+    setButtonLoading(btn, false);
+    return;
+  }
 
   const questionMap = new Map(
     questions.map(q => [String(q.question_id), q])
@@ -693,6 +840,7 @@ async function exportAssessmentsCsv() {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
   showToast("Assessment CSV exported");
+  setButtonLoading(btn, false);
 }
 
 async function saveAssessment() {
@@ -707,6 +855,13 @@ async function saveAssessment() {
   }
 
   const scoreInputs = document.querySelectorAll("[data-q-score]");
+  const totalQuestions = scoreInputs.length;
+  const filledQuestions = Array.from(scoreInputs).filter(input => input.value !== "").length;
+  if (totalQuestions && filledQuestions < totalQuestions) {
+    showToast("Please complete all scores before saving.", "error", "Missing info");
+    setButtonLoading(saveBtn, false);
+    return;
+  }
   const answers = [];
   scoreInputs.forEach(input => {
     const qId = input.getAttribute("data-q-score");

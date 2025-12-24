@@ -1,7 +1,7 @@
 /*****************************************************
  *  GLOBAL CONFIG
  *****************************************************/
-const API_URL = "https://script.google.com/macros/s/AKfycbxErCCEs6YOSy18SufoYe4ZSYSbh6yOvvu7pAvpygqtTUE2m1LPZ_z9xH1TjK3abDlS/exec"; // <-- Replace with your deployed Apps Script URL
+const API_URL = "https://script.google.com/macros/s/AKfycbyOXs-qQvV-H4hJGIkPsJbvTjiKHpS1DeDUI_24LrmGipIftzmz8u2CyhnvDbvzhg0/exec"; // <-- Replace with your deployed Apps Script URL
 
 
 /*****************************************************
@@ -36,16 +36,30 @@ async function login() {
   const username = document.getElementById("username")?.value?.trim();
   const password = document.getElementById("password")?.value?.trim();
   const errorBox = document.getElementById("error");
+  const loginBtn = document.getElementById("loginBtn");
+
+  if (loginBtn?.disabled) return;
 
   if (!username || !password) {
-    if (errorBox) errorBox.textContent = "Please enter username & password.";
+    if (errorBox) errorBox.textContent = "Please enter a username and password.";
     return;
   }
+
+  if (errorBox) errorBox.textContent = "";
+  setButtonLoading(loginBtn, true, "Signing in...");
 
   const data = await apiRequest("login", { username, password });
 
   if (!data.success) {
-    if (errorBox) errorBox.textContent = data.error || "Invalid login.";
+    const rawError = String(data.error || "").toLowerCase();
+    if (rawError.includes("network")) {
+      if (errorBox) errorBox.textContent = "Network error. Check your connection and try again.";
+    } else if (rawError.includes("invalid") || rawError.includes("credential")) {
+      if (errorBox) errorBox.textContent = "Invalid username or password.";
+    } else {
+      if (errorBox) errorBox.textContent = "Server error. Please try again shortly.";
+    }
+    setButtonLoading(loginBtn, false);
     return;
   }
 
@@ -132,13 +146,20 @@ function setText(id, value) {
 // Open modal (supports your dashboard.css)
 function openModal(id) {
   const modal = document.getElementById(id);
-  if (modal) modal.classList.add("active");
+  if (!modal) return;
+  modal.classList.remove("closing");
+  modal.classList.add("active");
 }
 
 // Close modal
 function closeModal(id) {
   const modal = document.getElementById(id);
-  if (modal) modal.classList.remove("active");
+  if (!modal) return;
+  if (!modal.classList.contains("active")) return;
+  modal.classList.add("closing");
+  setTimeout(() => {
+    modal.classList.remove("active", "closing");
+  }, 180);
 }
 
 // Attach close modal buttons automatically
@@ -154,14 +175,14 @@ function initModalClose() {
   document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
     backdrop.addEventListener("click", e => {
       if (e.target.classList.contains("modal-backdrop")) {
-        e.target.classList.remove("active");
+        closeModal(e.target.id);
       }
     });
   });
 
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
-      document.querySelectorAll(".modal-backdrop.active").forEach(backdrop => backdrop.classList.remove("active"));
+      document.querySelectorAll(".modal-backdrop.active").forEach(backdrop => closeModal(backdrop.id));
     }
   });
 }
@@ -238,6 +259,31 @@ function applyCompactMode(isCompact) {
   });
 }
 
+function applyAvatarFallback(avatarEl, name = "", photo = "") {
+  if (!avatarEl) return;
+  const initials = getInitials(name);
+  if (photo) {
+    avatarEl.style.backgroundImage = `url('${photo}')`;
+    avatarEl.classList.add("has-photo");
+    avatarEl.removeAttribute("data-initials");
+    return;
+  }
+  avatarEl.style.backgroundImage = "";
+  avatarEl.classList.remove("has-photo");
+  avatarEl.setAttribute("data-initials", initials);
+}
+
+function applyAvatarFallbackToSelector(selector, name, photo) {
+  document.querySelectorAll(selector).forEach(el => applyAvatarFallback(el, name, photo));
+}
+
+function getInitials(name = "") {
+  if (!name) return "NA";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function initCompactMode() {
   const saved = localStorage.getItem(COMPACT_STORAGE_KEY) === "1";
   applyCompactMode(saved);
@@ -270,3 +316,6 @@ window.applyCompactMode = applyCompactMode;
 window.initCompactMode = initCompactMode;
 window.setButtonLoading = setButtonLoading;
 window.showToast = showToast;
+window.applyAvatarFallback = applyAvatarFallback;
+window.applyAvatarFallbackToSelector = applyAvatarFallbackToSelector;
+window.getInitials = getInitials;

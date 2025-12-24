@@ -23,9 +23,9 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="overview">Overview</button>
-        <button class="nav-link" data-section="children">My Children</button>
-        <button class="nav-link" data-section="assessments">Assessments</button>
+        <button class="nav-link active" data-section="overview" aria-label="Overview" title="Overview">Overview</button>
+        <button class="nav-link" data-section="children" aria-label="My Children" title="My Children">My Children</button>
+        <button class="nav-link" data-section="assessments" aria-label="Assessments" title="Assessments">Assessments</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -46,6 +46,7 @@
         <div>
           <h1>Specialist Dashboard</h1>
           <p class="hint">Manage your children, sessions, and assessments.</p>
+          <div class="section-context" id="currentSectionLabel">Overview</div>
         </div>
         <div class="header-actions">
           <button class="ghost compact-toggle" type="button" data-compact-toggle aria-pressed="false">
@@ -141,11 +142,11 @@
 
             <div class="modules-grid" id="childrenGrid"></div>
               <div class="empty-state" id="childrenEmpty" style="display:none;">
-                <div class="empty-title">No children yet</div>
-                <div>Add children assigned to you to track sessions and assessments.</div>
-                <div class="empty-actions">
-                  <button class="ghost small" id="specEmptyAddChild">Add Child</button>
-                </div>
+              <div class="empty-title">No children yet</div>
+              <div>No children are assigned to you yet. Add a child to begin tracking sessions and assessments.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="specEmptyAddChild">Add Child</button>
+              </div>
               </div>
           </div>
         </section>
@@ -235,7 +236,17 @@
       </div>
 
       <div class="form-panel">
-        <div class="split-layout assessments">
+        <div class="modal-toolbar">
+          <button class="ghost small" id="exportAssessmentsBtn" type="button" title="Exports question text, category, difficulty, scores, and dates." aria-label="Export assessments as CSV">Export Assessments</button>
+          <button class="ghost small" id="btnAddSession" type="button">Add Session</button>
+          <button class="ghost small" id="btnAddAssessment" type="button">Add Assessment</button>
+        </div>
+        <div class="modal-tabs" role="tablist">
+          <button class="ghost small tab-button active" data-tab="overview" type="button">Overview</button>
+          <button class="ghost small tab-button" data-tab="sessions" type="button">Sessions</button>
+          <button class="ghost small tab-button" data-tab="assessments" type="button">Assessments</button>
+        </div>
+        <div class="tab-panel active" data-tab-panel="overview">
           <div class="summary-column">
             <div class="insight-card">
               <div class="insight-label">Total VR Time</div>
@@ -250,26 +261,21 @@
               <div><strong id="childProfileAssessmentCount">0</strong></div>
             </div>
           </div>
-
-          <div class="content-column">
-            <div class="panel">
-              <div class="panel-header">
-                <strong>Sessions</strong>
-                <button class="ghost small" id="btnAddSession">Add Session</button>
-              </div>
-              <div class="stacked-list" id="childSessionsList"></div>
+        </div>
+        <div class="tab-panel" data-tab-panel="sessions">
+          <div class="panel">
+            <div class="panel-header">
+              <strong>Sessions</strong>
             </div>
-
-            <div class="panel">
-              <div class="panel-header">
-                <strong>Assessments</strong>
-                <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-                  <button class="ghost small" id="exportAssessmentsBtn" type="button">Export Assessments (CSV)</button>
-                  <button class="ghost small" id="btnAddAssessment">Add Assessment</button>
-                </div>
-              </div>
-              <div class="stacked-list" id="childAssessmentsList"></div>
+            <div class="stacked-list" id="childSessionsList"></div>
+          </div>
+        </div>
+        <div class="tab-panel" data-tab-panel="assessments">
+          <div class="panel">
+            <div class="panel-header">
+              <strong>Assessments</strong>
             </div>
+            <div class="stacked-list" id="childAssessmentsList"></div>
           </div>
         </div>
       </div>
@@ -333,6 +339,10 @@
         <div class="input-group">
           <label for="assessmentDateInput">Date</label>
           <input id="assessmentDateInput" type="date" />
+        </div>
+        <div class="progress-inline">
+          <div class="progress-label" id="assessmentProgressText">Question 0 of 0</div>
+          <div class="progress-bar"><span id="assessmentProgressBar" style="width:0%"></span></div>
         </div>
         <div class="input-group">
           <label>Questions & Scores</label>

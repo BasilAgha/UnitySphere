@@ -18,6 +18,40 @@ const sortState = {
   children: { key: null, dir: 'asc' },
   modules: { key: null, dir: 'asc' }
 };
+let lastUpdatedAt = null;
+
+function markDataUpdated() {
+  lastUpdatedAt = new Date();
+  updateLastUpdatedLabel();
+}
+
+function formatTimeAgo(date) {
+  if (!date) return 'Last updated --';
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes <= 0) return 'Last updated just now';
+  if (minutes === 1) return 'Last updated 1 minute ago';
+  if (minutes < 60) return `Last updated ${minutes} minutes ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours === 1) return 'Last updated 1 hour ago';
+  return `Last updated ${hours} hours ago`;
+}
+
+function updateLastUpdatedLabel() {
+  const el = document.getElementById('lastUpdated');
+  if (!el) return;
+  el.textContent = formatTimeAgo(lastUpdatedAt);
+  if (lastUpdatedAt) {
+    el.title = `Last updated: ${lastUpdatedAt.toLocaleString()}`;
+  }
+}
+
+function renderSortIndicator(sort, key) {
+  if (sort.key === key) {
+    return `<span class="sort-indicator active">${sort.dir === 'asc' ? '▲' : '▼'}</span>`;
+  }
+  return '<span class="sort-indicator">▲▼</span>';
+}
 
 // ===== GENERIC HELPER =====
 async function apiCall(action, params = {}) {
@@ -56,6 +90,33 @@ function setButtonLoading(btn, isLoading, loadingLabel = 'Loading...') {
     btn.classList.remove('btn-loading');
     btn.disabled = false;
   }
+}
+
+const COMPACT_STORAGE_KEY = 'dashboard:compact';
+
+function applyCompactMode(isCompact) {
+  const enable = Boolean(isCompact);
+  document.body.classList.toggle('compact', enable);
+  localStorage.setItem(COMPACT_STORAGE_KEY, enable ? '1' : '0');
+
+  document.querySelectorAll('[data-compact-toggle]').forEach(btn => {
+    btn.setAttribute('aria-pressed', enable ? 'true' : 'false');
+    btn.classList.toggle('active', enable);
+    const status = btn.querySelector('[data-compact-status]');
+    if (status) status.textContent = enable ? 'On' : 'Off';
+  });
+}
+
+function initCompactMode() {
+  const saved = localStorage.getItem(COMPACT_STORAGE_KEY) === '1';
+  applyCompactMode(saved);
+
+  document.querySelectorAll('[data-compact-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const next = !document.body.classList.contains('compact');
+      applyCompactMode(next);
+    });
+  });
 }
 
 function getToastStack() {
@@ -171,6 +232,7 @@ async function loadDashboard() {
   setText('statChildren', t.children ?? 0);
   setText('statModules', t.modules ?? 0);
   updateDonutChart(t);
+  markDataUpdated();
 }
 // ===== CENTERS =====
 async function loadCenters() {
@@ -186,6 +248,7 @@ async function loadCenters() {
   if (!data.success) return;
 
   const centers = data.centers || [];
+  markDataUpdated();
   if (hint) hint.textContent = `${centers.length} center${centers.length !== 1 ? 's' : ''}`;
 
   const hasData = centers.length > 0;
@@ -239,11 +302,11 @@ async function loadCenters() {
     table.innerHTML = `
       <thead>
         <tr>
-          <th data-sort="name">Center</th>
-          <th data-sort="center_id">ID</th>
-          <th data-sort="num_specialists">Specialists</th>
-          <th data-sort="num_children">Children</th>
-          <th data-sort="username">Username</th>
+          <th data-sort="name">Center ${renderSortIndicator(sort, 'name')}</th>
+          <th data-sort="center_id">ID ${renderSortIndicator(sort, 'center_id')}</th>
+          <th data-sort="num_specialists">Specialists ${renderSortIndicator(sort, 'num_specialists')}</th>
+          <th data-sort="num_children">Children ${renderSortIndicator(sort, 'num_children')}</th>
+          <th data-sort="username">Username ${renderSortIndicator(sort, 'username')}</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -287,20 +350,33 @@ async function handleCenterCardClick(e) {
 
   if (editBtn) {
     const id = editBtn.getAttribute('data-edit-center');
-    openCenterModalForEdit(id);
+    setButtonLoading(editBtn, true, 'Loading...');
+    try {
+      await openCenterModalForEdit(id);
+    } finally {
+      setButtonLoading(editBtn, false);
+    }
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-center');
     if (await confirmAction('Delete this center?')) {
+      setButtonLoading(delBtn, true, 'Deleting...');
       showToast('Removing center...', 'success', 'Working');
-      apiCall('deleteCenter', {
-        center_id: id,
-        actor_username: getCurrentUserName(),
-        actor_role: 'admin'
-      }).then(() => {
+      try {
+        const res = await apiCall('deleteCenter', {
+          center_id: id,
+          actor_username: getCurrentUserName(),
+          actor_role: 'admin'
+        });
+        if (!res.success) {
+          showToast(res.error || 'Error deleting center', 'error', 'Delete failed');
+          return;
+        }
         showToast('Center deleted');
         loadCenters();
         setTimeout(loadDashboard, 300);
-      });
+      } finally {
+        setButtonLoading(delBtn, false);
+      }
     }
   }
 }
@@ -320,9 +396,15 @@ function openCenterModalForCreate() {
 async function openCenterModalForEdit(centerId) {
   showToast('Loading center...', 'success', 'Working');
   const data = await apiCall('listCenters');
-  if (!data.success) return;
+  if (!data.success) {
+    showToast(data.error || 'Unable to load center', 'error', 'Load failed');
+    return;
+  }
   const center = (data.centers || []).find(c => c.center_id == centerId);
-  if (!center) return;
+  if (!center) {
+    showToast('Center not found', 'error', 'Load failed');
+    return;
+  }
 
   document.getElementById('centerId').value = center.center_id;
   document.getElementById('centerModalTitle').textContent = 'Edit Center';
@@ -383,6 +465,7 @@ async function loadSpecialists() {
   if (!data.success) return;
 
   const specialists = data.specialists || [];
+  markDataUpdated();
   const hasData = specialists.length > 0;
   empty.style.display = hasData ? 'none' : 'block';
   grid.style.display = view === 'card' ? 'grid' : 'none';
@@ -429,11 +512,11 @@ async function loadSpecialists() {
     table.innerHTML = `
       <thead>
         <tr>
-          <th data-sort="name">Specialist</th>
-          <th data-sort="specialist_id">ID</th>
-          <th data-sort="center_id">Center</th>
-          <th data-sort="num_children">Children</th>
-          <th data-sort="username">Username</th>
+          <th data-sort="name">Specialist ${renderSortIndicator(sort, 'name')}</th>
+          <th data-sort="specialist_id">ID ${renderSortIndicator(sort, 'specialist_id')}</th>
+          <th data-sort="center_id">Center ${renderSortIndicator(sort, 'center_id')}</th>
+          <th data-sort="num_children">Children ${renderSortIndicator(sort, 'num_children')}</th>
+          <th data-sort="username">Username ${renderSortIndicator(sort, 'username')}</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -477,20 +560,33 @@ async function handleSpecialistCardClick(e) {
 
   if (editBtn) {
     const id = editBtn.getAttribute('data-edit-spec');
-    openSpecialistModalForEdit(id);
+    setButtonLoading(editBtn, true, 'Loading...');
+    try {
+      await openSpecialistModalForEdit(id);
+    } finally {
+      setButtonLoading(editBtn, false);
+    }
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-spec');
     if (await confirmAction('Delete this specialist?')) {
+      setButtonLoading(delBtn, true, 'Deleting...');
       showToast('Removing specialist...', 'success', 'Working');
-      apiCall('deleteSpecialist', {
-        specialist_id: id,
-        actor_username: getCurrentUserName(),
-        actor_role: 'admin'
-      }).then(() => {
+      try {
+        const res = await apiCall('deleteSpecialist', {
+          specialist_id: id,
+          actor_username: getCurrentUserName(),
+          actor_role: 'admin'
+        });
+        if (!res.success) {
+          showToast(res.error || 'Error deleting specialist', 'error', 'Delete failed');
+          return;
+        }
         showToast('Specialist deleted');
         loadSpecialists();
         setTimeout(loadDashboard, 300);
-      });
+      } finally {
+        setButtonLoading(delBtn, false);
+      }
     }
   }
 }
@@ -513,9 +609,15 @@ function openSpecialistModalForCreate() {
 async function openSpecialistModalForEdit(specId) {
   showToast('Loading specialist...', 'success', 'Working');
   const data = await apiCall('listSpecialists');
-  if (!data.success) return;
+  if (!data.success) {
+    showToast(data.error || 'Unable to load specialist', 'error', 'Load failed');
+    return;
+  }
   const spec = (data.specialists || []).find(s => s.specialist_id == specId);
-  if (!spec) return;
+  if (!spec) {
+    showToast('Specialist not found', 'error', 'Load failed');
+    return;
+  }
 
   document.getElementById('specId').value = spec.specialist_id;
   document.getElementById('specialistModalTitle').textContent = 'Edit Specialist';
@@ -623,6 +725,7 @@ async function loadChildren() {
   const data = await apiCall('listChildren');
   if (!data.success) return;
   const children = data.children || [];
+  markDataUpdated();
 
   const hasData = children.length > 0;
   empty.style.display = hasData ? 'none' : 'block';
@@ -675,12 +778,12 @@ async function loadChildren() {
           <th id="selectAllChildren">
             <input type="checkbox" aria-label="Select all children">
           </th>
-          <th data-sort="name">Child</th>
-          <th data-sort="child_id">ID</th>
-          <th data-sort="center_id">Center</th>
-          <th data-sort="specialist_id">Specialist</th>
-          <th data-sort="num_sessions">Sessions</th>
-          <th data-sort="age">Age</th>
+          <th data-sort="name">Child ${renderSortIndicator(sort, 'name')}</th>
+          <th data-sort="child_id">ID ${renderSortIndicator(sort, 'child_id')}</th>
+          <th data-sort="center_id">Center ${renderSortIndicator(sort, 'center_id')}</th>
+          <th data-sort="specialist_id">Specialist ${renderSortIndicator(sort, 'specialist_id')}</th>
+          <th data-sort="num_sessions">Sessions ${renderSortIndicator(sort, 'num_sessions')}</th>
+          <th data-sort="age">Age ${renderSortIndicator(sort, 'age')}</th>
         </tr>
       </thead>
       <tbody>
@@ -753,6 +856,7 @@ async function loadModules() {
   if (!data.success) return;
 
   const modules = data.modules || [];
+  markDataUpdated();
   const hasData = modules.length > 0;
   empty.style.display = hasData ? 'none' : 'block';
   grid.style.display = view === 'card' ? 'grid' : 'none';
@@ -800,11 +904,11 @@ async function loadModules() {
     table.innerHTML = `
       <thead>
         <tr>
-          <th data-sort="name">VR Module</th>
-          <th data-sort="module_id">ID</th>
-          <th data-sort="minutes_to_play">Minutes</th>
-          <th data-sort="num_centers_assigned">Centers</th>
-          <th data-sort="status">Status</th>
+          <th data-sort="name">VR Module ${renderSortIndicator(sort, 'name')}</th>
+          <th data-sort="module_id">ID ${renderSortIndicator(sort, 'module_id')}</th>
+          <th data-sort="minutes_to_play">Minutes ${renderSortIndicator(sort, 'minutes_to_play')}</th>
+          <th data-sort="num_centers_assigned">Centers ${renderSortIndicator(sort, 'num_centers_assigned')}</th>
+          <th data-sort="status">Status ${renderSortIndicator(sort, 'status')}</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -848,20 +952,33 @@ async function handleModuleCardClick(e) {
 
   if (editBtn) {
     const id = editBtn.getAttribute('data-edit-module');
-    openModuleModalForEdit(id);
+    setButtonLoading(editBtn, true, 'Loading...');
+    try {
+      await openModuleModalForEdit(id);
+    } finally {
+      setButtonLoading(editBtn, false);
+    }
   } else if (delBtn) {
     const id = delBtn.getAttribute('data-delete-module');
     if (await confirmAction('Delete this module?')) {
+      setButtonLoading(delBtn, true, 'Deleting...');
       showToast('Removing module...', 'success', 'Working');
-      apiCall('deleteModule', {
-        module_id: id,
-        actor_username: getCurrentUserName(),
-        actor_role: 'admin'
-      }).then(() => {
+      try {
+        const res = await apiCall('deleteModule', {
+          module_id: id,
+          actor_username: getCurrentUserName(),
+          actor_role: 'admin'
+        });
+        if (!res.success) {
+          showToast(res.error || 'Error deleting module', 'error', 'Delete failed');
+          return;
+        }
         showToast('Module deleted');
         loadModules();
         setTimeout(loadDashboard, 300);
-      });
+      } finally {
+        setButtonLoading(delBtn, false);
+      }
     }
   }
 }
@@ -881,9 +998,15 @@ function openModuleModalForCreate() {
 async function openModuleModalForEdit(moduleId) {
   showToast('Loading module...', 'success', 'Working');
   const data = await apiCall('listModules');
-  if (!data.success) return;
+  if (!data.success) {
+    showToast(data.error || 'Unable to load module', 'error', 'Load failed');
+    return;
+  }
   const m = (data.modules || []).find(x => x.module_id == moduleId);
-  if (!m) return;
+  if (!m) {
+    showToast('Module not found', 'error', 'Load failed');
+    return;
+  }
 
   document.getElementById('moduleId').value = m.module_id;
   document.getElementById('moduleModalTitle').textContent = 'Edit VR Module';
@@ -943,6 +1066,7 @@ async function loadAssessmentLibrary() {
   if (!data.success) return;
   const qs = data.questions || [];
   questionsCache = qs;
+  markDataUpdated();
 
   if (!qs.length) {
     empty.style.display = 'block';
@@ -1060,43 +1184,49 @@ async function handleQuestionListClick(e) {
 
 function renderAssessmentActions(question) {
   if (question.status === 'active') {
-    return `<button class="ghost small danger"
-      onclick="archiveAssessmentQuestion('${question.question_id}')">
+    return `<button class="ghost small danger" title="Archiving hides this question from new assessments."
+      onclick="archiveAssessmentQuestion('${question.question_id}', this)">
       Archive</button>`;
   }
   if (question.status === 'archived') {
-    return `<button class="ghost small"
-      onclick="activateAssessmentQuestion('${question.question_id}')">
+    return `<button class="ghost small" title="Activate to make this question available again."
+      onclick="activateAssessmentQuestion('${question.question_id}', this)">
       Activate</button>`;
   }
   return '';
 }
 
-async function archiveAssessmentQuestion(questionId) {
+async function archiveAssessmentQuestion(questionId, btn) {
   if (!confirm('Archive this assessment question?')) return;
+  setButtonLoading(btn, true, 'Archiving...');
   const res = await apiRequest('updateQuestion', {
     question_id: questionId,
     status: 'archived'
   });
   if (!res.success) {
     showToast('Failed to archive question', 'error');
+    setButtonLoading(btn, false);
     return;
   }
   showToast('Question archived');
   loadAssessmentLibrary();
+  setButtonLoading(btn, false);
 }
 
-async function activateAssessmentQuestion(questionId) {
+async function activateAssessmentQuestion(questionId, btn) {
+  setButtonLoading(btn, true, 'Activating...');
   const res = await apiRequest('updateQuestion', {
     question_id: questionId,
     status: 'active'
   });
   if (!res.success) {
     showToast('Failed to activate question', 'error');
+    setButtonLoading(btn, false);
     return;
   }
   showToast('Question activated');
   loadAssessmentLibrary();
+  setButtonLoading(btn, false);
 }
 
 function openQuestionModalForCreate() {
@@ -1112,9 +1242,15 @@ function openQuestionModalForCreate() {
 async function openQuestionModalForEdit(questionId) {
   showToast('Loading question...', 'success', 'Working');
   const data = await apiCall('listQuestions');
-  if (!data.success) return;
+  if (!data.success) {
+    showToast(data.error || 'Unable to load question', 'error', 'Load failed');
+    return;
+  }
   const q = (data.questions || []).find(x => x.question_id == questionId);
-  if (!q) return;
+  if (!q) {
+    showToast('Question not found', 'error', 'Load failed');
+    return;
+  }
 
   document.getElementById('questionId').value = q.question_id;
   document.getElementById('questionModalTitle').textContent = 'Edit Question';
@@ -1446,10 +1582,13 @@ function initAuthGuard() {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   initAuthGuard();
+  initCompactMode();
   initUserChip();
   initDynamicLabels();
   initModalCloseButtons();
   initViewSwitches();
+  updateLastUpdatedLabel();
+  setInterval(updateLastUpdatedLabel, 60000);
   document.getElementById('specPhotoFile')?.addEventListener('change', handleSpecPhotoChange);
   document.getElementById('specTypeInput')?.addEventListener('change', handleSpecTypeChange);
   document.getElementById('centerPhotoFile')?.addEventListener('change', handleCenterPhotoChange);
@@ -1469,6 +1608,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('refreshAllBtn')?.addEventListener('click', () => {
+    const btn = document.getElementById('refreshAllBtn');
+    setButtonLoading(btn, true, 'Refreshing...');
     const active = document.querySelector('.section.active');
     if (active) {
       const id = active.id.replace('section-', '');
@@ -1477,6 +1618,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       loadDashboard();
     }
+    setTimeout(() => setButtonLoading(btn, false), 500);
   });
 
   document.getElementById('logoutBtn')?.addEventListener('click', () => {

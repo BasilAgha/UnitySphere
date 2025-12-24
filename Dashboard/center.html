@@ -25,10 +25,10 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="overview">Overview</button>
-        <button class="nav-link" data-section="specialists">Specialists</button>
-        <button class="nav-link" data-section="children">Children</button>
-        <button class="nav-link" data-section="modules">VR Modules</button>
+        <button class="nav-link active" data-section="overview" aria-label="Overview" title="Overview">Overview</button>
+        <button class="nav-link" data-section="specialists" aria-label="Specialists" title="Specialists">Specialists</button>
+        <button class="nav-link" data-section="children" aria-label="Children" title="Children">Children</button>
+        <button class="nav-link" data-section="modules" aria-label="VR Modules" title="VR Modules">VR Modules</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -88,14 +88,35 @@
             </div>
 
             <!-- Chart placeholders -->
-            <div class="card chart-card">
-              <h2>Children per Specialist</h2>
-              <div class="chart multi-line" id="chartChildrenPerSpecialist"></div>
+            <div class="card">
+              <div class="card-header">
+                <h2>Center Summary</h2>
+              </div>
+              <div class="grid-inline">
+                <div class="panel-stat">
+                  <div class="hint">Avg children per specialist</div>
+                  <strong id="summaryAvgChildren">0</strong>
+                </div>
+                <div class="panel-stat">
+                  <div class="hint">Assigned modules</div>
+                  <strong id="summaryModulesAssigned">0</strong>
+                </div>
+                <div class="panel-stat">
+                  <div class="hint">Coverage of catalog</div>
+                  <strong id="summaryModulesCoverage">0%</strong>
+                </div>
+              </div>
+              <div class="progress-bar">
+                <span id="summaryModulesCoverageBar" style="width:0%"></span>
+              </div>
             </div>
 
-            <div class="card chart-card">
-              <h2>Module Usage</h2>
-              <div class="chart multi-line" id="chartModuleUsage"></div>
+            <div class="card">
+              <div class="card-header">
+                <h2>Advanced Analytics</h2>
+                <span class="chip subtle">Phase 2</span>
+              </div>
+              <div class="hint">Session trends, outcomes, and comparative benchmarks are coming in a later phase.</div>
             </div>
 
           </div>
@@ -118,6 +139,10 @@
             <div class="specialists-grid" id="specialistsGrid"></div>
             <div class="empty-state" id="specialistsEmpty" style="display:none;">
               <div class="empty-title">No specialists yet</div>
+              <div>No specialists are linked to this center yet. Add a specialist to begin assigning children.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="specialistsEmptyAdd">Add Specialist</button>
+              </div>
             </div>
           </div>
         </section>
@@ -139,6 +164,10 @@
             <div class="modules-grid" id="childrenGrid"></div>
             <div class="empty-state" id="childrenEmpty" style="display:none;">
               <div class="empty-title">No children yet</div>
+              <div>No children have been added for this center. Add a child to start tracking sessions.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="childrenEmptyAdd">Add Child</button>
+              </div>
             </div>
           </div>
         </section>
@@ -160,6 +189,10 @@
             <div class="modules-grid" id="modulesGrid"></div>
             <div class="empty-state" id="modulesEmpty" style="display:none;">
               <div class="empty-title">No VR modules assigned</div>
+              <div>Modules are not assigned yet. Assign modules to make them available to specialists.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="modulesEmptyAssign">Assign Modules</button>
+              </div>
             </div>
           </div>
         </section>
@@ -199,6 +232,7 @@
           <textarea id="specDescriptionInput" rows="3" placeholder="Specialist description"></textarea>
         </div>
       </div>
+      <div class="inline-error" id="specModalError" style="display:none;"></div>
       <div class="modal-actions">
         <button class="ghost" data-close-modal="specialistModal">Cancel</button>
         <button class="primary" id="specSaveBtn">Save Specialist</button>
@@ -242,6 +276,7 @@
           </select>
         </div>
       </div>
+      <div class="inline-error" id="childModalError" style="display:none;"></div>
       <div class="modal-actions">
         <button class="ghost" data-close-modal="childModal">Cancel</button>
         <button class="primary" id="childSaveBtn">Save Child</button>
@@ -260,7 +295,26 @@
         <button class="icon-button" data-close-modal="assignModulesModal">x</button>
       </div>
       <div class="form-panel">
-        <div id="assignModulesList" class="stacked-list"></div>
+        <div class="modal-toolbar">
+          <button class="ghost small" id="assignModulesSelectAll" type="button">Select All</button>
+          <button class="ghost small" id="assignModulesClearAll" type="button">Clear All</button>
+        </div>
+        <div id="assignModulesList" class="stacked-list">
+          <div class="panel">
+            <div class="panel-header">
+              <strong>Assigned</strong>
+              <span class="meta-muted" id="assignModulesAssignedCount">0</span>
+            </div>
+            <div class="stacked-list" id="assignModulesAssigned"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <strong>Not Assigned</strong>
+              <span class="meta-muted" id="assignModulesUnassignedCount">0</span>
+            </div>
+            <div class="stacked-list" id="assignModulesUnassigned"></div>
+          </div>
+        </div>
       </div>
       <div class="modal-actions">
         <button class="ghost" data-close-modal="assignModulesModal">Cancel</button>

@@ -21,22 +21,22 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="dashboard">
+        <button class="nav-link active" data-section="dashboard" aria-label="Dashboard" title="Dashboard">
           <span>Dashboard</span>
         </button>
-        <button class="nav-link" data-section="centers">
+        <button class="nav-link" data-section="centers" aria-label="Centers" title="Centers">
           <span>Centers</span>
         </button>
-        <button class="nav-link" data-section="specialists">
+        <button class="nav-link" data-section="specialists" aria-label="Specialists" title="Specialists">
           <span>Specialists</span>
         </button>
-        <button class="nav-link" data-section="children">
+        <button class="nav-link" data-section="children" aria-label="Children" title="Children">
           <span>Children</span>
         </button>
-        <button class="nav-link" data-section="modules">
+        <button class="nav-link" data-section="modules" aria-label="VR Modules" title="VR Modules">
           <span>VR Modules</span>
         </button>
-        <button class="nav-link" data-section="questions">
+        <button class="nav-link" data-section="questions" aria-label="Assessments" title="Assessments">
           <span>Assessments</span>
         </button>
       </nav>
@@ -65,6 +65,7 @@
               </div>
         </div>
         <div class="header-actions">
+          <div class="last-updated" id="lastUpdated" title="Last updated: --">Last updated just now</div>
           <button class="ghost" id="accountSettingsBtn">Account</button>
           <button class="ghost" id="refreshAllBtn">Refresh data</button>
         </div>
@@ -165,8 +166,8 @@
               </div>
               <div class="section-actions">
                 <div class="view-switch" data-view-switch="centers">
-                  <button type="button" class="active" data-view="card">Cards</button>
-                  <button type="button" data-view="table">Table</button>
+                  <button type="button" class="ghost small active" data-view="card">Cards</button>
+                  <button type="button" class="ghost small" data-view="table">Table</button>
                 </div>
                 <button class="primary with-icon" id="btnAddCenter">
                   <span class="icon">+</span>
@@ -189,7 +190,7 @@
 
               <div class="empty-state" id="centersEmpty" style="display:none;">
                 <div class="empty-title">No centers yet</div>
-                <div>Centers are hubs for specialists and children records. Create one to get started.</div>
+                <div>No center profiles have been created yet. Add a center to start onboarding specialists and children.</div>
                 <div class="empty-actions">
                   <button class="ghost small" id="centersEmptyAdd">Add Center</button>
                 </div>
@@ -208,8 +209,8 @@
               </div>
               <div class="section-actions">
                 <div class="view-switch" data-view-switch="specialists">
-                  <button type="button" class="active" data-view="card">Cards</button>
-                  <button type="button" data-view="table">Table</button>
+                  <button type="button" class="ghost small active" data-view="card">Cards</button>
+                  <button type="button" class="ghost small" data-view="table">Table</button>
                 </div>
                 <button class="primary with-icon" id="btnAddSpecialist">
                   <span class="icon">+</span>
@@ -226,7 +227,7 @@
 
             <div class="empty-state" id="specialistsEmpty" style="display:none;">
               <div class="empty-title">No specialists yet</div>
-              <div>Specialists deliver therapy and manage children. Add your first therapist to populate sessions.</div>
+              <div>There are no specialists on record. Add a specialist to begin assigning children and sessions.</div>
               <div class="empty-actions">
                 <button class="ghost small" id="specialistsEmptyAdd">Add Specialist</button>
               </div>
@@ -244,8 +245,8 @@
               </div>
               <div class="section-actions">
                 <div class="view-switch" data-view-switch="children">
-                  <button type="button" class="active" data-view="card">Cards</button>
-                  <button type="button" data-view="table">Table</button>
+                  <button type="button" class="ghost small active" data-view="card">Cards</button>
+                  <button type="button" class="ghost small" data-view="table">Table</button>
                 </div>
               </div>
             </div>
@@ -258,6 +259,10 @@
 
             <div class="empty-state" id="childrenEmpty" style="display:none;">
               <div class="empty-title">No children yet</div>
+              <div>No child records exist yet. Review centers or specialists to begin onboarding children.</div>
+              <div class="empty-actions">
+                <button class="ghost small" type="button" onclick="showSection('centers')">Review Centers</button>
+              </div>
             </div>
           </div>
         </section>
@@ -272,8 +277,8 @@
               </div>
               <div class="section-actions">
                 <div class="view-switch" data-view-switch="modules">
-                  <button type="button" class="active" data-view="card">Cards</button>
-                  <button type="button" data-view="table">Table</button>
+                  <button type="button" class="ghost small active" data-view="card">Cards</button>
+                  <button type="button" class="ghost small" data-view="table">Table</button>
                 </div>
                 <button class="primary with-icon" id="btnAddModule">
                   <span class="icon">+</span>
@@ -290,7 +295,7 @@
 
             <div class="empty-state" id="modulesEmpty" style="display:none;">
               <div class="empty-title">No VR modules yet</div>
-              <div>Modules are training experiences assignable to centers. Add one to start distributing content.</div>
+              <div>Modules are training experiences assignable to centers. Add a module to start distributing content.</div>
               <div class="empty-actions">
                 <button class="ghost small" id="modulesEmptyAdd">Add Module</button>
               </div>
@@ -305,6 +310,7 @@
               <div>
                 <h2>Assessment Library</h2>
                 <p class="hint">Manage assessment questions that appear in child evaluations.</p>
+                <p class="hint" id="assessmentArchiveHint">Archiving removes a question from new assessments but keeps historical responses intact.</p>
               </div>
               <button class="primary with-icon" id="btnAddQuestion">
                 <span class="icon">+</span>
@@ -352,6 +358,10 @@
 
             <div class="empty-state" id="questionsEmpty" style="display:none;">
               <div class="empty-title">No assessment questions yet</div>
+              <div>Create your first question to make assessments available to specialists.</div>
+              <div class="empty-actions">
+                <button class="ghost small" type="button" onclick="openQuestionModalForCreate()">Add Question</button>
+              </div>
             </div>
           </div>
         </section>
@@ -556,7 +566,7 @@
       </div>
       <div class="modal-actions confirm-actions">
         <button class="ghost" id="confirmCancel">Cancel</button>
-        <button class="primary" id="confirmOk">Yes, proceed</button>
+        <button class="primary danger" id="confirmOk">Yes, proceed</button>
       </div>
     </div>
   </div>
