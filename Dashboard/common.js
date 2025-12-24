@@ -1,7 +1,7 @@
 /*****************************************************
  *  GLOBAL CONFIG
  *****************************************************/
-const API_URL = "https://script.google.com/macros/s/AKfycbyOXs-qQvV-H4hJGIkPsJbvTjiKHpS1DeDUI_24LrmGipIftzmz8u2CyhnvDbvzhg0/exec"; // <-- Replace with your deployed Apps Script URL
+const API_URL = "https://script.google.com/macros/s/AKfycbxErCCEs6YOSy18SufoYe4ZSYSbh6yOvvu7pAvpygqtTUE2m1LPZ_z9xH1TjK3abDlS/exec"; // <-- Replace with your deployed Apps Script URL
 
 
 /*****************************************************
