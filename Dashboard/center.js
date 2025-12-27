@@ -13,20 +13,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
   wrapModalClose();
   initModalClose();
-  initCompactMode();
+  initShell();
 
   bindNavigation();
   bindCenterButtons();
   setUserAvatar();
 
+  document.addEventListener("unitysphere:search", (event) => {
+    applyGlobalSearch(event.detail.query);
+  });
+
   loadSection("overview");
 });
+
+function initShell() {
+  const sidebarHost = document.getElementById("appSidebar");
+  const headerHost = document.getElementById("appHeader");
+  if (!sidebarHost || !headerHost || !window.UnitySphereShell) return;
+  const sidebar = window.UnitySphereShell.buildSidebar({ role: "center", active: "centers" });
+  const header = window.UnitySphereShell.buildHeader({ title: "Center Dashboard" });
+  sidebarHost.replaceWith(sidebar);
+  headerHost.replaceWith(header);
+  window.UnitySphereShell.wireEscManager();
+}
 
 function bindNavigation() {
   document.querySelectorAll(".nav-link").forEach(btn => {
     btn.addEventListener("click", () => {
       const section = btn.dataset.section;
       switchSection(section);
+      updateHeaderTitle(section);
       loadSection(section);
     });
   });
@@ -52,6 +68,7 @@ function bindCenterButtons() {
     const btn = document.getElementById("refreshAllBtn");
     setButtonLoading(btn, true, "Refreshing...");
     const active = document.querySelector(".section.active")?.id.replace("section-", "") || "overview";
+    updateHeaderTitle(active);
     loadSection(active);
     setTimeout(() => setButtonLoading(btn, false), 400);
   });
@@ -154,10 +171,10 @@ function setUserAvatar() {
   const name = center.name || center.username || "Center";
   const photo = center.photo || center.photo_url || "";
   if (typeof applyAvatarFallbackToSelector === "function") {
-    applyAvatarFallbackToSelector(".sidebar .avatar", name, photo);
+    applyAvatarFallbackToSelector("#centerUserAvatar", name, photo);
     return;
   }
-  document.querySelectorAll(".sidebar .avatar").forEach(avatar => {
+  document.querySelectorAll("#centerUserAvatar").forEach(avatar => {
     if (photo) {
       avatar.style.backgroundImage = `url('${photo}')`;
       avatar.classList.add("has-photo");
@@ -167,6 +184,28 @@ function setUserAvatar() {
       avatar.classList.remove("has-photo");
       avatar.setAttribute("data-initials", getInitials(name));
     }
+  });
+}
+
+function updateHeaderTitle(section) {
+  const title = document.querySelector(".shell-header .title");
+  if (!title) return;
+  const map = {
+    overview: "Center Dashboard",
+    specialists: "Specialists",
+    children: "Children",
+    modules: "VR Modules"
+  };
+  title.textContent = map[section] || "Center Dashboard";
+}
+
+function applyGlobalSearch(query) {
+  const term = String(query || "").trim().toLowerCase();
+  const section = document.querySelector(".section.active");
+  if (!section) return;
+  section.querySelectorAll(".card, .stat-card, .specialist-card, .module-card").forEach(card => {
+    const match = !term || card.textContent.toLowerCase().includes(term);
+    card.classList.toggle("search-hidden", !match);
   });
 }
 
@@ -250,18 +289,32 @@ async function loadSpecialists() {
     const card = document.createElement("div");
     const avatar = s.photo || s.photo_url || "";
     const initials = getInitials(s.name || s.username || "");
-    card.className = "specialist-card";
+    const experience = s.experience || s.years_experience || s.years || "";
+    const experienceText = experience ? `${experience} Years of Experience` : "Experience not listed";
+    const bio = s.bio || s.description || "Passionate specialist with extensive experience in technology-assisted child development.";
+    card.className = "specialist-card flip-card hover-lift";
     card.innerHTML = `
-      <div class="avatar avatar-static${avatar ? " has-photo" : ""}" ${avatar ? `style="background-image:url('${avatar}')"` : `data-initials="${initials}"`}></div>
-      <strong>${s.name || s.username || "Specialist"}</strong>
-      <p>${s.description || "No description"}</p>
-      <div class="specialist-credentials">
-        <span class="chip subtle">User: ${s.username || "-"}</span>
-        <span class="chip subtle">Children: ${s.num_children ?? 0}</span>
-      </div>
-      <div class="card-actions">
-        <button class="ghost small" data-edit-specialist="${s.specialist_id}">Edit</button>
-        <button class="ghost small danger" data-delete-specialist="${s.specialist_id}">Delete</button>
+      <div class="flip-card-inner">
+        <div class="flip-card-face front">
+          <div class="specialist-front">
+            <div class="avatar avatar-static${avatar ? " has-photo" : ""}" ${avatar ? `style="background-image:url('${avatar}')"` : `data-initials="${initials}"`}></div>
+            <strong>${s.name || s.username || "Specialist"}</strong>
+            <div class="specialist-role">${s.specialty || s.type || "Psychology"}</div>
+            <div class="language-pills">
+              <span class="pill small">EN</span>
+            </div>
+          </div>
+        </div>
+        <div class="flip-card-face back">
+          <div class="specialist-back">
+            <div class="specialist-bio">${bio}</div>
+            <div class="specialist-experience">${experienceText}</div>
+            <div class="card-actions">
+              <button class="icon-action" data-edit-specialist="${s.specialist_id}" aria-label="Edit specialist">✏️</button>
+              <button class="icon-action danger" data-delete-specialist="${s.specialist_id}" aria-label="Delete specialist">🗑️</button>
+            </div>
+          </div>
+        </div>
       </div>
     `;
     grid.appendChild(card);

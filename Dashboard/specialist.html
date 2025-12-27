@@ -6,58 +6,39 @@
   <title>Specialist Dashboard</title>
 
   <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="../ui-shell.css" />
   <link rel="stylesheet" href="dashboard.css" />
 </head>
 
 <body class="dashboard-page">
-  <div class="app-shell" id="dashboard">
-
-    <!-- ============ SIDEBAR ============ -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">SP</div>
+  <div class="ui-shell" id="dashboard">
+    <aside id="appSidebar"></aside>
+    <header id="appHeader"></header>
+    <main class="shell-content">
+      <div class="page-toolbar card">
         <div>
-          <strong>Specialist Panel</strong>
-          <span>My Children & Sessions</span>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="overview" aria-label="Overview" title="Overview">Overview</button>
-        <button class="nav-link" data-section="children" aria-label="My Children" title="My Children">My Children</button>
-        <button class="nav-link" data-section="assessments" aria-label="Assessments" title="Assessments">Assessments</button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="current-user">
-          <div class="avatar avatar-static"></div>
-          <div>
-            <div id="currentUserName">Specialist</div>
-            <div class="hint">VR Therapy Specialist</div>
-          </div>
-        </div>
-        <button class="ghost small" id="logoutBtn">Log out</button>
-      </div>
-    </aside>
-
-    <!-- ============ MAIN AREA ============ -->
-    <div class="app-main">
-      <header class="app-header">
-        <div>
-          <h1>Specialist Dashboard</h1>
+          <h2>Specialist Dashboard</h2>
           <p class="hint">Manage your children, sessions, and assessments.</p>
           <div class="section-context" id="currentSectionLabel">Overview</div>
         </div>
-        <div class="header-actions">
-          <button class="ghost compact-toggle" type="button" data-compact-toggle aria-pressed="false">
-            <span class="compact-label">Compact mode</span>
-            <span class="compact-status" data-compact-status>Off</span>
-          </button>
+        <div class="settings-actions">
+          <div class="profile-card">
+            <div class="avatar profile-avatar" id="specialistUserAvatar" data-initials="SP"></div>
+            <div>
+              <div id="currentUserName">Specialist</div>
+              <div class="hint">VR Therapy Specialist</div>
+            </div>
+          </div>
           <button class="ghost" id="refreshAllBtn">Refresh</button>
+          <button class="ghost" id="logoutBtn">Log out</button>
         </div>
-      </header>
+      </div>
 
-      <main>
+      <div class="section-tabs">
+        <button class="nav-link active" data-section="overview" aria-label="Overview" title="Overview">Overview</button>
+        <button class="nav-link" data-section="children" aria-label="My Children" title="My Children">My Children</button>
+        <button class="nav-link" data-section="assessments" aria-label="Assessments" title="Assessments">Assessments</button>
+      </div>
         <!-- ===== OVERVIEW ===== -->
         <section id="section-overview" class="section active">
           <div class="overview-grid">
@@ -175,8 +156,7 @@
             <div class="stacked-list" id="assessmentsQuestionsList"></div>
           </div>
         </section>
-      </main>
-    </div>
+    </main>
   </div>
 
   <!-- ============ MODALS ============ -->
@@ -363,6 +343,7 @@
   </div>
 
   <script src="common.js"></script>
+  <script src="../ui-shell.js"></script>
   <script src="specialist.js"></script>
 </body>
 </html>

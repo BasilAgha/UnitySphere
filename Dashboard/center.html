@@ -6,58 +6,39 @@
   <title>Center Dashboard</title>
 
   <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="../ui-shell.css" />
   <link rel="stylesheet" href="dashboard.css" />
 </head>
 
 <body class="dashboard-page">
-  <div class="app-shell" id="dashboard">
-
-    <!-- ======================================
-         SIDEBAR
-    ======================================= -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">CT</div>
+  <div class="ui-shell" id="dashboard">
+    <aside id="appSidebar"></aside>
+    <header id="appHeader"></header>
+    <main class="shell-content">
+      <div class="page-toolbar card">
         <div>
-          <strong>Center Panel</strong>
-          <span>Dashboard</span>
+          <h2>Center Dashboard</h2>
+          <p class="hint">Manage your specialists, children, and modules.</p>
+        </div>
+        <div class="settings-actions">
+          <div class="profile-card">
+            <div class="avatar profile-avatar" id="centerUserAvatar" data-initials="CT"></div>
+            <div>
+              <div id="currentUserName">Center Admin</div>
+              <div class="hint">Center Dashboard</div>
+            </div>
+          </div>
+          <button class="ghost" id="refreshAllBtn">Refresh</button>
+          <button class="ghost" id="logoutBtn">Log out</button>
         </div>
       </div>
 
-      <nav class="sidebar-nav">
+      <div class="section-tabs">
         <button class="nav-link active" data-section="overview" aria-label="Overview" title="Overview">Overview</button>
         <button class="nav-link" data-section="specialists" aria-label="Specialists" title="Specialists">Specialists</button>
         <button class="nav-link" data-section="children" aria-label="Children" title="Children">Children</button>
         <button class="nav-link" data-section="modules" aria-label="VR Modules" title="VR Modules">VR Modules</button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="current-user">
-          <div class="avatar avatar-static"></div>
-          <div>
-            <div id="currentUserName">Center Admin</div>
-            <div class="hint">Center Dashboard</div>
-          </div>
-        </div>
-        <button class="ghost small" id="logoutBtn">Log out</button>
       </div>
-    </aside>
-
-    <!-- ======================================
-         MAIN CONTENT
-    ======================================= -->
-    <div class="app-main">
-      <header class="app-header">
-        <div>
-          <h1>Center Dashboard</h1>
-          <p class="hint">Manage your specialists, children, and modules.</p>
-        </div>
-        <div class="header-actions">
-          <button class="ghost" id="refreshAllBtn">Refresh</button>
-        </div>
-      </header>
-
-      <main>
 
         <!-- ================== OVERVIEW ================== -->
         <section id="section-overview" class="section active">
@@ -136,7 +117,7 @@
               </button>
             </div>
 
-            <div class="specialists-grid" id="specialistsGrid"></div>
+            <div class="specialists-grid hover-flip" id="specialistsGrid"></div>
             <div class="empty-state" id="specialistsEmpty" style="display:none;">
               <div class="empty-title">No specialists yet</div>
               <div>No specialists are linked to this center yet. Add a specialist to begin assigning children.</div>
@@ -197,8 +178,7 @@
           </div>
         </section>
 
-      </main>
-    </div>
+    </main>
   </div>
 
   <!-- ============ MODALS ============ -->
@@ -324,6 +304,7 @@
   </div>
 
   <script src="common.js"></script>
+  <script src="../ui-shell.js"></script>
   <script src="center.js"></script>
 </body>
 </html>

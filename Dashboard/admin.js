@@ -4,7 +4,6 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbxErCCEs6YOSy18SufoYe4ZSYSbh6yOvvu7pAvpygqtTUE2m1LPZ_z9xH1TjK3abDlS/exec'; // TODO: replace with deployed Apps Script URL
 
 // ===== STATE =====
-const VIEW_PREF_KEY = 'admin:view:';
 const toastStackId = 'toastStack';
 let questionsCache = [];
 const questionFilters = {
@@ -19,6 +18,24 @@ const sortState = {
   modules: { key: null, dir: 'asc' }
 };
 let lastUpdatedAt = null;
+const SECTION_TITLES = {
+  dashboard: 'Dashboard',
+  centers: 'Centers',
+  locations: 'Locations',
+  specialists: 'Specialists',
+  'vr-modules': 'VR Modules',
+  assessment: 'Assessment',
+  settings: 'Settings'
+};
+let shellSidebar = null;
+let shellHeader = null;
+let charts = {};
+let centersMap = null;
+let centersMapMarkers = [];
+let locationsMap = null;
+let lastSearchQuery = '';
+let assessmentCharts = {};
+let assessmentChildrenCache = [];
 
 function markDataUpdated() {
   lastUpdatedAt = new Date();
@@ -92,33 +109,6 @@ function setButtonLoading(btn, isLoading, loadingLabel = 'Loading...') {
   }
 }
 
-const COMPACT_STORAGE_KEY = 'dashboard:compact';
-
-function applyCompactMode(isCompact) {
-  const enable = Boolean(isCompact);
-  document.body.classList.toggle('compact', enable);
-  localStorage.setItem(COMPACT_STORAGE_KEY, enable ? '1' : '0');
-
-  document.querySelectorAll('[data-compact-toggle]').forEach(btn => {
-    btn.setAttribute('aria-pressed', enable ? 'true' : 'false');
-    btn.classList.toggle('active', enable);
-    const status = btn.querySelector('[data-compact-status]');
-    if (status) status.textContent = enable ? 'On' : 'Off';
-  });
-}
-
-function initCompactMode() {
-  const saved = localStorage.getItem(COMPACT_STORAGE_KEY) === '1';
-  applyCompactMode(saved);
-
-  document.querySelectorAll('[data-compact-toggle]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const next = !document.body.classList.contains('compact');
-      applyCompactMode(next);
-    });
-  });
-}
-
 function getToastStack() {
   let stack = document.getElementById(toastStackId);
   if (!stack) {
@@ -137,14 +127,6 @@ function showToast(message, type = 'success', title = 'Status') {
   toast.innerHTML = `<div class="toast-title">${title}</div><div>${message}</div>`;
   stack.appendChild(toast);
   setTimeout(() => toast.remove(), 3200);
-}
-
-function setViewPref(section, view) {
-  localStorage.setItem(VIEW_PREF_KEY + section, view);
-}
-
-function getViewPref(section) {
-  return localStorage.getItem(VIEW_PREF_KEY + section) || 'card';
 }
 
 function formatDateSafe(value) {
@@ -180,32 +162,142 @@ function setText(id, value) {
   if (el) el.textContent = value;
 }
 
-// ===== VIEW SWITCHES =====
-function initViewSwitches() {
-  document.querySelectorAll('[data-view-switch]').forEach(switchEl => {
-    const section = switchEl.getAttribute('data-view-switch');
-    const saved = getViewPref(section);
-    switchEl.querySelectorAll('button').forEach(btn => {
-      const view = btn.getAttribute('data-view');
-      btn.classList.toggle('active', view === saved);
-      btn.addEventListener('click', () => {
-        switchEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        setViewPref(section, view);
-        refreshSection(section);
-      });
-    });
+function getSpecialtyLabel(spec) {
+  return spec.specialty || spec.type || 'Therapist';
+}
+
+function getLanguagePills(spec) {
+  const lang = spec.language || spec.languages || '';
+  const list = Array.isArray(lang) ? lang : String(lang).split(/[,\s/]+/).filter(Boolean);
+  if (!list.length) return ['EN'];
+  return Array.from(new Set(list.map(code => code.toUpperCase()))).slice(0, 3);
+}
+
+function getModuleDomains(module) {
+  const domains = module.domains || module.skills || module.tags || '';
+  const list = Array.isArray(domains) ? domains : String(domains).split(/[,\s/]+/).filter(Boolean);
+  if (!list.length) return ['Cognitive'];
+  return Array.from(new Set(list.map(item => item.trim()))).slice(0, 3);
+}
+
+function formatModuleStars(level) {
+  const value = Number(level || 0);
+  const clamped = Math.max(1, Math.min(5, Math.round(value)));
+  return '★'.repeat(clamped) + '☆'.repeat(5 - clamped);
+}
+
+function initShell() {
+  const sidebarHost = document.getElementById('appSidebar');
+  const headerHost = document.getElementById('appHeader');
+  if (!sidebarHost || !headerHost || !window.UnitySphereShell) return;
+
+  const active = 'dashboard';
+  shellSidebar = window.UnitySphereShell.buildSidebar({ role: 'admin', active });
+  shellHeader = window.UnitySphereShell.buildHeader({ title: "" });
+
+  sidebarHost.replaceWith(shellSidebar);
+  headerHost.replaceWith(shellHeader);
+
+  const lastUpdated = document.createElement('div');
+  lastUpdated.id = 'lastUpdated';
+  lastUpdated.className = 'last-updated';
+  lastUpdated.textContent = 'Last updated --';
+  shellHeader.querySelector('.header-actions')?.prepend(lastUpdated);
+
+  shellSidebar.addEventListener('click', (event) => {
+    const nav = event.target.closest('[data-nav]');
+    if (!nav) return;
+    showSection(nav.dataset.nav);
+  });
+
+  window.UnitySphereShell.wireEscManager();
+}
+
+function initSettingsControls() {
+  const themeBtn = document.getElementById('themeToggleBtn');
+  const langBtn = document.getElementById('languageToggleBtn');
+  const storedTheme = localStorage.getItem('unitysphere:theme') || 'light';
+  const storedLang = localStorage.getItem('unitysphere:language') || 'en';
+
+  applyThemePreference(storedTheme);
+  applyLanguagePreference(storedLang);
+  updateProfileSummary();
+
+  themeBtn?.addEventListener('click', () => {
+    const next = document.body.dataset.theme === 'light' ? 'dark' : 'light';
+    applyThemePreference(next);
+    localStorage.setItem('unitysphere:theme', next);
+  });
+
+  langBtn?.addEventListener('click', () => {
+    const next = document.documentElement.lang === 'ar' ? 'en' : 'ar';
+    applyLanguagePreference(next);
+    localStorage.setItem('unitysphere:language', next);
   });
 }
 
+function applyThemePreference(theme) {
+  const themeBtn = document.getElementById('themeToggleBtn');
+  const value = theme === 'dark' ? 'dark' : 'light';
+  if (window.UnitySphereShell?.applyTheme) {
+    window.UnitySphereShell.applyTheme(value);
+  } else {
+    document.body.dataset.theme = value;
+    localStorage.setItem('unitysphere:theme', value);
+  }
+  if (themeBtn) themeBtn.textContent = `Theme: ${value === 'light' ? 'Light' : 'Dark'}`;
+}
+
+function applyLanguagePreference(lang) {
+  const langBtn = document.getElementById('languageToggleBtn');
+  const value = lang === 'ar' ? 'ar' : 'en';
+  document.documentElement.lang = value;
+  if (langBtn) langBtn.textContent = `Language: ${value.toUpperCase()}`;
+}
+
+function updateProfileSummary() {
+  const user = getCurrentUserData();
+  const name = user.name || user.full_name || user.fullName || user.displayName || user.username || 'Admin';
+  const role = getCurrentUserRole();
+  const center = user.center_name || user.center_id || '--';
+  const avatar = document.getElementById('settingsAvatar');
+  if (avatar) {
+    const photo = user.photo || user.photo_url || '';
+    avatar.classList.toggle('has-photo', Boolean(photo));
+    avatar.style.backgroundImage = photo ? `url('${photo}')` : '';
+    avatar.setAttribute('data-initials', getInitials(name));
+  }
+  setText('settingsProfileName', name);
+  setText('settingsProfileRole', `Role: ${role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Admin'}`);
+  setText('settingsProfileCenter', `Center: ${center}`);
+}
+
+function applyGlobalSearch(query) {
+  lastSearchQuery = String(query || '').trim().toLowerCase();
+  const section = document.querySelector('.section.active');
+  if (!section) return;
+
+  const cards = section.querySelectorAll(
+    '.card, .stat-card, .center-card, .specialist-card, .module-card, .assessment-card'
+  );
+
+  cards.forEach(card => {
+    const text = card.textContent.toLowerCase();
+    const match = !lastSearchQuery || text.includes(lastSearchQuery);
+    card.classList.toggle('search-hidden', !match);
+  });
+}
+
+// ===== VIEW SWITCHES =====
 function refreshSection(section) {
   switch (section) {
     case 'dashboard': loadDashboard(); break;
     case 'centers': loadCenters(); break;
+    case 'locations': initLocationsMap(); break;
     case 'specialists': loadSpecialists(); break;
-    case 'children': loadChildren(); break;
-    case 'modules': loadModules(); break;
-    case 'questions': loadQuestions(); break;
+    case 'vr-modules': loadModules(); break;
+    case 'assessment': loadAssessmentSection(); break;
+    case 'settings': break;
   }
 }
 
@@ -214,12 +306,16 @@ function showSection(sectionName) {
   document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
   const sectionEl = document.getElementById(`section-${sectionName}`);
   if (sectionEl) sectionEl.classList.add('active');
-
-  document.querySelectorAll('.nav-link').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.section === sectionName);
-  });
+  if (shellSidebar && window.UnitySphereShell) {
+    window.UnitySphereShell.setActiveNavItem(shellSidebar, sectionName);
+  }
+  if (shellHeader) {
+    const title = shellHeader.querySelector('.title');
+    if (title) title.textContent = SECTION_TITLES[sectionName] || '';
+  }
 
   refreshSection(sectionName);
+  applyGlobalSearch(lastSearchQuery);
 }
 
 // ===== DASHBOARD =====
@@ -232,11 +328,13 @@ async function loadDashboard() {
   setText('statChildren', t.children ?? 0);
   setText('statModules', t.modules ?? 0);
   updateDonutChart(t);
+  renderDashboardCharts();
+  renderRecommendations();
   markDataUpdated();
 }
 // ===== CENTERS =====
 async function loadCenters() {
-  const view = getViewPref('centers');
+  const view = 'card';
   const grid = document.getElementById('centersGrid');
   const empty = document.getElementById('centersEmpty');
   const hint = document.getElementById('centersCountHint');
@@ -262,25 +360,28 @@ async function loadCenters() {
       const card = document.createElement('article');
       card.className = 'center-card';
 
+      const cover = c.cover || c.cover_photo || c.cover_url || c.photo || '';
+      const coverHtml = cover
+        ? `<div class="center-cover" style="background-image:url('${cover}')"></div>`
+        : '<div class="center-cover placeholder"></div>';
       card.innerHTML = `
-        ${c.photo ? `<div class="center-photo" style="background-image:url('${c.photo}')"></div>` : ''}
+        ${coverHtml}
         <div class="card-body">
           <div class="title">${c.name || 'Center'}</div>
-          <div class="place muted">ID: ${c.center_id}</div>
+          <div class="center-tag">${c.focus_area || c.specialty || 'Social Skills'}</div>
           <div class="desc">
-            ${c.description || '<span class="muted">No description provided</span>'}
+            ${c.description || '<span class="muted">A leading provider of VR-based developmental therapies.</span>'}
           </div>
         </div>
         <footer>
           <div class="center-footer">
             <div class="center-credentials">
-              <span class="pill small">User: ${c.username}</span>
-              <span class="pill small">Specs: ${c.num_specialists}</span>
-              <span class="pill small">Children: ${c.num_children}</span>
+              <span class="pill small">${c.address || '—'}</span>
+              <span class="pill small">${c.email || c.username || '—'}</span>
             </div>
             <div class="card-actions">
-              <button class="ghost small" data-edit-center="${c.center_id}">Edit</button>
-              <button class="ghost small danger" data-delete-center="${c.center_id}">Delete</button>
+              <button class="icon-action" aria-label="Edit center" data-edit-center="${c.center_id}">✏️</button>
+              <button class="icon-action danger" aria-label="Delete center" data-delete-center="${c.center_id}">🗑️</button>
             </div>
           </div>
         </footer>
@@ -342,6 +443,8 @@ async function loadCenters() {
       });
     });
   }
+
+  applyGlobalSearch(lastSearchQuery);
 }
 
 async function handleCenterCardClick(e) {
@@ -389,7 +492,9 @@ function openCenterModalForCreate() {
   document.getElementById('centerPasswordInput').value = '';
   document.getElementById('centerDescInput').value = '';
   document.getElementById('centerPhotoInput').value = '';
+  document.getElementById('centerCoverInput').value = '';
   setCenterPhotoPreview('');
+  setCenterCoverPreview('');
   openModal('centerModal');
 }
 
@@ -415,6 +520,9 @@ async function openCenterModalForEdit(centerId) {
   const photo = center.photo || center.photo_url || center.photo_base64 || '';
   document.getElementById('centerPhotoInput').value = photo;
   setCenterPhotoPreview(photo);
+  const cover = center.cover || center.cover_url || center.cover_photo || center.photo || '';
+  document.getElementById('centerCoverInput').value = cover;
+  setCenterCoverPreview(cover);
   openModal('centerModal');
 }
 
@@ -428,6 +536,7 @@ async function saveCenter() {
     password: document.getElementById('centerPasswordInput').value,
     description: document.getElementById('centerDescInput').value,
     photo: document.getElementById('centerPhotoInput').value,
+    cover: document.getElementById('centerCoverInput').value,
     actor_username: getCurrentUserName(),
     actor_role: 'admin'
   };
@@ -454,7 +563,7 @@ async function saveCenter() {
 }
 // ===== SPECIALISTS =====
 async function loadSpecialists() {
-  const view = getViewPref('specialists');
+  const view = 'card';
   const grid = document.getElementById('specialistsGrid');
   const empty = document.getElementById('specialistsEmpty');
   const tableWrap = document.getElementById('specialistsTableWrap');
@@ -474,31 +583,48 @@ async function loadSpecialists() {
 
   if (view === 'card') {
     specialists.forEach(s => {
-      const photo = s.photo || s.photo_url || s.photo_base64 || '';
-      const avatarStyle = photo ? `style="background-image:url('${photo}')"` : '';
-      const avatarClasses = `avatar avatar-static${photo ? ' has-photo' : ''}`;
-      const initials = photo ? '' : `data-initials="${getInitials(s.name || s.username)}"`;
-
       const card = document.createElement('article');
-      card.className = 'specialist-card';
+      card.className = 'specialist-card flip-card hover-lift';
+      card.dataset.specId = s.specialist_id;
+      card.tabIndex = 0;
+      const photo = s.photo || s.photo_url || s.photo_base64 || '';
+      const initials = getInitials(s.name || s.username);
+      const languages = getLanguagePills(s);
+      const specialty = getSpecialtyLabel(s);
+      const extended = s.description || 'Extended specialization details not provided yet.';
       card.innerHTML = `
-        <div class="${avatarClasses}" ${avatarStyle} ${initials}></div>
-        <strong>${s.name || s.username || 'Specialist'}</strong>
-        <p>${s.description || '<span class="muted">No description</span>'}</p>
-        <div class="specialist-credentials">
-          <span class="chip subtle">${s.type === 'freelance' ? 'Freelance' : 'Center-linked'}</span>
-          ${s.center_id ? `<span class="chip subtle">Center: ${s.center_id}</span>` : ''}
-          <span class="chip subtle">Children: ${s.num_children ?? 0}</span>
-          <span class="chip subtle">User: ${s.username}</span>
-        </div>
-        <div class="card-actions">
-          <button class="ghost small" data-edit-spec="${s.specialist_id}">Edit</button>
-          <button class="ghost small danger" data-delete-spec="${s.specialist_id}">Delete</button>
+        <div class="flip-card-inner">
+          <div class="flip-card-face front">
+            <div class="specialist-top">
+              <div class="avatar profile-avatar${photo ? ' has-photo' : ''}" style="${photo ? `background-image:url('${photo}')` : ''}" data-initials="${initials}"></div>
+              <div>
+                <strong>${s.name || s.username || 'Specialist'}</strong>
+                <div class="specialist-specialty">${specialty}</div>
+              </div>
+            </div>
+            <div class="language-pills">
+              ${languages.map(lang => `<span class="pill small">${lang}</span>`).join('')}
+            </div>
+          </div>
+          <div class="flip-card-face back">
+            <div class="specialist-back">
+              <div class="specialist-extended">${extended}</div>
+              ${s.center_id ? `<div class="hint">Center: ${s.center_id}</div>` : '<div class="hint">No center assigned</div>'}
+              <div class="assessment-actions">
+                <button class="ghost small" data-edit-spec="${s.specialist_id}">Edit</button>
+                <button class="ghost small danger" data-delete-spec="${s.specialist_id}">Delete</button>
+              </div>
+            </div>
+          </div>
         </div>
       `;
       grid.appendChild(card);
     });
-    grid.addEventListener('click', handleSpecialistCardClick, { once: true });
+    if (!grid.dataset.listener) {
+      grid.addEventListener('click', handleSpecialistCardClick);
+      grid.addEventListener('keydown', handleSpecialistCardKeydown);
+      grid.dataset.listener = 'true';
+    }
   } else if (tableWrap) {
     const sort = sortState.specialists;
     const sorted = [...specialists].sort((a, b) => {
@@ -542,7 +668,7 @@ async function loadSpecialists() {
     `;
     tableWrap.innerHTML = '';
     tableWrap.appendChild(table);
-    table.addEventListener('click', handleSpecialistCardClick, { once: true });
+    table.addEventListener('click', handleSpecialistCardClick);
     table.querySelectorAll('th[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const key = th.getAttribute('data-sort');
@@ -552,11 +678,14 @@ async function loadSpecialists() {
       });
     });
   }
+
+  applyGlobalSearch(lastSearchQuery);
 }
 
 async function handleSpecialistCardClick(e) {
   const editBtn = e.target.closest('[data-edit-spec]');
   const delBtn = e.target.closest('[data-delete-spec]');
+  const card = e.target.closest('.flip-card');
 
   if (editBtn) {
     const id = editBtn.getAttribute('data-edit-spec');
@@ -588,7 +717,18 @@ async function handleSpecialistCardClick(e) {
         setButtonLoading(delBtn, false);
       }
     }
+  } else if (card) {
+    card.classList.toggle('flipped');
   }
+}
+
+function handleSpecialistCardKeydown(e) {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  if (e.target.closest('button')) return;
+  const card = e.target.closest('.flip-card');
+  if (!card) return;
+  e.preventDefault();
+  card.classList.toggle('flipped');
 }
 
 function openSpecialistModalForCreate() {
@@ -715,7 +855,7 @@ function handleSpecTypeChange(e) {
 }
 // ===== CHILDREN =====
 async function loadChildren() {
-  const view = getViewPref('children');
+  const view = 'card';
   const grid = document.getElementById('childrenGrid');
   const empty = document.getElementById('childrenEmpty');
   const tableWrap = document.getElementById('childrenTableWrap');
@@ -834,6 +974,8 @@ async function loadChildren() {
       });
     });
   }
+
+  applyGlobalSearch(lastSearchQuery);
 }
 
 async function handleChildCardClick(e) {
@@ -845,7 +987,7 @@ async function handleChildCardClick(e) {
 
 // ===== MODULES =====
 async function loadModules() {
-  const view = getViewPref('modules');
+  const view = 'card';
   const grid = document.getElementById('modulesGrid');
   const empty = document.getElementById('modulesEmpty');
   const tableWrap = document.getElementById('modulesTableWrap');
@@ -865,32 +1007,56 @@ async function loadModules() {
 
   if (view === 'card') {
     modules.forEach(m => {
+      const domains = getModuleDomains(m);
+      const difficulty = formatModuleStars(m.difficulty || m.level || 3);
+      const usage = m.usage_count || m.num_sessions || m.num_centers_assigned || 0;
+      const score = m.avg_score || m.score || 0;
+      const scoreValue = Number(score);
+      const scoreDisplay = Number.isFinite(scoreValue) ? scoreValue.toFixed(0) : '0';
+      const duration = m.minutes_to_play || 0;
       const card = document.createElement('article');
-      card.className = 'module-card';
+      card.className = 'module-card module-card-clickable hover-lift';
+      card.dataset.moduleId = m.module_id;
+      card.tabIndex = 0;
 
       card.innerHTML = `
-        <header>
-          <div>
-            <strong>${m.name || 'VR Module'}</strong>
-            <div class="hint">ID: ${m.module_id}</div>
+        <div class="module-header">
+          <strong>${m.name || 'VR Module'}</strong>
+          <div class="module-domains">
+            ${domains.map(domain => `<span class="module-domain">${domain}</span>`).join('')}
           </div>
-          <span class="chip subtle">${m.minutes_to_play || 0} min</span>
-        </header>
-        <div class="module-meta">
-          <span>Centers: ${m.num_centers_assigned || 0}</span>
-          <span>Status: ${m.status || 'active'}</span>
         </div>
-        <div class="hint">
-          ${m.description || '<span class="muted">No description.</span>'}
+        <div class="hint">${m.description || 'No description available yet.'}</div>
+        <div class="module-metrics">
+          <div>
+            <span class="metric-label">Difficulty</span>
+            <span class="metric-value">${difficulty}</span>
+          </div>
+          <div>
+            <span class="metric-label">Usage</span>
+            <span class="metric-value">${usage}</span>
+          </div>
+          <div>
+            <span class="metric-label">Score</span>
+            <span class="metric-value">${scoreDisplay}%</span>
+          </div>
+          <div>
+            <span class="metric-label">Duration</span>
+            <span class="metric-value">${duration} min</span>
+          </div>
         </div>
-        <div class="card-actions">
+        <div class="module-actions">
           <button class="ghost small" data-edit-module="${m.module_id}">Edit</button>
           <button class="ghost small danger" data-delete-module="${m.module_id}">Delete</button>
         </div>
       `;
       grid.appendChild(card);
     });
-    grid.addEventListener('click', handleModuleCardClick, { once: true });
+    if (!grid.dataset.listener) {
+      grid.addEventListener('click', handleModuleCardClick);
+      grid.addEventListener('keydown', handleModuleCardKeydown);
+      grid.dataset.listener = 'true';
+    }
   } else if (tableWrap) {
     const sort = sortState.modules;
     const sorted = [...modules].sort((a, b) => {
@@ -934,7 +1100,7 @@ async function loadModules() {
     `;
     tableWrap.innerHTML = '';
     tableWrap.appendChild(table);
-    table.addEventListener('click', handleModuleCardClick, { once: true });
+    table.addEventListener('click', handleModuleCardClick);
     table.querySelectorAll('th[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const key = th.getAttribute('data-sort');
@@ -944,11 +1110,14 @@ async function loadModules() {
       });
     });
   }
+
+  applyGlobalSearch(lastSearchQuery);
 }
 
 async function handleModuleCardClick(e) {
   const editBtn = e.target.closest('[data-edit-module]');
   const delBtn = e.target.closest('[data-delete-module]');
+  const card = e.target.closest('.module-card');
 
   if (editBtn) {
     const id = editBtn.getAttribute('data-edit-module');
@@ -980,7 +1149,18 @@ async function handleModuleCardClick(e) {
         setButtonLoading(delBtn, false);
       }
     }
+  } else if (card && card.dataset.moduleId) {
+    await openModuleModalForEdit(card.dataset.moduleId);
   }
+}
+
+async function handleModuleCardKeydown(e) {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  if (e.target.closest('button')) return;
+  const card = e.target.closest('.module-card');
+  if (!card || !card.dataset.moduleId) return;
+  e.preventDefault();
+  await openModuleModalForEdit(card.dataset.moduleId);
 }
 
 function openModuleModalForCreate() {
@@ -1052,15 +1232,210 @@ async function saveModule() {
     setButtonLoading(saveBtn, false);
   }
 }
+// ===== ASSESSMENT DASHBOARD =====
+async function loadAssessmentSection() {
+  await loadAssessmentChildren();
+  clearAssessmentDetails();
+}
+
+async function loadAssessmentChildren() {
+  const data = await apiCall('listChildren');
+  if (!data.success) return;
+  const children = data.children || [];
+  assessmentChildrenCache = [...children].sort((a, b) =>
+    String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' })
+  );
+  renderAssessmentChildrenList(assessmentChildrenCache);
+}
+
+function renderAssessmentChildrenList(children) {
+  const list = document.getElementById('assessmentChildList');
+  if (!list) return;
+  list.innerHTML = '';
+  children.forEach(child => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'child-option';
+    btn.setAttribute('role', 'option');
+    btn.dataset.childId = child.child_id;
+    btn.textContent = child.name || `Child ${child.child_id}`;
+    list.appendChild(btn);
+  });
+}
+
+function clearAssessmentDetails() {
+  const details = document.getElementById('assessmentDetails');
+  const emptyCard = document.getElementById('assessmentEmptyCard');
+  if (details) details.style.display = 'none';
+  if (emptyCard) emptyCard.style.display = 'grid';
+  clearAssessmentCharts();
+}
+
+function clearAssessmentCharts() {
+  Object.values(assessmentCharts).forEach(chart => {
+    if (chart && typeof chart.destroy === 'function') chart.destroy();
+  });
+  assessmentCharts = {};
+}
+
+async function handleAssessmentChildSelect(childId) {
+  const child = assessmentChildrenCache.find(item => String(item.child_id) === String(childId));
+  if (!child) return;
+
+  const avatar = document.getElementById('assessmentChildAvatar');
+  if (avatar) {
+    const photo = child.photo || child.photo_url || child.photo_base64 || '';
+    avatar.classList.toggle('has-photo', Boolean(photo));
+    avatar.style.backgroundImage = photo ? `url('${photo}')` : '';
+    avatar.setAttribute('data-initials', getInitials(child.name || 'Child'));
+  }
+
+  setText('assessmentChildName', child.name || 'Child');
+  setText('assessmentChildAge', `Age: ${child.age || '--'}`);
+  setText('assessmentChildCenter', `Center: ${child.center_name || child.center_id || '--'}`);
+
+  const details = document.getElementById('assessmentDetails');
+  const emptyCard = document.getElementById('assessmentEmptyCard');
+  if (details) details.style.display = 'grid';
+  if (emptyCard) emptyCard.style.display = 'none';
+
+  const assessmentData = await fetchAssessmentData(child.child_id);
+  renderAssessmentCharts(assessmentData);
+}
+
+async function fetchAssessmentData(childId) {
+  const domains = [
+    'Cognitive',
+    'Language & Communication',
+    'Social & Emotional',
+    'Motor & Sensory',
+    'Early Academic Skills',
+    'Executive Function'
+  ];
+
+  let radarScores = null;
+  let progressScores = null;
+
+  const res = await apiCall('listAssessmentResponses', { child_id: childId });
+  if (res?.success && Array.isArray(res.responses) && res.responses.length) {
+    const responses = res.responses;
+    const grouped = domains.reduce((acc, domain) => {
+      acc[domain] = [];
+      return acc;
+    }, {});
+
+    responses.forEach(r => {
+      const domain = r.category || r.domain || '';
+      const score = Number(r.score || 0);
+      if (grouped[domain]) grouped[domain].push(score);
+    });
+
+    radarScores = domains.map(domain => {
+      const scores = grouped[domain] || [];
+      if (!scores.length) return 0;
+      const avg = scores.reduce((acc, value) => acc + value, 0) / scores.length;
+      return Math.round(avg);
+    });
+
+    const sorted = [...responses]
+      .filter(r => r.created_at || r.date)
+      .sort((a, b) => new Date(a.created_at || a.date) - new Date(b.created_at || b.date))
+      .slice(-5);
+    if (sorted.length) {
+      progressScores = sorted.map(r => Math.round(Number(r.score || 0)));
+    }
+  }
+
+  if (!radarScores) {
+    radarScores = [72, 64, 70, 58, 66, 74];
+  }
+  if (!progressScores) {
+    progressScores = [58, 64, 70, 76, 82];
+  }
+
+  return { domains, radarScores, progressScores };
+}
+
+function renderAssessmentCharts({ domains, radarScores, progressScores }) {
+  if (!window.Chart) return;
+
+  clearAssessmentCharts();
+
+  const radarCtx = document.getElementById('assessmentRadarChart')?.getContext('2d');
+  if (radarCtx) {
+    assessmentCharts.radar = new Chart(radarCtx, {
+      type: 'radar',
+      data: {
+        labels: domains,
+        datasets: [
+          {
+            label: 'Score',
+            data: radarScores,
+            backgroundColor: 'rgba(168, 85, 247, 0.25)',
+            borderColor: '#a855f7',
+            pointBackgroundColor: '#a855f7',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        scales: {
+          r: {
+            angleLines: { color: 'rgba(255,255,255,0.08)' },
+            grid: { color: 'rgba(255,255,255,0.08)' },
+            pointLabels: { color: '#cfd2e5', font: { size: 11 } },
+            ticks: { color: '#9aa0b4', backdropColor: 'transparent' },
+            suggestedMin: 0,
+            suggestedMax: 100
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  const lineCtx = document.getElementById('assessmentProgressChart')?.getContext('2d');
+  if (lineCtx) {
+    assessmentCharts.progress = new Chart(lineCtx, {
+      type: 'line',
+      data: {
+        labels: ['S1', 'S2', 'S3', 'S4', 'S5'],
+        datasets: [
+          {
+            label: 'Progress',
+            data: progressScores,
+            borderColor: '#a855f7',
+            backgroundColor: 'rgba(168, 85, 247, 0.15)',
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        scales: {
+          x: { ticks: { color: '#9aa0b4' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { color: '#9aa0b4' },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+}
+
 // ===== QUESTIONS =====
 async function loadQuestions() {
   await loadAssessmentLibrary();
 }
 
 async function loadAssessmentLibrary() {
-  const tableBody = document.getElementById('questionsTableBody');
+  const list = document.getElementById('questionsList');
   const empty = document.getElementById('questionsEmpty');
-  if (tableBody) tableBody.innerHTML = '';
+  if (list) list.innerHTML = '';
 
   const data = await apiCall('listQuestions');
   if (!data.success) return;
@@ -1075,33 +1450,37 @@ async function loadAssessmentLibrary() {
   empty.style.display = 'none';
 
   populateQuestionFilters(qs);
-  renderQuestionsTable(applyQuestionFilters(qs));
+  renderQuestionsList(applyQuestionFilters(qs));
+  applyGlobalSearch(lastSearchQuery);
 }
 
-function renderQuestionsTable(qs) {
-  const tableBody = document.getElementById('questionsTableBody');
-  if (!tableBody) return;
-  tableBody.innerHTML = '';
+function renderQuestionsList(qs) {
+  const list = document.getElementById('questionsList');
+  if (!list) return;
+  list.innerHTML = '';
 
   qs.forEach(q => {
     const statusValue = String(q.status || 'active').toLowerCase();
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${q.question_text || '-'}</td>
-      <td class="meta-muted">${q.category || 'General'}</td>
-      <td class="meta-muted">${q.difficulty || 'N/A'}</td>
-      <td class="meta-muted">${q.status || 'Active'}</td>
-      <td class="table-actions">
+    const card = document.createElement('article');
+    card.className = 'assessment-card';
+    card.innerHTML = `
+      <strong>${q.question_text || '-'}</strong>
+      <div class="assessment-meta">
+        <span>Category: ${q.category || 'General'}</span>
+        <span>Difficulty: ${q.difficulty || 'N/A'}</span>
+        <span>Status: ${q.status || 'Active'}</span>
+      </div>
+      <div class="assessment-actions">
         <button class="ghost small" data-edit-question="${q.question_id}">Edit</button>
         ${renderAssessmentActions({ ...q, status: statusValue })}
-      </td>
+      </div>
     `;
-    tableBody.appendChild(row);
+    list.appendChild(card);
   });
 
-  if (!tableBody.dataset.listener) {
-    tableBody.addEventListener('click', handleQuestionListClick);
-    tableBody.dataset.listener = 'true';
+  if (!list.dataset.listener) {
+    list.addEventListener('click', handleQuestionListClick);
+    list.dataset.listener = 'true';
   }
 }
 
@@ -1170,7 +1549,7 @@ function handleQuestionFilterChange() {
   questionFilters.category = categorySelect ? categorySelect.value : '';
   questionFilters.difficulty = difficultySelect ? difficultySelect.value : '';
   questionFilters.status = statusSelect ? statusSelect.value : '';
-  renderQuestionsTable(applyQuestionFilters(questionsCache));
+  renderQuestionsList(applyQuestionFilters(questionsCache));
 }
 
 async function handleQuestionListClick(e) {
@@ -1399,6 +1778,7 @@ function saveAccountSettings() {
   localStorage.setItem('user', JSON.stringify(user));
   initUserChip();
   initDynamicLabels();
+  updateProfileSummary();
   closeModal('accountModal');
 }
 
@@ -1440,6 +1820,30 @@ function handleCenterPhotoChange(e) {
 
 function setCenterPhotoPreview(src) {
   const preview = document.getElementById('centerPhotoPreview');
+  if (!preview) return;
+  if (src) {
+    preview.style.backgroundImage = `url('${src}')`;
+    preview.classList.add('has-photo');
+  } else {
+    preview.style.backgroundImage = '';
+    preview.classList.remove('has-photo');
+  }
+}
+
+function handleCenterCoverChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    document.getElementById('centerCoverInput').value = dataUrl;
+    setCenterCoverPreview(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setCenterCoverPreview(src) {
+  const preview = document.getElementById('centerCoverPreview');
   if (!preview) return;
   if (src) {
     preview.style.backgroundImage = `url('${src}')`;
@@ -1572,6 +1976,238 @@ function updateDonutChart(totals = {}) {
   donut.style.background = `conic-gradient(${gradient})`;
 }
 
+function clearCharts() {
+  Object.values(charts).forEach(chart => {
+    if (chart && typeof chart.destroy === 'function') {
+      chart.destroy();
+    }
+  });
+  charts = {};
+}
+
+function renderDashboardCharts() {
+  if (!window.Chart) return;
+
+  clearCharts();
+
+  const minutesCtx = document.getElementById('vrMinutesChart')?.getContext('2d');
+  if (minutesCtx) {
+    charts.vrMinutes = new Chart(minutesCtx, {
+      type: 'line',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [
+          {
+            label: 'Therapy',
+            data: [420, 510, 460, 580, 620, 710, 680],
+            borderColor: '#a855f7',
+            backgroundColor: 'rgba(168, 85, 247, 0.15)',
+            tension: 0.35,
+            fill: true
+          },
+          {
+            label: 'Assessment',
+            data: [260, 300, 280, 340, 360, 390, 410],
+            borderColor: '#7c3aed',
+            backgroundColor: 'rgba(124, 58, 237, 0.12)',
+            tension: 0.35,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#cfd2e5' } }
+        },
+        scales: {
+          x: { ticks: { color: '#9aa0b4' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#9aa0b4' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+
+  const deviceCtx = document.getElementById('sessionsDeviceChart')?.getContext('2d');
+  if (deviceCtx) {
+    charts.sessions = new Chart(deviceCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Quest', 'Vive', 'Pico', 'Mobile'],
+        datasets: [
+          {
+            data: [42, 28, 18, 12],
+            backgroundColor: ['#a855f7', '#7c3aed', '#ec4899', '#22c55e'],
+            borderWidth: 0
+          }
+        ]
+      },
+      options: {
+        cutout: '68%',
+        plugins: {
+          legend: { labels: { color: '#cfd2e5' } }
+        }
+      }
+    });
+  }
+
+  const progressCtx = document.getElementById('learningProgressChart')?.getContext('2d');
+  if (progressCtx) {
+    charts.learning = new Chart(progressCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Complete', 'Remaining'],
+        datasets: [
+          {
+            data: [72, 28],
+            backgroundColor: ['#a855f7', 'rgba(255,255,255,0.08)'],
+            borderWidth: 0
+          }
+        ]
+      },
+      options: {
+        cutout: '72%',
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  const rateCtx = document.getElementById('progressRateChart')?.getContext('2d');
+  if (rateCtx) {
+    const centers = [
+      { name: 'North Ridge', value: 86 },
+      { name: 'East Harbor', value: 74 },
+      { name: 'Summit', value: 68 },
+      { name: 'Cedar Gate', value: 62 }
+    ].sort((a, b) => b.value - a.value);
+
+    charts.rate = new Chart(rateCtx, {
+      type: 'bar',
+      data: {
+        labels: centers.map(c => c.name),
+        datasets: [
+          {
+            label: 'Progress Rate',
+            data: centers.map(c => c.value),
+            backgroundColor: 'rgba(168, 85, 247, 0.6)',
+            borderRadius: 10
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { ticks: { color: '#9aa0b4' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#cfd2e5' }, grid: { display: false } }
+        }
+      }
+    });
+  }
+}
+
+function renderRecommendations() {
+  const list = document.getElementById('aiRecommendations');
+  if (!list) return;
+  list.innerHTML = '';
+  const items = [
+    'Prioritize onboarding at centers below 60% progress.',
+    'Review VR module usage for kids under 8 sessions.',
+    'Schedule specialist pairing for high-demand centers.',
+    'Flag devices with repeated session drop-offs.'
+  ];
+  items.forEach(text => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    list.appendChild(li);
+  });
+}
+
+function buildPurpleIcon() {
+  if (!window.L) return null;
+  return L.divIcon({
+    className: 'purple-marker',
+    iconSize: [14, 14]
+  });
+}
+
+function getCenterCoordinates(center) {
+  const lat = center.lat || center.latitude || center.center_lat || center.centerLatitude;
+  const lng = center.lng || center.longitude || center.center_lng || center.centerLongitude;
+  if (!lat || !lng) return null;
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return null;
+  return [latNum, lngNum];
+}
+
+function renderCentersMap(centers) {
+  const status = document.getElementById('centersMapStatus');
+  if (!window.L) {
+    if (status) status.textContent = 'Map unavailable.';
+    return;
+  }
+
+  if (!centersMap) {
+    centersMap = L.map('centersMap', { zoomControl: false }).setView([40.73, -73.93], 3);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(centersMap);
+  }
+
+  centersMapMarkers.forEach(marker => marker.remove());
+  centersMapMarkers = [];
+
+  const icon = buildPurpleIcon();
+  const coords = centers.map(getCenterCoordinates).filter(Boolean);
+  if (!coords.length) {
+    if (status) status.textContent = 'No center coordinates yet.';
+    return;
+  }
+
+  coords.forEach(([lat, lng]) => {
+    const marker = L.marker([lat, lng], { icon });
+    marker.addTo(centersMap);
+    centersMapMarkers.push(marker);
+  });
+
+  if (status) status.textContent = `${coords.length} center location${coords.length !== 1 ? 's' : ''}`;
+  const bounds = L.latLngBounds(coords);
+  centersMap.fitBounds(bounds.pad(0.2));
+}
+
+function initLocationsMap() {
+  const status = document.getElementById('locationsMapStatus');
+  if (!window.L) {
+    if (status) status.textContent = 'Map unavailable.';
+    return;
+  }
+
+  if (locationsMap) return;
+
+  locationsMap = L.map('locationsMap', { zoomControl: false }).setView([39.5, -98.35], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(locationsMap);
+
+  const icon = buildPurpleIcon();
+  const points = [
+    [34.05, -118.24],
+    [41.88, -87.62],
+    [29.76, -95.36],
+    [40.71, -74.0]
+  ];
+  points.forEach(([lat, lng]) => {
+    L.marker([lat, lng], { icon }).addTo(locationsMap);
+  });
+
+  if (status) status.textContent = 'Locations live across key regions.';
+}
+
 function initAuthGuard() {
   const role = localStorage.getItem('role');
   if (role !== 'admin') {
@@ -1582,29 +2218,41 @@ function initAuthGuard() {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   initAuthGuard();
-  initCompactMode();
+  initShell();
   initUserChip();
   initDynamicLabels();
   initModalCloseButtons();
-  initViewSwitches();
   updateLastUpdatedLabel();
   setInterval(updateLastUpdatedLabel, 60000);
   document.getElementById('specPhotoFile')?.addEventListener('change', handleSpecPhotoChange);
   document.getElementById('specTypeInput')?.addEventListener('change', handleSpecTypeChange);
   document.getElementById('centerPhotoFile')?.addEventListener('change', handleCenterPhotoChange);
+  document.getElementById('centerCoverFile')?.addEventListener('change', handleCenterCoverChange);
   document.getElementById('modulePhotoFile')?.addEventListener('change', handleModulePhotoChange);
   document.getElementById('accountPhotoFile')?.addEventListener('change', handleAccountPhotoChange);
   document.getElementById('accountSettingsBtn')?.addEventListener('click', openAccountSettings);
   document.getElementById('accountSaveBtn')?.addEventListener('click', saveAccountSettings);
-  document.getElementById('questionFilterCategory')?.addEventListener('change', handleQuestionFilterChange);
-  document.getElementById('questionFilterDifficulty')?.addEventListener('change', handleQuestionFilterChange);
-  document.getElementById('questionFilterStatus')?.addEventListener('change', handleQuestionFilterChange);
 
-  // nav
-  document.querySelectorAll('.nav-link').forEach(btn => {
-    btn.addEventListener('click', () => {
-      showSection(btn.dataset.section);
-    });
+  const childSearch = document.getElementById('assessmentChildSearch');
+  const childList = document.getElementById('assessmentChildList');
+  childSearch?.addEventListener('input', () => {
+    const term = childSearch.value.trim().toLowerCase();
+    const filtered = assessmentChildrenCache.filter(child =>
+      String(child.name || '').toLowerCase().includes(term)
+    );
+    renderAssessmentChildrenList(filtered);
+  });
+  childList?.addEventListener('click', (event) => {
+    const option = event.target.closest('[data-child-id]');
+    if (!option) return;
+    childSearch.value = option.textContent;
+    handleAssessmentChildSelect(option.dataset.childId);
+  });
+
+  initSettingsControls();
+
+  document.addEventListener('unitysphere:search', (event) => {
+    applyGlobalSearch(event.detail.query);
   });
 
   document.getElementById('refreshAllBtn')?.addEventListener('click', () => {
@@ -1649,7 +2297,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('questionSaveBtn')?.addEventListener('click', saveQuestion);
 
   // initial load
-  loadDashboard();
+  showSection('dashboard');
 });
 
 

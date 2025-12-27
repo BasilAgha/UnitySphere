@@ -6,367 +6,290 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Your CSS (already uploaded to your project / web host) -->
   <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="../ui-shell.css" />
   <link rel="stylesheet" href="dashboard.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
 </head>
 <body class="dashboard-page">
-  <div class="app-shell">
-    <!-- ========= SIDEBAR ========= -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">VR</div>
-        <div>
-          <strong id="brandName">VR Therapy Admin</strong>
-          <span id="brandRole">System Control Panel</span>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav">
-        <button class="nav-link active" data-section="dashboard" aria-label="Dashboard" title="Dashboard">
-          <span>Dashboard</span>
-        </button>
-        <button class="nav-link" data-section="centers" aria-label="Centers" title="Centers">
-          <span>Centers</span>
-        </button>
-        <button class="nav-link" data-section="specialists" aria-label="Specialists" title="Specialists">
-          <span>Specialists</span>
-        </button>
-        <button class="nav-link" data-section="children" aria-label="Children" title="Children">
-          <span>Children</span>
-        </button>
-        <button class="nav-link" data-section="modules" aria-label="VR Modules" title="VR Modules">
-          <span>VR Modules</span>
-        </button>
-        <button class="nav-link" data-section="questions" aria-label="Assessments" title="Assessments">
-          <span>Assessments</span>
-        </button>
-      </nav>
-
-      <div class="sidebar-user">
-        <div class="current-user">
-          <div class="avatar avatar-static"></div>
+  <div class="ui-shell">
+    <aside id="appSidebar"></aside>
+    <header id="appHeader"></header>
+    <main class="shell-content">
+      <!-- ===== DASHBOARD SECTION ===== -->
+      <section id="section-dashboard" class="section active">
+        <div class="section-header">
           <div>
-            <div id="currentUserName" class="user-name">Admin</div>
-            <div class="hint user-role" id="currentUserRole">System Administrator</div>
+            <h2>Dashboard</h2>
+            <p class="hint">Welcome back, <span id="welcomeName">Admin</span>. Here is the system pulse.</p>
           </div>
         </div>
-        <button class="ghost block" id="logoutBtn">Log out</button>
-      </div>
-    </aside>
 
-    <!-- ========= MAIN ========= -->
-      <div class="app-main">
-      <header class="app-header">
-        <div>
-          <h1>Welcome back, <span id="welcomeName">Admin</span></h1>
-          <p class="hint">Everything you need to keep centers, specialists, and children supported.</p>
-          <div class="hero-actions">
-                <button class="primary" type="button" onclick="showSection('centers')">Open centers</button>
-                <button class="ghost" type="button" onclick="showSection('modules')">Review modules</button>
+        <div class="card-grid kpi-grid">
+          <div class="card kpi-card">
+            <div class="kpi-label">Centers</div>
+            <div class="kpi-value" id="statCenters">0</div>
+            <div class="kpi-sub" id="statCentersHint">Active VR therapy hubs</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-label">Specialists</div>
+            <div class="kpi-value" id="statSpecialists">0</div>
+            <div class="kpi-sub" id="statSpecialistsHint">Clinical workforce online</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-label">Kids</div>
+            <div class="kpi-value" id="statChildren">0</div>
+            <div class="kpi-sub">Participants in active programs</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-label">VR Modules</div>
+            <div class="kpi-value" id="statModules">0</div>
+            <div class="kpi-sub">Live therapy experiences</div>
+          </div>
+        </div>
+
+        <div class="card-grid dashboard-grid two-up">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>VR Minutes</h3>
+            </div>
+            <canvas id="vrMinutesChart" height="110"></canvas>
+          </div>
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Sessions by Device</h3>
+            </div>
+            <canvas id="sessionsDeviceChart" height="110"></canvas>
+          </div>
+        </div>
+        <div class="card-grid dashboard-grid three-up">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Learning Progress</h3>
+            </div>
+            <canvas id="learningProgressChart" height="110"></canvas>
+          </div>
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Progress Rate by Center</h3>
+            </div>
+            <canvas id="progressRateChart" height="110"></canvas>
+          </div>
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>AI Recommendations</h3>
+            </div>
+            <ul class="recommendation-list" id="aiRecommendations"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== CENTERS SECTION ===== -->
+      <section id="section-centers" class="section">
+        <div class="section-header">
+          <div>
+            <h2>Centers</h2>
+            <p class="hint">Manage centers, their credentials, and basic stats.</p>
+          </div>
+          <div class="section-actions">
+            <button class="primary with-icon" id="btnAddCenter">
+              <span class="icon">+</span>
+              <span class="label">Add Center</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="center-directory">
+            <div class="directory-header">
+              <h3>All Centers</h3>
+              <span class="hint" id="centersCountHint">0 centers</span>
+            </div>
+
+            <div class="card-grid" id="centersGrid">
+              <!-- Centers will be rendered here as .center-card -->
+            </div>
+
+            <div class="empty-state" id="centersEmpty" style="display:none;">
+              <div class="empty-title">No centers yet</div>
+              <div>No center profiles have been created yet. Add a center to start onboarding specialists and children.</div>
+              <div class="empty-actions">
+                <button class="ghost small" id="centersEmptyAdd">Add Center</button>
               </div>
+            </div>
+          </div>
         </div>
-        <div class="header-actions">
-          <div class="last-updated" id="lastUpdated" title="Last updated: --">Last updated just now</div>
-          <button class="ghost" id="accountSettingsBtn">Account</button>
-          <button class="ghost" id="refreshAllBtn">Refresh data</button>
+      </section>
+
+      <!-- ===== LOCATIONS SECTION ===== -->
+      <section id="section-locations" class="section">
+        <div class="section-header">
+          <div>
+            <h2>Locations</h2>
+            <p class="hint">Live facility presence across the network.</p>
+          </div>
         </div>
-      </header>
+        <div class="card map-card">
+          <div class="card-header">
+            <h3>Locations Map</h3>
+            <span class="hint map-status" id="locationsMapStatus">Loading map...</span>
+          </div>
+          <div id="locationsMap" class="map-canvas"></div>
+        </div>
+      </section>
 
-      <main>
-        <!-- ===== DASHBOARD SECTION ===== -->
-        <section id="section-dashboard" class="section active">
-          
-          <div class="overview-grid">
-            <!-- Stat cards -->
-            <div class="stat-card">
-              <header>
-                <span>Total Centers</span>
-                <span class="chip subtle">Network</span>
-              </header>
-              <div class="stat-value" id="statCenters">0</div>
-              <div class="trend" id="statCentersHint">Active centers running VR programs</div>
+      <!-- ===== SPECIALISTS SECTION ===== -->
+      <section id="section-specialists" class="section">
+        <div class="section-header">
+          <div>
+            <h2>Specialists</h2>
+            <p class="hint">Manage freelance and center-linked specialists.</p>
+          </div>
+          <div class="section-actions">
+            <button class="primary with-icon" id="btnAddSpecialist">
+              <span class="icon">+</span>
+              <span class="label">Add Specialist</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="specialists-grid flip-grid" id="specialistsGrid">
+          <!-- Specialist flip cards here -->
+        </div>
+
+        <div class="empty-state" id="specialistsEmpty" style="display:none;">
+          <div class="empty-title">No specialists yet</div>
+          <div>There are no specialists on record. Add a specialist to begin assigning children and sessions.</div>
+          <div class="empty-actions">
+            <button class="ghost small" id="specialistsEmptyAdd">Add Specialist</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VR MODULES SECTION ===== -->
+      <section id="section-vr-modules" class="section">
+        <div class="section-header">
+          <div>
+            <h2>VR Modules</h2>
+            <p class="hint">Manage VR modules available to centers.</p>
+          </div>
+          <div class="section-actions">
+            <button class="primary with-icon" id="btnAddModule">
+              <span class="icon">+</span>
+              <span class="label">Add Module</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="modules-grid module-grid" id="modulesGrid">
+          <!-- Module cards -->
+        </div>
+
+        <div class="empty-state" id="modulesEmpty" style="display:none;">
+          <div class="empty-title">No VR modules yet</div>
+          <div>Modules are training experiences assignable to centers. Add a module to start distributing content.</div>
+          <div class="empty-actions">
+            <button class="ghost small" id="modulesEmptyAdd">Add Module</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== ASSESSMENT SECTION ===== -->
+      <section id="section-assessment" class="section">
+        <div class="section-header">
+          <div>
+            <h2>Assessment</h2>
+            <p class="hint">Monitor child performance snapshots across centers.</p>
+          </div>
+        </div>
+
+        <div class="assessment-shell">
+          <div class="card assessment-selector">
+            <label for="assessmentChildSearch" class="hint">Child</label>
+            <div class="child-dropdown">
+              <input id="assessmentChildSearch" type="search" placeholder="Search child name" autocomplete="off" />
+              <div id="assessmentChildList" class="child-dropdown-list" role="listbox" aria-label="Children list"></div>
             </div>
+          </div>
 
-            <div class="stat-card">
-              <header>
-                <span>Total Specialists</span>
-                <span class="chip subtle">Therapists</span>
-              </header>
-              <div class="stat-value" id="statSpecialists">0</div>
-              <div class="trend" id="statSpecialistsHint">Freelance + center-linked specialists</div>
+          <div class="card assessment-empty" id="assessmentEmptyCard">
+            <div class="empty-text">Select a child to view assessment</div>
+          </div>
+
+          <div class="assessment-details" id="assessmentDetails" style="display:none;">
+            <div class="card assessment-profile">
+              <div class="profile-card">
+                <div class="avatar profile-avatar" id="assessmentChildAvatar" data-initials="CH"></div>
+                <div>
+                  <div class="profile-name" id="assessmentChildName">Child Name</div>
+                  <div class="profile-meta">
+                    <span id="assessmentChildAge">Age: --</span>
+                    <span id="assessmentChildCenter">Center: --</span>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <div class="stat-card">
-              <header>
-                <span>Total Children</span>
-                <span class="chip subtle">Participants</span>
-              </header>
-              <div class="stat-value" id="statChildren">0</div>
-              <div class="trend">Children across all centers</div>
-            </div>
-
-            <div class="stat-card">
-              <header>
-                <span>VR Modules</span>
-                <span class="chip subtle">Content</span>
-              </header>
-              <div class="stat-value" id="statModules">0</div>
-              <div class="trend">Available VR training modules</div>
-            </div>
-
-            <!-- Donut summary -->
-            <div class="card donut-card">
+            <div class="card assessment-chart">
               <div class="card-header">
-                <h2>Quick Breakdown</h2>
+                <h3>Performance Overview</h3>
               </div>
-              <div class="donut-wrapper">
-                <div class="donut" id="donutChart"></div>
-                <ul class="chart-legend">
-                  <li><span class="legend-color legend-one"></span> Centers: <span id="legendCenters">0</span></li>
-                  <li><span class="legend-color legend-two"></span> Specialists: <span id="legendSpecialists">0</span></li>
-                  <li><span class="legend-color legend-three"></span> Children: <span id="legendChildren">0</span></li>
-                  <li><span class="legend-color legend-four"></span> Modules: <span id="legendModules">0</span></li>
-                </ul>
-              </div>
+              <canvas id="assessmentRadarChart" height="200"></canvas>
             </div>
-
-            <!-- Recent insights -->
-            <div class="card recommendations">
+            <div class="card assessment-chart">
               <div class="card-header">
-                <h2>Admin Insights</h2>
+                <h3>Progress Over Time</h3>
               </div>
-              <div class="recommendation">
-                <div class="recommendation-icon">Ops</div>
-                <div class="recommendation-body">
-                  <strong>Review center distribution</strong>
-                  <span class="hint">
-                    Check if each center has enough specialists for their children load.
-                  </span>
-                </div>
-              </div>
-              <div class="recommendation">
-                <div class="recommendation-icon">VR</div>
-                <div class="recommendation-body">
-                  <strong>VR modules adoption</strong>
-                  <span class="hint">
-                    Make sure every center has the right modules assigned for their use-cases.
-                  </span>
-                </div>
-              </div>
+              <canvas id="assessmentProgressChart" height="200"></canvas>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <!-- ===== CENTERS SECTION ===== -->
-        <section id="section-centers" class="section">
-          <div class="card full">
-            <div class="section-header">
+      <!-- ===== SETTINGS SECTION ===== -->
+      <section id="section-settings" class="section">
+        <div class="section-header">
+          <div>
+            <h2>Settings</h2>
+            <p class="hint">Account preferences and workspace controls.</p>
+          </div>
+        </div>
+        <div class="card-grid settings-grid">
+          <div class="card settings-card">
+            <div class="card-header">
+              <h3>Appearance</h3>
+            </div>
+            <div class="settings-actions">
+              <button class="ghost" id="themeToggleBtn">Theme: Dark</button>
+              <button class="ghost" id="languageToggleBtn">Language: EN</button>
+            </div>
+          </div>
+          <div class="card settings-card">
+            <div class="card-header">
+              <h3>Profile Summary</h3>
+            </div>
+            <div class="profile-card">
+              <div class="avatar profile-avatar" id="settingsAvatar" data-initials="US"></div>
               <div>
-                <h2>Centers</h2>
-                <p class="hint">Manage centers, their credentials, and basic stats.</p>
-              </div>
-              <div class="section-actions">
-                <div class="view-switch" data-view-switch="centers">
-                  <button type="button" class="ghost small active" data-view="card">Cards</button>
-                  <button type="button" class="ghost small" data-view="table">Table</button>
-                </div>
-                <button class="primary with-icon" id="btnAddCenter">
-                  <span class="icon">+</span>
-                  <span class="label">Add Center</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="center-directory">
-              <div class="directory-header">
-                <h3>All Centers</h3>
-                <span class="hint" id="centersCountHint">0 centers</span>
-              </div>
-
-              <div class="card-grid" id="centersGrid">
-                <!-- Centers will be rendered here as .center-card -->
-              </div>
-
-              <div class="table-wrapper" id="centersTableWrap" style="display:none;"></div>
-
-              <div class="empty-state" id="centersEmpty" style="display:none;">
-                <div class="empty-title">No centers yet</div>
-                <div>No center profiles have been created yet. Add a center to start onboarding specialists and children.</div>
-                <div class="empty-actions">
-                  <button class="ghost small" id="centersEmptyAdd">Add Center</button>
+                <div class="profile-name" id="settingsProfileName">Admin</div>
+                <div class="profile-meta">
+                  <span id="settingsProfileRole">Role: Admin</span>
+                  <span id="settingsProfileCenter">Center: --</span>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <!-- ===== SPECIALISTS SECTION ===== -->
-        <section id="section-specialists" class="section">
-          <div class="card full">
-            <div class="section-header">
-              <div>
-                <h2>Specialists</h2>
-                <p class="hint">Manage freelance and center-linked specialists.</p>
-              </div>
-              <div class="section-actions">
-                <div class="view-switch" data-view-switch="specialists">
-                  <button type="button" class="ghost small active" data-view="card">Cards</button>
-                  <button type="button" class="ghost small" data-view="table">Table</button>
-                </div>
-                <button class="primary with-icon" id="btnAddSpecialist">
-                  <span class="icon">+</span>
-                  <span class="label">Add Specialist</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="specialists-grid" id="specialistsGrid">
-              <!-- Specialist cards here -->
-            </div>
-
-            <div class="table-wrapper" id="specialistsTableWrap" style="display:none;"></div>
-
-            <div class="empty-state" id="specialistsEmpty" style="display:none;">
-              <div class="empty-title">No specialists yet</div>
-              <div>There are no specialists on record. Add a specialist to begin assigning children and sessions.</div>
-              <div class="empty-actions">
-                <button class="ghost small" id="specialistsEmptyAdd">Add Specialist</button>
-              </div>
+            <div class="settings-actions">
+              <button class="ghost" id="accountSettingsBtn">Account Settings</button>
+              <button class="ghost" id="refreshAllBtn">Refresh data</button>
+              <button class="ghost" id="logoutBtn">Log out</button>
             </div>
           </div>
-        </section>
-
-        <!-- ===== CHILDREN SECTION ===== -->
-        <section id="section-children" class="section">
-          <div class="card full">
-            <div class="section-header">
-              <div>
-                <h2>Children</h2>
-                <p class="hint">View all children across centers and specialists.</p>
-              </div>
-              <div class="section-actions">
-                <div class="view-switch" data-view-switch="children">
-                  <button type="button" class="ghost small active" data-view="card">Cards</button>
-                  <button type="button" class="ghost small" data-view="table">Table</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="modules-grid" id="childrenGrid">
-              <!-- Children as cards, reusing modules-grid layout -->
-            </div>
-
-            <div class="table-wrapper" id="childrenTableWrap" style="display:none;"></div>
-
-            <div class="empty-state" id="childrenEmpty" style="display:none;">
-              <div class="empty-title">No children yet</div>
-              <div>No child records exist yet. Review centers or specialists to begin onboarding children.</div>
-              <div class="empty-actions">
-                <button class="ghost small" type="button" onclick="showSection('centers')">Review Centers</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ===== MODULES SECTION ===== -->
-        <section id="section-modules" class="section">
-          <div class="card full">
-            <div class="section-header">
-              <div>
-                <h2>VR Modules</h2>
-                <p class="hint">Manage VR modules available to centers.</p>
-              </div>
-              <div class="section-actions">
-                <div class="view-switch" data-view-switch="modules">
-                  <button type="button" class="ghost small active" data-view="card">Cards</button>
-                  <button type="button" class="ghost small" data-view="table">Table</button>
-                </div>
-                <button class="primary with-icon" id="btnAddModule">
-                  <span class="icon">+</span>
-                  <span class="label">Add Module</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="modules-grid" id="modulesGrid">
-              <!-- Module cards -->
-            </div>
-
-            <div class="table-wrapper" id="modulesTableWrap" style="display:none;"></div>
-
-            <div class="empty-state" id="modulesEmpty" style="display:none;">
-              <div class="empty-title">No VR modules yet</div>
-              <div>Modules are training experiences assignable to centers. Add a module to start distributing content.</div>
-              <div class="empty-actions">
-                <button class="ghost small" id="modulesEmptyAdd">Add Module</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ===== QUESTIONS SECTION ===== -->
-        <section id="section-questions" class="section">
-          <div class="card full">
-            <div class="section-header">
-              <div>
-                <h2>Assessment Library</h2>
-                <p class="hint">Manage assessment questions that appear in child evaluations.</p>
-                <p class="hint" id="assessmentArchiveHint">Archiving removes a question from new assessments but keeps historical responses intact.</p>
-              </div>
-              <button class="primary with-icon" id="btnAddQuestion">
-                <span class="icon">+</span>
-                <span class="label">Add Question</span>
-              </button>
-            </div>
-
-            <div class="section-actions">
-              <div class="input-group">
-                <label for="questionFilterCategory">Category</label>
-                <select id="questionFilterCategory">
-                  <option value="">All categories</option>
-                </select>
-              </div>
-              <div class="input-group">
-                <label for="questionFilterDifficulty">Difficulty</label>
-                <select id="questionFilterDifficulty">
-                  <option value="">All difficulties</option>
-                </select>
-              </div>
-              <div class="input-group">
-                <label for="questionFilterStatus">Status</label>
-                <select id="questionFilterStatus">
-                  <option value="">All statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Archived">Archived</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="table-wrapper">
-              <table class="management-table">
-                <thead>
-                  <tr>
-                    <th>Question Text</th>
-                    <th>Category</th>
-                    <th>Difficulty</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="questionsTableBody"></tbody>
-              </table>
-            </div>
-
-            <div class="empty-state" id="questionsEmpty" style="display:none;">
-              <div class="empty-title">No assessment questions yet</div>
-              <div>Create your first question to make assessments available to specialists.</div>
-              <div class="empty-actions">
-                <button class="ghost small" type="button" onclick="openQuestionModalForCreate()">Add Question</button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-    </div>
+        </div>
+      </section>
+    </main>
   </div>
 
   <!-- ========= MODALS ========= -->
@@ -390,6 +313,15 @@
             <label for="centerPhotoFile">Photo</label>
             <input id="centerPhotoFile" type="file" accept="image/*" />
             <p class="hint">Upload a center photo (optional).</p>
+          </div>
+        </div>
+        <input type="hidden" id="centerCoverInput" />
+        <div class="photo-input">
+          <div class="cover preview" id="centerCoverPreview"></div>
+          <div class="input-group">
+            <label for="centerCoverFile">Cover</label>
+            <input id="centerCoverFile" type="file" accept="image/*" />
+            <p class="hint">Upload a center cover photo (optional).</p>
           </div>
         </div>
         <div class="input-group">
@@ -603,6 +535,13 @@
     </div>
   </div>
 
+  <script src="../ui-shell.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
   <script src="admin.js"></script>
 </body>
 </html>

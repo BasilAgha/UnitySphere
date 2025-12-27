@@ -12,12 +12,16 @@ let currentChildProfile = null;
 // ------------- INIT -------------
 document.addEventListener("DOMContentLoaded", () => {
   initModalClose();
-  initCompactMode();
+  initShell();
 
   // user chip
   const nameEl = document.getElementById("currentUserName");
   if (nameEl) nameEl.textContent = specialistUser.name || specialistUser.username || "Specialist";
   setSpecialistAvatar();
+
+  document.addEventListener("unitysphere:search", (event) => {
+    applyGlobalSearch(event.detail.query);
+  });
 
   // nav
   document.querySelectorAll(".nav-link").forEach(btn => {
@@ -25,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const section = btn.dataset.section;
       switchSection(section);
       updateSectionContext(section);
+      updateHeaderTitle(section);
       loadSection(section);
     });
   });
@@ -38,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setButtonLoading(btn, true, "Refreshing...");
     const active = document.querySelector(".section.active")?.id.replace("section-", "") || "overview";
     updateSectionContext(active);
+    updateHeaderTitle(active);
     loadSection(active);
     setTimeout(() => setButtonLoading(btn, false), 400);
   });
@@ -78,8 +84,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // initial section
   updateSectionContext("overview");
+  updateHeaderTitle("overview");
   loadSection("overview");
 });
+
+function initShell() {
+  const sidebarHost = document.getElementById("appSidebar");
+  const headerHost = document.getElementById("appHeader");
+  if (!sidebarHost || !headerHost || !window.UnitySphereShell) return;
+  const sidebar = window.UnitySphereShell.buildSidebar({ role: "specialist", active: "specialists" });
+  const header = window.UnitySphereShell.buildHeader({ title: "Specialist Dashboard" });
+  sidebarHost.replaceWith(sidebar);
+  headerHost.replaceWith(header);
+  window.UnitySphereShell.wireEscManager();
+}
 
 function initChildProfileTabs() {
   const modal = document.getElementById("childProfileModal");
@@ -108,8 +126,41 @@ function setSpecialistAvatar() {
   const name = specialistUser.name || specialistUser.username || "Specialist";
   const photo = specialistUser.photo || specialistUser.photo_url || "";
   if (typeof applyAvatarFallbackToSelector === "function") {
-    applyAvatarFallbackToSelector(".sidebar .avatar", name, photo);
+    applyAvatarFallbackToSelector("#specialistUserAvatar", name, photo);
+    return;
   }
+  const avatar = document.getElementById("specialistUserAvatar");
+  if (!avatar) return;
+  if (photo) {
+    avatar.style.backgroundImage = `url('${photo}')`;
+    avatar.classList.add("has-photo");
+    avatar.removeAttribute("data-initials");
+  } else {
+    avatar.style.backgroundImage = "";
+    avatar.classList.remove("has-photo");
+    avatar.setAttribute("data-initials", getInitials(name));
+  }
+}
+
+function updateHeaderTitle(section) {
+  const title = document.querySelector(".shell-header .title");
+  if (!title) return;
+  const map = {
+    overview: "Specialist Dashboard",
+    children: "My Children",
+    assessments: "Assessments"
+  };
+  title.textContent = map[section] || "Specialist Dashboard";
+}
+
+function applyGlobalSearch(query) {
+  const term = String(query || "").trim().toLowerCase();
+  const section = document.querySelector(".section.active");
+  if (!section) return;
+  section.querySelectorAll(".card, .stat-card, .module-card, .specialist-card").forEach(card => {
+    const match = !term || card.textContent.toLowerCase().includes(term);
+    card.classList.toggle("search-hidden", !match);
+  });
 }
 
 function updateSectionContext(section) {
