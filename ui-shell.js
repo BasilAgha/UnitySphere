@@ -1,161 +1,142 @@
 (function () {
-  const NAV_ITEMS = {
-    admin: [
-      { id: "dashboard", label: "Dashboard", icon: "D" },
-      { id: "centers", label: "Centers", icon: "C" },
-      { id: "locations", label: "Locations", icon: "L" },
-      { id: "specialists", label: "Specialists", icon: "S" },
-      { id: "vr-modules", label: "VR Modules", icon: "V" },
-      { id: "assessment", label: "Assessment", icon: "A" },
-      { id: "settings", label: "Settings", icon: "G" }
-    ],
-    center: [
-      { id: "overview", label: "Overview", icon: "O", section: "overview" },
-      { id: "specialists", label: "Specialists", icon: "S", section: "specialists" },
-      { id: "children", label: "Children", icon: "C", section: "children" },
-      { id: "modules", label: "VR Modules", icon: "V", section: "modules" }
-    ],
-    specialist: [
-      { id: "overview", label: "Overview", icon: "O", section: "overview" },
-      { id: "children", label: "Children", icon: "C", section: "children" },
-      { id: "assessments", label: "Assessments", icon: "A", section: "assessments" }
-    ]
-  };
+  const NAV_ITEMS = [
+    { id: "dashboard", label: "Dashboard", roles: ["admin"] },
+    { id: "centers", label: "Centers", roles: ["admin", "center"] },
+    { id: "locations", label: "Locations", roles: ["admin"] },
+    { id: "specialists", label: "Specialists", roles: ["admin", "center", "specialist"] },
+    { id: "vr-modules", label: "VR Modules", roles: ["admin", "center", "specialist"] },
+    { id: "assessment", label: "Assessment", roles: ["admin", "specialist"] },
+    { id: "settings", label: "Settings", roles: ["admin", "center", "specialist"] },
+  ];
 
-  function buildSidebar({ role, active } = {}) {
-    const resolvedRole = role || "admin";
-    const items = NAV_ITEMS[resolvedRole] || NAV_ITEMS.admin;
+  function applyTheme(value) {
+    const theme = value === "dark" ? "dark" : "light";
+    document.body.dataset.theme = theme;
+    localStorage.setItem("unitysphere:theme", theme);
+    return theme;
+  }
+
+  function updateThemeToggle(button, theme) {
+    if (!button) return;
+    button.innerHTML = theme === "light" ? "🌙" : "☀️";
+    button.setAttribute(
+      "aria-label",
+      theme === "light" ? "Switch to dark theme" : "Switch to light theme"
+    );
+  }
+
+  function bindThemeToggle(root) {
+    const btn = root.querySelector("[data-theme-toggle]");
+    if (!btn) return;
+    const stored = localStorage.getItem("unitysphere:theme") || "light";
+    const current = applyTheme(stored);
+    updateThemeToggle(btn, current);
+    btn.addEventListener("click", () => {
+      const next = document.body.dataset.theme === "light" ? "dark" : "light";
+      const applied = applyTheme(next);
+      updateThemeToggle(btn, applied);
+    });
+  }
+
+  function buildSidebar({ role, active }) {
     const sidebar = document.createElement("aside");
     sidebar.className = "sidebar";
 
-    const brand = document.createElement("div");
-    brand.className = "sidebar-brand";
-    brand.innerHTML =
-      "<img class=\"brand-logo\" src=\"Logo 02.png\" alt=\"UnitySphere logo\" />" +
-      "<div class=\"brand-text\">" +
-      "<div id=\"brandName\">UnitySphere</div>" +
-      "<div id=\"brandRole\" class=\"hint\">Workspace</div>" +
-      "</div>";
+    const logo = document.createElement("div");
+    logo.className = "logo";
+    logo.innerHTML = '<span class="logo-mark"></span><span>UnitySphere</span>';
+    sidebar.appendChild(logo);
 
-    const nav = document.createElement("nav");
-    nav.className = "sidebar-nav";
-    items.forEach(item => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "sidebar-link" + (item.id === active ? " active" : "");
-      btn.dataset.nav = item.id;
-      if (item.section) {
-        btn.dataset.section = item.section;
+    const list = document.createElement("ul");
+    list.className = "nav-list";
+
+    NAV_ITEMS.forEach((item) => {
+      const li = document.createElement("li");
+      const link = document.createElement("a");
+      link.className = "nav-item";
+      link.dataset.nav = item.id;
+      link.textContent = item.label;
+
+      if (active === item.id) {
+        link.classList.add("active");
       }
-      btn.innerHTML =
-        "<span class=\"nav-icon\">" + item.icon + "</span>" +
-        "<span class=\"nav-label\">" + item.label + "</span>";
-      nav.appendChild(btn);
+
+      if (role && item.roles && !item.roles.includes(role)) {
+        link.classList.add("disabled");
+        link.setAttribute("aria-disabled", "true");
+        link.tabIndex = -1;
+      }
+
+      li.appendChild(link);
+      list.appendChild(li);
     });
 
-    const user = document.createElement("div");
-    user.className = "sidebar-user";
-    const nameId = resolvedRole === "admin" ? "currentUserName" : "sidebarUserName";
-    const roleId = resolvedRole === "admin" ? "currentUserRole" : "sidebarUserRole";
-    user.innerHTML =
-      "<div class=\"avatar\" data-initials=\"US\"></div>" +
-      "<div class=\"user-meta\">" +
-      "<div id=\"" + nameId + "\">User</div>" +
-      "<div id=\"" + roleId + "\" class=\"hint\">Role</div>" +
-      "</div>";
-
-    sidebar.appendChild(brand);
-    sidebar.appendChild(nav);
-    sidebar.appendChild(user);
-
-    sidebar.addEventListener("click", event => {
-      const btn = event.target.closest(".sidebar-link");
-      if (!btn) return;
-      if (btn.dataset.section) {
-        const tab = document.querySelector(
-          ".section-tabs [data-section=\"" + btn.dataset.section + "\"]"
-        );
-        if (tab) tab.click();
-      }
-    });
-
+    sidebar.appendChild(list);
     return sidebar;
   }
 
-  function buildHeader({ title } = {}) {
+  function buildHeader({ title }) {
     const header = document.createElement("header");
     header.className = "shell-header";
 
-    const left = document.createElement("div");
-    left.className = "header-left";
-    left.innerHTML =
-      "<button class=\"menu-toggle\" aria-label=\"Toggle navigation\" type=\"button\">|||</button>" +
-      "<div class=\"title\">" + (title || "") + "</div>";
+    const inner = document.createElement("div");
+    inner.className = "shell-header-inner";
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "title";
+    titleEl.textContent = title || "";
+    if (!title) {
+      titleEl.style.display = "none";
+      header.classList.add("no-title");
+    }
 
     const actions = document.createElement("div");
     actions.className = "header-actions";
 
-    const search = document.createElement("input");
-    search.type = "search";
-    search.className = "shell-search";
-    search.placeholder = "Search";
-    search.setAttribute("aria-label", "Search");
-    search.addEventListener("input", () => {
-      const event = new CustomEvent("unitysphere:search", {
-        detail: { query: search.value }
-      });
-      document.dispatchEvent(event);
-    });
+    const theme = document.createElement("button");
+    theme.className = "icon-button";
+    theme.type = "button";
+    theme.innerHTML = "🌙";
+    theme.setAttribute("aria-label", "Switch to dark theme");
+    theme.dataset.themeToggle = "true";
 
-    actions.appendChild(search);
-    header.appendChild(left);
-    header.appendChild(actions);
+    const language = document.createElement("button");
+    language.className = "icon-button";
+    language.type = "button";
+    language.innerHTML = "🌐";
+    language.setAttribute("aria-label", "Language");
 
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = "US";
+
+    actions.append(theme, language, avatar);
+    inner.append(titleEl, actions);
+    header.append(inner);
+    bindThemeToggle(header);
     return header;
   }
 
-  function setActiveNavItem(sidebar, sectionName) {
-    if (!sidebar) return;
-    sidebar.querySelectorAll("[data-nav]").forEach(link => {
-      link.classList.toggle("active", link.dataset.nav === sectionName);
-    });
-  }
-
-  function applyTheme(theme) {
-    const value = "dark";
-    document.body.dataset.theme = value;
-    try {
-      localStorage.setItem("unitysphere:theme", value);
-    } catch {
-      // ignore storage failures
-    }
+  function setActiveNavItem(root, active) {
+    const items = root.querySelectorAll("[data-nav]");
+    items.forEach((item) => item.classList.toggle("active", item.dataset.nav === active));
   }
 
   function wireEscManager() {
-    if (document.body.dataset.shellWired === "true") return;
-    document.body.dataset.shellWired = "true";
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
 
-    let backdrop = document.querySelector(".sidebar-backdrop");
-    if (!backdrop) {
-      backdrop = document.createElement("div");
-      backdrop.className = "sidebar-backdrop";
-      document.body.appendChild(backdrop);
-    }
+      document.querySelectorAll(".modal.open, .modal[open]").forEach((modal) => {
+        if (typeof modal.close === "function") {
+          modal.close();
+        } else {
+          modal.classList.remove("open");
+        }
+      });
 
-    document.body.addEventListener("click", event => {
-      const toggle = event.target.closest(".menu-toggle");
-      if (!toggle) return;
-      document.body.classList.toggle("sidebar-open");
-    });
-
-    backdrop.addEventListener("click", () => {
-      document.body.classList.remove("sidebar-open");
-    });
-
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") {
-        document.body.classList.remove("sidebar-open");
-      }
+      document.querySelectorAll(".flip-card.flipped").forEach((card) => {
+        card.classList.remove("flipped");
+      });
     });
   }
 
@@ -163,7 +144,8 @@
     buildSidebar,
     buildHeader,
     setActiveNavItem,
+    wireEscManager,
     applyTheme,
-    wireEscManager
+    bindThemeToggle,
   };
 })();
