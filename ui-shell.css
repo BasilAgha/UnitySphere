@@ -176,9 +176,9 @@ body[data-theme="light"] .shell-header .header-actions {
 
 .shell-header-inner {
   width: 100%;
-  max-width: var(--shell-content-width);
-  margin: 0 auto;
-  padding: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0 24px;
   height: 100%;
   display: flex;
   align-items: center;

@@ -21,7 +21,6 @@ let lastUpdatedAt = null;
 const SECTION_TITLES = {
   dashboard: 'Dashboard',
   centers: 'Centers',
-  locations: 'Locations',
   specialists: 'Specialists',
   'vr-modules': 'VR Modules',
   assessment: 'Assessment',
@@ -32,7 +31,6 @@ let shellHeader = null;
 let charts = {};
 let centersMap = null;
 let centersMapMarkers = [];
-let locationsMap = null;
 let lastSearchQuery = '';
 let assessmentCharts = {};
 let assessmentChildrenCache = [];
@@ -97,14 +95,25 @@ function apiRequest(action, params = {}) {
 // ===== UI HELPERS =====
 function setButtonLoading(btn, isLoading, loadingLabel = 'Loading...') {
   if (!btn) return;
+  const isIconButton = btn.classList.contains('icon-action');
   if (isLoading) {
-    btn.dataset.originalText = btn.textContent;
-    btn.textContent = loadingLabel;
-    btn.classList.add('btn-loading');
+    if (isIconButton) {
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
+    } else {
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = loadingLabel;
+      btn.classList.add('btn-loading');
+    }
     btn.disabled = true;
   } else {
-    btn.textContent = btn.dataset.originalText || btn.textContent;
-    btn.classList.remove('btn-loading');
+    if (isIconButton) {
+      btn.classList.remove('is-loading');
+      btn.removeAttribute('aria-busy');
+    } else {
+      btn.textContent = btn.dataset.originalText || btn.textContent;
+      btn.classList.remove('btn-loading');
+    }
     btn.disabled = false;
   }
 }
@@ -216,18 +225,17 @@ function initShell() {
 function initSettingsControls() {
   const themeBtn = document.getElementById('themeToggleBtn');
   const langBtn = document.getElementById('languageToggleBtn');
-  const storedTheme = localStorage.getItem('unitysphere:theme') || 'light';
   const storedLang = localStorage.getItem('unitysphere:language') || 'en';
 
-  applyThemePreference(storedTheme);
+  applyThemePreference('dark');
   applyLanguagePreference(storedLang);
   updateProfileSummary();
 
-  themeBtn?.addEventListener('click', () => {
-    const next = document.body.dataset.theme === 'light' ? 'dark' : 'light';
-    applyThemePreference(next);
-    localStorage.setItem('unitysphere:theme', next);
-  });
+  if (themeBtn) {
+    themeBtn.textContent = 'Theme: Dark';
+    themeBtn.disabled = true;
+    themeBtn.title = 'Theme is locked to dark mode';
+  }
 
   langBtn?.addEventListener('click', () => {
     const next = document.documentElement.lang === 'ar' ? 'en' : 'ar';
@@ -238,14 +246,14 @@ function initSettingsControls() {
 
 function applyThemePreference(theme) {
   const themeBtn = document.getElementById('themeToggleBtn');
-  const value = theme === 'dark' ? 'dark' : 'light';
+  const value = 'dark';
   if (window.UnitySphereShell?.applyTheme) {
     window.UnitySphereShell.applyTheme(value);
   } else {
     document.body.dataset.theme = value;
     localStorage.setItem('unitysphere:theme', value);
   }
-  if (themeBtn) themeBtn.textContent = `Theme: ${value === 'light' ? 'Light' : 'Dark'}`;
+  if (themeBtn) themeBtn.textContent = 'Theme: Dark';
 }
 
 function applyLanguagePreference(lang) {
@@ -293,7 +301,6 @@ function refreshSection(section) {
   switch (section) {
     case 'dashboard': loadDashboard(); break;
     case 'centers': loadCenters(); break;
-    case 'locations': initLocationsMap(); break;
     case 'specialists': loadSpecialists(); break;
     case 'vr-modules': loadModules(); break;
     case 'assessment': loadAssessmentSection(); break;
@@ -389,7 +396,10 @@ async function loadCenters() {
 
       grid.appendChild(card);
     });
-    grid.addEventListener('click', handleCenterCardClick, { once: true });
+    if (!grid.dataset.listener) {
+      grid.addEventListener('click', handleCenterCardClick);
+      grid.dataset.listener = 'true';
+    }
   } else if (tableWrap) {
     const sort = sortState.centers;
     const sorted = [...centers].sort((a, b) => {
@@ -433,7 +443,10 @@ async function loadCenters() {
     `;
     tableWrap.innerHTML = '';
     tableWrap.appendChild(table);
-    table.addEventListener('click', handleCenterCardClick, { once: true });
+    if (tableWrap && !tableWrap.dataset.listener) {
+      tableWrap.addEventListener('click', handleCenterCardClick);
+      tableWrap.dataset.listener = 'true';
+    }
     table.querySelectorAll('th[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const key = th.getAttribute('data-sort');
@@ -998,15 +1011,23 @@ async function loadModules() {
   if (!data.success) return;
 
   const modules = data.modules || [];
+  const seenModuleKeys = new Set();
+  const uniqueModules = [];
+  modules.forEach(m => {
+    const key = String(m.module_id ?? m.id ?? m.name ?? '');
+    if (!key || seenModuleKeys.has(key)) return;
+    seenModuleKeys.add(key);
+    uniqueModules.push(m);
+  });
   markDataUpdated();
-  const hasData = modules.length > 0;
+  const hasData = uniqueModules.length > 0;
   empty.style.display = hasData ? 'none' : 'block';
   grid.style.display = view === 'card' ? 'grid' : 'none';
   if (tableWrap) tableWrap.style.display = view === 'table' ? 'block' : 'none';
   if (!hasData) return;
 
   if (view === 'card') {
-    modules.forEach(m => {
+    uniqueModules.forEach(m => {
       const domains = getModuleDomains(m);
       const difficulty = formatModuleStars(m.difficulty || m.level || 3);
       const usage = m.usage_count || m.num_sessions || m.num_centers_assigned || 0;
@@ -1059,7 +1080,7 @@ async function loadModules() {
     }
   } else if (tableWrap) {
     const sort = sortState.modules;
-    const sorted = [...modules].sort((a, b) => {
+    const sorted = [...uniqueModules].sort((a, b) => {
       if (!sort.key) return 0;
       const av = a[sort.key] || '';
       const bv = b[sort.key] || '';
@@ -1246,6 +1267,7 @@ async function loadAssessmentChildren() {
     String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' })
   );
   renderAssessmentChildrenList(assessmentChildrenCache);
+  renderAssessmentChildSelect(assessmentChildrenCache);
 }
 
 function renderAssessmentChildrenList(children) {
@@ -1260,6 +1282,18 @@ function renderAssessmentChildrenList(children) {
     btn.dataset.childId = child.child_id;
     btn.textContent = child.name || `Child ${child.child_id}`;
     list.appendChild(btn);
+  });
+}
+
+function renderAssessmentChildSelect(children) {
+  const select = document.getElementById('assessmentChildSelect');
+  if (!select) return;
+  select.innerHTML = '<option value="">Select child</option>';
+  children.forEach(child => {
+    const option = document.createElement('option');
+    option.value = child.child_id;
+    option.textContent = child.name || `Child ${child.child_id}`;
+    select.appendChild(option);
   });
 }
 
@@ -2180,34 +2214,6 @@ function renderCentersMap(centers) {
   centersMap.fitBounds(bounds.pad(0.2));
 }
 
-function initLocationsMap() {
-  const status = document.getElementById('locationsMapStatus');
-  if (!window.L) {
-    if (status) status.textContent = 'Map unavailable.';
-    return;
-  }
-
-  if (locationsMap) return;
-
-  locationsMap = L.map('locationsMap', { zoomControl: false }).setView([39.5, -98.35], 4);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(locationsMap);
-
-  const icon = buildPurpleIcon();
-  const points = [
-    [34.05, -118.24],
-    [41.88, -87.62],
-    [29.76, -95.36],
-    [40.71, -74.0]
-  ];
-  points.forEach(([lat, lng]) => {
-    L.marker([lat, lng], { icon }).addTo(locationsMap);
-  });
-
-  if (status) status.textContent = 'Locations live across key regions.';
-}
-
 function initAuthGuard() {
   const role = localStorage.getItem('role');
   if (role !== 'admin') {
@@ -2235,8 +2241,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const childSearch = document.getElementById('assessmentChildSearch');
   const childList = document.getElementById('assessmentChildList');
+  const childSelect = document.getElementById('assessmentChildSelect');
   childSearch?.addEventListener('input', () => {
     const term = childSearch.value.trim().toLowerCase();
+    if (childSelect) childSelect.value = '';
     const filtered = assessmentChildrenCache.filter(child =>
       String(child.name || '').toLowerCase().includes(term)
     );
@@ -2246,7 +2254,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const option = event.target.closest('[data-child-id]');
     if (!option) return;
     childSearch.value = option.textContent;
+    if (childSelect) childSelect.value = option.dataset.childId;
     handleAssessmentChildSelect(option.dataset.childId);
+  });
+  childSelect?.addEventListener('change', () => {
+    const selectedId = childSelect.value;
+    if (!selectedId) return;
+    const child = assessmentChildrenCache.find(item => String(item.child_id) === String(selectedId));
+    if (childSearch) childSearch.value = child?.name || '';
+    handleAssessmentChildSelect(selectedId);
   });
 
   initSettingsControls();

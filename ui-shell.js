@@ -2,7 +2,6 @@
   const NAV_ITEMS = [
     { id: "dashboard", label: "Dashboard", roles: ["admin"] },
     { id: "centers", label: "Centers", roles: ["admin", "center"] },
-    { id: "locations", label: "Locations", roles: ["admin"] },
     { id: "specialists", label: "Specialists", roles: ["admin", "center", "specialist"] },
     { id: "vr-modules", label: "VR Modules", roles: ["admin", "center", "specialist"] },
     { id: "assessment", label: "Assessment", roles: ["admin", "specialist"] },

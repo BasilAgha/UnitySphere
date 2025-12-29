@@ -1,4 +1,18 @@
 // Smooth scroll for nav + footer links
+const prefersReducedMotion =
+  window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const scrollBehavior = prefersReducedMotion ? "auto" : "smooth";
+
+function debounce(fn, wait = 100) {
+  let timerId;
+  return (...args) => {
+    if (timerId) clearTimeout(timerId);
+    timerId = setTimeout(() => fn(...args), wait);
+  };
+}
+
 const scrollLinks = document.querySelectorAll("[data-scroll]");
 
 scrollLinks.forEach(link => {
@@ -8,7 +22,7 @@ scrollLinks.forEach(link => {
     if (!targetSelector) return;
     const target = document.querySelector(targetSelector);
     if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.scrollIntoView({ behavior: scrollBehavior, block: "start" });
     }
   });
 });
@@ -18,6 +32,7 @@ const sections = ["#home", "#about", "#world", "#team", "#contact"].map(id =>
   document.querySelector(id)
 );
 const navLinks = document.querySelectorAll(".nav-link");
+const scrollTopBtn = document.getElementById("scrollTopBtn");
 
 function updateActiveNav() {
   const scrollY = window.scrollY;
@@ -37,8 +52,20 @@ function updateActiveNav() {
   });
 }
 
-window.addEventListener("scroll", updateActiveNav);
-updateActiveNav();
+function updateScrollTopVisibility() {
+  if (!scrollTopBtn) return;
+  const show = window.scrollY > 300;
+  scrollTopBtn.style.opacity = show ? "1" : "0";
+  scrollTopBtn.style.pointerEvents = show ? "auto" : "none";
+}
+
+const handleScroll = debounce(() => {
+  updateActiveNav();
+  updateScrollTopVisibility();
+}, 100);
+
+window.addEventListener("scroll", handleScroll, { passive: true });
+handleScroll();
 
 // Scroll reveal
 const revealEls = document.querySelectorAll(".reveal-on-scroll");
@@ -69,26 +96,59 @@ const heroText = document.getElementById("heroText");
 const heroCounter = document.getElementById("heroCounter");
 const heroDotsContainer = document.getElementById("heroDots");
 
+function loadBackgroundImage(el) {
+  if (!el || el.dataset.bgLoaded === "true") return;
+  const bg = el.getAttribute("data-bg");
+  if (!bg) return;
+  el.style.backgroundImage = `url("${bg}")`;
+  el.dataset.bgLoaded = "true";
+}
+
+function observeLazyBackgrounds() {
+  const lazyEls = document.querySelectorAll("[data-bg]");
+  if (!("IntersectionObserver" in window)) {
+    lazyEls.forEach(el => loadBackgroundImage(el));
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          loadBackgroundImage(entry.target);
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { rootMargin: "200px 0px" }
+  );
+
+  lazyEls.forEach(el => {
+    if (el.classList.contains("hero-slide")) return;
+    observer.observe(el);
+  });
+}
+
 const heroContent = [
   {
     title: "For The Minds of Tomorrow",
     text:
-      "Empowering learners through immersive, AI-driven VR experiences designed to inspire curiosity, confidence, and growth."
+      "AI-guided VR experiences that build curiosity, confidence, and steady growth."
   },
   {
     title: "Our Belief",
     text:
-      "We believe everyone deserves to learn in the way that works best for them — personalized, engaging, and built around their unique strengths."
+      "We believe everyone deserves learning that fits their strengths and pace."
   },
   {
     title: "Our Vision",
     text:
-      "To make advanced, accessible learning tools available in every home, school, and center, giving every learner equal opportunities to succeed."
+      "Accessible learning tools for every home, school, and center."
   },
   {
     title: "Our Approach",
     text:
-      "By combining virtual reality with intelligent guidance, we create interactive sessions that make learning immersive, enjoyable, and truly effective."
+      "Virtual reality with intelligent guidance for calm, effective learning."
   }
 ];
 
@@ -115,6 +175,7 @@ function goToHeroSlide(index, manual = false) {
   heroSlides.forEach((slide, idx) => {
     slide.classList.toggle("active", idx === heroIndex);
   });
+  loadBackgroundImage(heroSlides[heroIndex]);
 
   // use the matching hero text
   const content = heroContent[heroIndex] || heroContent[0];
@@ -130,6 +191,7 @@ function goToHeroSlide(index, manual = false) {
 }
 
 function startHeroTimer() {
+  if (prefersReducedMotion) return;
   heroTimer = setInterval(() => {
     goToHeroSlide(heroIndex + 1);
   }, 6000);
@@ -145,6 +207,7 @@ if (heroSlides.length) {
   startHeroTimer();
 }
 
+observeLazyBackgrounds();
 
 // WORLD CAROUSEL
 const worldTrack = document.querySelector(".world-track");
@@ -178,18 +241,11 @@ if (worldPrev && worldNext && worldCards.length) {
 }
 
 // Scroll to top button
-const scrollTopBtn = document.getElementById("scrollTopBtn");
-
 if (scrollTopBtn) {
   scrollTopBtn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: scrollBehavior });
   });
-
-  window.addEventListener("scroll", () => {
-    const show = window.scrollY > 300;
-    scrollTopBtn.style.opacity = show ? "1" : "0";
-    scrollTopBtn.style.pointerEvents = show ? "auto" : "none";
-  });
+  updateScrollTopVisibility();
 }
 
 // THEME TOGGLE (DARK / LIGHT)

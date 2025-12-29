@@ -7,10 +7,10 @@
   --accent: #22d3ee;
 
   --text: #ffffff;
-  --text-muted: #94a3b8;
+  --text-muted: #8794aa;
   --border: rgba(148, 163, 184, 0.2);
-  --shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-  --radius: 16px;
+  --shadow: 0 14px 32px rgba(0, 0, 0, 0.28), 0 6px 16px rgba(0, 0, 0, 0.22);
+  --radius: 18px;
 
   --hero-overlay-start: rgba(5, 11, 29, 0.7);
   --hero-overlay-end: rgba(5, 11, 29, 0.95);
@@ -27,9 +27,9 @@ body[data-theme="light"] {
   --accent: #0ea5e9;
 
   --text: #020617;
-  --text-muted: #6b7280;
+  --text-muted: #7a8697;
   --border: rgba(148, 163, 184, 0.3);
-  --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --shadow: 0 14px 30px rgba(15, 23, 42, 0.08), 0 6px 14px rgba(15, 23, 42, 0.06);
 
   --hero-overlay-start: rgba(15, 23, 42, 0.55);
   --hero-overlay-end: rgba(15, 23, 42, 0.85);
@@ -61,7 +61,7 @@ body {
   background:
     radial-gradient(circle at 10% 20%, rgba(115, 91, 255, 0.15), transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.12), transparent 50%);
-  opacity: 0.8;
+  opacity: 0.68;
   z-index: -1;
   animation: bgFloat 20s ease-in-out infinite alternate;
 }
@@ -115,11 +115,11 @@ body[data-theme="light"] .navbar {
   justify-content: center;
   font-weight: 700;
   font-size: 0.9rem;
-  box-shadow: 0 0 30px rgba(115, 91, 255, 0.5);
+  box-shadow: 0 0 26px rgba(115, 91, 255, 0.42);
 }
 
 body[data-theme="light"] .logo-circle {
-  box-shadow: 0 0 40px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 0 34px rgba(79, 70, 229, 0.38);
 }
 
 .logo-text {
@@ -158,6 +158,10 @@ body[data-theme="light"] .logo-circle {
   width: 100%;
 }
 
+.nav-link:hover {
+  color: var(--accent);
+}
+
 /* Navbar actions (dashboard + theme toggle) */
 .nav-actions {
   display: flex;
@@ -168,7 +172,7 @@ body[data-theme="light"] .logo-circle {
 /* Buttons */
 .btn-primary {
   padding: 0.75rem 1.75rem;
-  border-radius: 999px;
+  border-radius: 16px;
   background: linear-gradient(135deg, var(--primary), var(--primary));
   color: white;
   font-weight: 600;
@@ -178,20 +182,21 @@ body[data-theme="light"] .logo-circle {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 10px 30px rgba(115, 91, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(115, 91, 255, 0.34);
   transition: all 0.3s ease;
   white-space: nowrap;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 15px 40px rgba(115, 91, 255, 0.6);
+  box-shadow: 0 12px 34px rgba(115, 91, 255, 0.5);
+  filter: brightness(1.05);
 }
 
 /* Theme toggle button */
 .theme-toggle {
   padding: 0.55rem 1rem;
-  border-radius: 999px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: rgba(15, 23, 41, 0.6);
   color: var(--text);
@@ -200,7 +205,7 @@ body[data-theme="light"] .logo-circle {
   align-items: center;
   gap: 0.4rem;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   white-space: nowrap;
 }
 
@@ -226,13 +231,13 @@ body[data-theme="light"] .theme-toggle::before {
 /* Outline button if needed */
 .btn-outline {
   padding: 0.75rem 1.75rem;
-  border-radius: 12px;
+  border-radius: 14px;
   background: transparent;
   color: var(--text);
   font-weight: 500;
   border: 1px solid var(--border);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
 
 .btn-outline:hover {
@@ -262,6 +267,7 @@ body[data-theme="light"] .theme-toggle::before {
   inset: 0;
   background-size: cover;
   background-position: center;
+  min-height: 100vh;
   opacity: 0;
   transition: opacity 1s ease;
 }
@@ -299,6 +305,7 @@ body[data-theme="light"] .theme-toggle::before {
   color: var(--accent);
   margin-bottom: 1.25rem;
   opacity: 0.9;
+  text-shadow: 0 4px 16px rgba(5, 11, 29, 0.35);
 }
 
 .hero-title {
@@ -306,7 +313,8 @@ body[data-theme="light"] .theme-toggle::before {
   font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: 800;
   margin-bottom: 1.5rem;
-  line-height: 1.1;
+  line-height: 1.06;
+  text-shadow: 0 8px 24px rgba(5, 11, 29, 0.45);
   animation: fadeInUp 0.8s ease;
 }
 
@@ -315,6 +323,7 @@ body[data-theme="light"] .theme-toggle::before {
   color: var(--text-muted);
   max-width: 700px;
   margin: 0 auto 2rem;
+  text-shadow: 0 6px 20px rgba(5, 11, 29, 0.35);
   animation: fadeInUp 0.8s ease 0.2s backwards;
 }
 
@@ -331,20 +340,20 @@ body[data-theme="light"] .theme-toggle::before {
   color: #fff;
   border: none;
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(115, 91, 255, 0.45);
-  transition: all 0.25s ease;
+  box-shadow: 0 8px 22px rgba(115, 91, 255, 0.38);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
   margin-top: 1.4rem;
 }
 
 .hero-cta:hover {
   transform: translateY(-3px);
-  box-shadow: 0 15px 35px rgba(115, 91, 255, 0.6);
+  box-shadow: 0 12px 30px rgba(115, 91, 255, 0.5);
   opacity: 0.95;
 }
 
 .hero-cta:active {
   transform: scale(0.97);
-  box-shadow: 0 8px 20px rgba(115, 91, 255, 0.35);
+  box-shadow: 0 6px 16px rgba(115, 91, 255, 0.3);
 }
 
 .hero-cta a {
@@ -371,7 +380,12 @@ body[data-theme="light"] .theme-toggle::before {
 .hero-dot.active {
   width: 32px;
   background: var(--primary);
-  box-shadow: 0 0 20px rgba(115, 91, 255, 0.8);
+  box-shadow: 0 0 16px rgba(115, 91, 255, 0.68);
+}
+
+.hero-dot:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* Counter under dots */
@@ -406,7 +420,7 @@ body[data-theme="light"] .theme-toggle::before {
 .section-title {
   font-family: "Poppins", sans-serif;
   font-size: clamp(2rem, 4vw, 3.5rem);
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 1rem;
 }
 
@@ -434,13 +448,13 @@ body[data-theme="light"] .theme-toggle::before {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 2.5rem 2rem;
-  transition: all 0.3s ease;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
 
 .benefit-card:hover {
   transform: translateY(-5px);
   border-color: rgba(115, 91, 255, 0.4);
-  box-shadow: 0 20px 50px rgba(115, 91, 255, 0.2);
+  box-shadow: 0 16px 36px rgba(115, 91, 255, 0.18), 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 .benefit-icon {
@@ -526,6 +540,13 @@ body[data-theme="light"] .theme-toggle::before {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr);
   gap: 2rem;
+  min-height: 320px;
+  transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.world-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(115, 91, 255, 0.35);
 }
 
 .world-scene {
@@ -564,18 +585,24 @@ body[data-theme="light"] .theme-toggle::before {
   border-radius: 999px;
   font-size: 0.85rem;
   color: var(--primary);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.world-pill:hover {
+  transform: translateY(-2px);
+  border-color: rgba(115, 91, 255, 0.5);
 }
 
 .world-btn {
   align-self: flex-start;
   padding: 0.75rem 1.75rem;
-  border-radius: 12px;
+  border-radius: 14px;
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
 
 .world-btn:hover {
@@ -594,7 +621,7 @@ body[data-theme="light"] .theme-toggle::before {
 .world-arrow {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: 14px;
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text);
@@ -602,7 +629,7 @@ body[data-theme="light"] .theme-toggle::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
 
 .world-arrow:hover {
@@ -628,13 +655,14 @@ body[data-theme="light"] .theme-toggle::before {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
   position: relative;
+  min-height: 380px;
 }
 
 .team-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 20px 50px rgba(115, 91, 255, 0.2);
+  box-shadow: 0 16px 40px rgba(115, 91, 255, 0.18), 0 6px 16px rgba(15, 23, 42, 0.22);
 }
 
 .team-photo {
@@ -642,6 +670,7 @@ body[data-theme="light"] .theme-toggle::before {
   background-size: cover;
   background-position: center;
   position: relative;
+  transition: transform 0.35s ease;
 }
 
 .team-photo::after {
@@ -649,6 +678,10 @@ body[data-theme="light"] .theme-toggle::before {
   position: absolute;
   inset: 0;
   background: linear-gradient(to bottom, transparent, rgba(5, 11, 29, 0.9));
+}
+
+.team-card:hover .team-photo {
+  transform: scale(1.03);
 }
 
 .team-body {
@@ -673,6 +706,12 @@ body[data-theme="light"] .theme-toggle::before {
   background: rgba(148, 163, 184, 0.15);
   border-radius: 999px;
   font-size: 0.8rem;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.team-pill:hover {
+  transform: translateY(-2px);
+  background: rgba(148, 163, 184, 0.22);
 }
 
 /* Team hover icons */
@@ -720,6 +759,12 @@ body[data-theme="light"] .theme-toggle::before {
   display: flex;
   flex-wrap: wrap;
   gap: 3rem;
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.contact-layout:hover {
+  border-color: rgba(115, 91, 255, 0.3);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.24);
 }
 
 .contact-text {
@@ -732,7 +777,7 @@ body[data-theme="light"] .theme-toggle::before {
 .contact-card {
   flex: 1 1 35%;
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid var(--border);
   padding: 2rem;
 }
@@ -752,6 +797,12 @@ body[data-theme="light"] .theme-toggle::before {
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.15);
   font-size: 0.85rem;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.contact-highlight-pill:hover {
+  transform: translateY(-2px);
+  background: rgba(148, 163, 184, 0.22);
 }
 
 .contact-highlight-dot {
@@ -774,6 +825,12 @@ body[data-theme="light"] .theme-toggle::before {
   border: 1px solid rgba(115, 91, 255, 0.3);
   font-size: 0.85rem;
   color: var(--primary);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.contact-badge:hover {
+  transform: translateY(-2px);
+  border-color: rgba(115, 91, 255, 0.5);
 }
 
 .contact-item {
@@ -848,7 +905,7 @@ body[data-theme="light"] .theme-toggle::before {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  box-shadow: 0 0 30px rgba(115, 91, 255, 0.6);
+  box-shadow: 0 0 26px rgba(115, 91, 255, 0.5);
 }
 
 .footer-logo-text {
@@ -880,7 +937,7 @@ body[data-theme="light"] .theme-toggle::before {
   justify-content: center;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .footer-social-circle:hover {
@@ -911,6 +968,7 @@ body[data-theme="light"] .theme-toggle::before {
   color: inherit;
   text-decoration: none;
   cursor: pointer;
+  transition: color 0.2s ease;
 }
 
 .footer-list a:hover {
@@ -945,7 +1003,7 @@ body[data-theme="light"] .theme-toggle::before {
   height: 220px;
   border-radius: 50%;
   filter: blur(60px);
-  opacity: 0.4;
+  opacity: 0.34;
   pointer-events: none;
 }
 
@@ -975,7 +1033,7 @@ body[data-theme="light"] .theme-toggle::before {
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(115, 91, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(115, 91, 255, 0.42);
   opacity: 0;
   pointer-events: none;
   transition: all 0.3s ease;
@@ -984,7 +1042,7 @@ body[data-theme="light"] .theme-toggle::before {
 
 #scrollTopBtn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 15px 40px rgba(115, 91, 255, 0.7);
+  box-shadow: 0 12px 34px rgba(115, 91, 255, 0.6);
 }
 
 /* Responsive */
@@ -1037,23 +1095,23 @@ body[data-theme="light"] .theme-toggle::before {
 
 /* ========== LIGHT THEME SECTION BACKGROUNDS ========== */
 body[data-theme="light"] .benefits {
-  background: radial-gradient(circle at 0% 0%, #e0e7ff, #f8fafc 60%);
+  background: radial-gradient(circle at 0% 0%, #dfe6ff, #f7fafc 60%);
 }
 
 body[data-theme="light"] .world {
-  background: radial-gradient(circle at 50% 0%, #e0f2fe, #f9fafb 70%);
+  background: radial-gradient(circle at 50% 0%, #dbeafe, #f8fafc 70%);
 }
 
 body[data-theme="light"] .team {
-  background: radial-gradient(circle at 100% 100%, #e5e7eb, #f9fafb 60%);
+  background: radial-gradient(circle at 100% 100%, #e3e8ef, #f8fafc 60%);
 }
 
 body[data-theme="light"] .contact {
-  background: radial-gradient(circle at 0 0, #e0e7ff, #f9fafb 60%);
+  background: radial-gradient(circle at 0 0, #dfe6ff, #f8fafc 60%);
 }
 
 body[data-theme="light"] .site-footer {
-  background: #f9fafb;
+  background: linear-gradient(180deg, #f6f7fb 0%, #f1f3f8 100%);
 }
 
 /* Light mode cards */
@@ -1080,11 +1138,12 @@ body[data-theme="light"] .contact-layout {
 
 /* Light mode hero tweaks */
 body[data-theme="light"] .hero-title {
-  text-shadow: 0 6px 24px rgba(15, 23, 42, 0.25);
+  text-shadow: 0 6px 20px rgba(15, 23, 42, 0.22);
 }
 
 body[data-theme="light"] .hero-text {
   color: var(--text-muted);
+  text-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
 }
 
 /* Light mode theme toggle */
@@ -1092,4 +1151,14 @@ body[data-theme="light"] .theme-toggle {
   background: #ffffff;
   border-color: rgba(148, 163, 184, 0.5);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-animated {
+    animation: none;
+  }
+
+  .hero-slide {
+    transition: none;
+  }
 }

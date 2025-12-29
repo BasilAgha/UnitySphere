@@ -587,40 +587,82 @@ button.chip {
 .assessment-selector label {
   display: block;
   margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.assessment-search-row {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
 }
 
 .child-dropdown {
   position: relative;
+  flex: 1 1 auto;
 }
 
 .child-dropdown input {
   border-radius: 16px;
-  padding: 0.85rem 1rem 0.85rem 2.6rem;
+  padding: 0.9rem 1rem 0.9rem 2.8rem;
   font-size: 0.95rem;
+  background: linear-gradient(180deg, rgba(18, 26, 40, 0.95), rgba(14, 20, 34, 0.98));
+  border: 1px solid rgba(120, 131, 230, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  transition: border 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
 .child-dropdown::before {
   content: "🔎";
   position: absolute;
-  left: 16px;
+  left: 18px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.95rem;
-  color: rgba(124, 58, 237, 0.6);
+  color: rgba(111, 217, 207, 0.8);
   pointer-events: none;
 }
 
 .child-dropdown input::placeholder {
-  color: rgba(71, 84, 103, 0.5);
+  color: rgba(148, 163, 184, 0.55);
 }
 
 .child-dropdown input:focus {
-  border-color: rgba(124, 58, 237, 0.5);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  border-color: rgba(111, 217, 207, 0.6);
+  background: rgba(16, 24, 38, 0.98);
+  box-shadow: 0 0 0 3px rgba(111, 217, 207, 0.18);
 }
 
 .child-dropdown input {
   width: 100%;
+}
+
+.child-select {
+  min-width: 220px;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(18, 26, 40, 0.95), rgba(14, 20, 34, 0.98));
+  border: 1px solid rgba(120, 131, 230, 0.25);
+  color: inherit;
+  font-size: 0.92rem;
+  transition: border 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.child-select:focus {
+  outline: none;
+  border-color: rgba(111, 217, 207, 0.6);
+  box-shadow: 0 0 0 3px rgba(111, 217, 207, 0.18);
+}
+
+@media (max-width: 720px) {
+  .assessment-search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .child-select {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .child-dropdown-list {
@@ -1611,11 +1653,39 @@ button.chip {
   background: rgba(168, 85, 247, 0.12);
   color: inherit;
   cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  position: relative;
 }
 
 .icon-action.danger {
   border-color: rgba(239, 68, 68, 0.45);
   background: rgba(239, 68, 68, 0.12);
+}
+
+.icon-action:hover {
+  transform: translateY(-2px);
+  border-color: rgba(168, 85, 247, 0.45);
+  box-shadow: 0 10px 20px rgba(5, 8, 20, 0.25);
+}
+
+.icon-action.danger:hover {
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 10px 20px rgba(5, 8, 20, 0.2);
+}
+
+.icon-action.is-loading {
+  color: transparent;
+  pointer-events: none;
+}
+
+.icon-action.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 999px;
+  border: 2px solid rgba(223, 230, 242, 0.4);
+  border-top-color: rgba(223, 230, 242, 0.9);
+  animation: spin 0.8s linear infinite;
 }
 
 .center-footer .card-actions {
@@ -2201,4 +2271,71 @@ button.chip {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* =================================
+   DASHBOARD POLISH
+   ================================= */
+
+.dashboard-page .card,
+.dashboard-page .stat-card,
+.dashboard-page .kpi-card,
+.dashboard-page .chart-card,
+.dashboard-page .assessment-card,
+.dashboard-page .module-card,
+.dashboard-page .center-card,
+.dashboard-page .panel,
+.dashboard-page .insight-card,
+.dashboard-page .recommendation,
+.dashboard-page .table-wrapper,
+.dashboard-page .modal {
+  border-color: rgba(148, 163, 184, 0.14);
+  box-shadow: var(--shadow-soft);
+}
+
+.dashboard-page .card:hover,
+.dashboard-page .module-card:hover,
+.dashboard-page .center-card:hover,
+.dashboard-page .assessment-card:hover {
+  box-shadow: var(--shadow-medium);
+}
+
+.dashboard-page .table-wrapper {
+  background: rgba(16, 24, 38, 0.94);
+}
+
+.dashboard-page .management-table tbody tr:hover {
+  background: rgba(120, 131, 230, 0.08);
+}
+
+.dashboard-page .chip,
+.dashboard-page .pill,
+.dashboard-page .badge,
+.dashboard-page .tag {
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.dashboard-page .chip:hover,
+.dashboard-page .pill:hover,
+.dashboard-page .badge:hover {
+  transform: translateY(-1px);
+}
+
+body.dashboard-page[data-theme="light"] {
+  background:
+    radial-gradient(1000px 600px at 80% -120px, rgba(120, 131, 230, 0.14), transparent 60%),
+    radial-gradient(800px 480px at 12% 0, rgba(111, 217, 207, 0.12), transparent 55%),
+    #f5f6fb;
+}
+
+body.dashboard-page[data-theme="light"] .sidebar {
+  background: linear-gradient(180deg, #ffffff, #f5f6fb);
+  border-right-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 10px 0 30px rgba(15, 23, 42, 0.08);
+}
+
+body.dashboard-page[data-theme="light"] .shell-header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(245, 246, 251, 0.9));
+  border-bottom-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }

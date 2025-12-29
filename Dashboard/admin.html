@@ -8,12 +8,6 @@
   <link rel="stylesheet" href="base.css" />
   <link rel="stylesheet" href="../ui-shell.css" />
   <link rel="stylesheet" href="dashboard.css" />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
 </head>
 <body class="dashboard-page">
   <div class="ui-shell">
@@ -125,23 +119,6 @@
         </div>
       </section>
 
-      <!-- ===== LOCATIONS SECTION ===== -->
-      <section id="section-locations" class="section">
-        <div class="section-header">
-          <div>
-            <h2>Locations</h2>
-            <p class="hint">Live facility presence across the network.</p>
-          </div>
-        </div>
-        <div class="card map-card">
-          <div class="card-header">
-            <h3>Locations Map</h3>
-            <span class="hint map-status" id="locationsMapStatus">Loading map...</span>
-          </div>
-          <div id="locationsMap" class="map-canvas"></div>
-        </div>
-      </section>
-
       <!-- ===== SPECIALISTS SECTION ===== -->
       <section id="section-specialists" class="section">
         <div class="section-header">
@@ -210,9 +187,14 @@
         <div class="assessment-shell">
           <div class="card assessment-selector">
             <label for="assessmentChildSearch" class="hint">Child</label>
-            <div class="child-dropdown">
-              <input id="assessmentChildSearch" type="search" placeholder="Search child name" autocomplete="off" />
-              <div id="assessmentChildList" class="child-dropdown-list" role="listbox" aria-label="Children list"></div>
+            <div class="assessment-search-row">
+              <div class="child-dropdown">
+                <input id="assessmentChildSearch" type="search" placeholder="Search child name" autocomplete="off" />
+                <div id="assessmentChildList" class="child-dropdown-list" role="listbox" aria-label="Children list"></div>
+              </div>
+              <select id="assessmentChildSelect" class="child-select" aria-label="Select child">
+                <option value="">Select child</option>
+              </select>
             </div>
           </div>
 
@@ -537,11 +519,6 @@
 
   <script src="../ui-shell.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
   <script src="admin.js"></script>
 </body>
 </html>

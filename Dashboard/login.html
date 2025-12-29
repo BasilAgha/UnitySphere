@@ -33,7 +33,7 @@
       border: 1px solid var(--color-border);
       padding: 2rem;
       border-radius: var(--radius-lg);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 14px 30px rgba(5, 8, 20, 0.25);
       animation: fadeIn 0.4s ease;
     }
 
@@ -59,27 +59,32 @@
       background: var(--color-surface-alt);
       color: var(--color-text);
       font-size: 1rem;
+      transition: border var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
     }
 
     .login-card input:focus {
-      outline: 2px solid var(--color-primary);
+      outline: none;
+      border-color: rgba(120, 131, 230, 0.6);
+      box-shadow: 0 0 0 3px rgba(120, 131, 230, 0.2);
     }
 
     .login-btn {
       width: 100%;
       padding: 12px;
-      background: var(--color-primary);
+      background: linear-gradient(120deg, rgba(120, 131, 230, 0.95), rgba(111, 217, 207, 0.9));
       color: white;
       border: none;
       border-radius: var(--radius-md);
       cursor: pointer;
-      transition: background var(--transition-fast);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
       margin-top: 10px;
       font-size: 1rem;
     }
 
     .login-btn:hover {
-      background: var(--color-accent);
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 10px 22px rgba(5, 8, 20, 0.25);
     }
 
     #error {
