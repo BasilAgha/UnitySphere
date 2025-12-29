@@ -1274,6 +1274,10 @@ function renderAssessmentChildrenList(children) {
   const list = document.getElementById('assessmentChildList');
   if (!list) return;
   list.innerHTML = '';
+  const wrapper = list.closest('.child-dropdown');
+  if (wrapper) {
+    wrapper.classList.toggle('has-items', children.length > 0);
+  }
   children.forEach(child => {
     const btn = document.createElement('button');
     btn.type = 'button';
