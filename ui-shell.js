@@ -1,11 +1,12 @@
 (function () {
   const NAV_ITEMS = [
-    { id: "dashboard", label: "Dashboard", roles: ["admin"] },
-    { id: "centers", label: "Centers", roles: ["admin", "center"] },
+    { id: "dashboard", label: "Dashboard", roles: ["admin", "center"] },
+    { id: "centers", label: "Centers", roles: ["admin"] },
     { id: "specialists", label: "Specialists", roles: ["admin", "center", "specialist"] },
+    { id: "children", label: "Children", roles: ["center"] },
     { id: "vr-modules", label: "VR Modules", roles: ["admin", "center", "specialist"] },
-    { id: "assessment", label: "Assessment", roles: ["admin", "specialist"] },
-    { id: "settings", label: "Settings", roles: ["admin", "center", "specialist"] },
+    { id: "assessment", label: "Assessment", roles: ["admin", "center", "specialist"] },
+    { id: "settings", label: "Settings", roles: ["admin", "specialist"] },
   ];
 
   function applyTheme(value) {
@@ -50,6 +51,7 @@
     list.className = "nav-list";
 
     NAV_ITEMS.forEach((item) => {
+      if (role && item.roles && !item.roles.includes(role)) return;
       const li = document.createElement("li");
       const link = document.createElement("a");
       link.className = "nav-item";

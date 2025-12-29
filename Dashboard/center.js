@@ -5,6 +5,9 @@ let specialistsCache = [];
 let allModulesCache = [];
 let assignModulesSelection = null;
 let assignModulesAssignmentMap = new Map();
+let shellSidebar = null;
+let assessmentCharts = {};
+let assessmentChildrenCache = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   authGuard("center");
@@ -18,23 +21,39 @@ document.addEventListener("DOMContentLoaded", () => {
   bindNavigation();
   bindCenterButtons();
   setUserAvatar();
+  setWelcomeName();
 
   document.addEventListener("unitysphere:search", (event) => {
     applyGlobalSearch(event.detail.query);
   });
 
-  loadSection("overview");
+  bindAssessmentFilters();
+  loadSection("dashboard");
+  setActiveSidebarForSection("dashboard");
+  updateHeaderTitle("dashboard");
 });
 
 function initShell() {
   const sidebarHost = document.getElementById("appSidebar");
   const headerHost = document.getElementById("appHeader");
   if (!sidebarHost || !headerHost || !window.UnitySphereShell) return;
-  const sidebar = window.UnitySphereShell.buildSidebar({ role: "center", active: "centers" });
-  const header = window.UnitySphereShell.buildHeader({ title: "Center Dashboard" });
+  const sidebar = window.UnitySphereShell.buildSidebar({ role: "center", active: "dashboard" });
+  const header = window.UnitySphereShell.buildHeader({ title: "Dashboard" });
   sidebarHost.replaceWith(sidebar);
   headerHost.replaceWith(header);
+  shellSidebar = sidebar;
   window.UnitySphereShell.wireEscManager();
+
+  sidebar.addEventListener("click", (event) => {
+    const nav = event.target.closest("[data-nav]");
+    if (!nav || nav.classList.contains("disabled")) return;
+    const section = mapNavToSection(nav.dataset.nav);
+    if (!section) return;
+    switchSection(section);
+    updateHeaderTitle(section);
+    loadSection(section);
+    window.UnitySphereShell.setActiveNavItem(sidebar, nav.dataset.nav);
+  });
 }
 
 function bindNavigation() {
@@ -44,6 +63,7 @@ function bindNavigation() {
       switchSection(section);
       updateHeaderTitle(section);
       loadSection(section);
+      setActiveSidebarForSection(section);
     });
   });
 }
@@ -67,7 +87,7 @@ function bindCenterButtons() {
   document.getElementById("refreshAllBtn")?.addEventListener("click", () => {
     const btn = document.getElementById("refreshAllBtn");
     setButtonLoading(btn, true, "Refreshing...");
-    const active = document.querySelector(".section.active")?.id.replace("section-", "") || "overview";
+    const active = document.querySelector(".section.active")?.id.replace("section-", "") || "dashboard";
     updateHeaderTitle(active);
     loadSection(active);
     setTimeout(() => setButtonLoading(btn, false), 400);
@@ -77,7 +97,7 @@ function bindCenterButtons() {
 
 function loadSection(section) {
   switch (section) {
-    case "overview":
+    case "dashboard":
       loadOverview();
       break;
     case "specialists":
@@ -86,8 +106,11 @@ function loadSection(section) {
     case "children":
       loadChildren();
       break;
-    case "modules":
+    case "vr-modules":
       loadModules();
+      break;
+    case "assessment":
+      loadAssessmentSection();
       break;
   }
 }
@@ -154,8 +177,11 @@ function resetSpecialistModal() {
 function resetAssignModulesModal() {
   const modal = document.getElementById("assignModulesModal");
   if (!modal) return;
-  const list = document.getElementById("assignModulesList");
-  if (list) list.innerHTML = "";
+  const assignedList = document.getElementById("assignModulesAssigned");
+  const unassignedList = document.getElementById("assignModulesUnassigned");
+  if (assignedList) assignedList.innerHTML = "";
+  if (unassignedList) unassignedList.innerHTML = "";
+  updateAssignModulesCounts(0, 0);
   setButtonLoading(document.getElementById("assignModulesSaveBtn"), false);
 }
 
@@ -171,10 +197,10 @@ function setUserAvatar() {
   const name = center.name || center.username || "Center";
   const photo = center.photo || center.photo_url || "";
   if (typeof applyAvatarFallbackToSelector === "function") {
-    applyAvatarFallbackToSelector("#centerUserAvatar", name, photo);
+    applyAvatarFallbackToSelector(".sidebar .avatar, .shell-header .avatar", name, photo);
     return;
   }
-  document.querySelectorAll("#centerUserAvatar").forEach(avatar => {
+  document.querySelectorAll(".sidebar .avatar, .shell-header .avatar").forEach(avatar => {
     if (photo) {
       avatar.style.backgroundImage = `url('${photo}')`;
       avatar.classList.add("has-photo");
@@ -191,12 +217,288 @@ function updateHeaderTitle(section) {
   const title = document.querySelector(".shell-header .title");
   if (!title) return;
   const map = {
-    overview: "Center Dashboard",
+    dashboard: "Dashboard",
     specialists: "Specialists",
     children: "Children",
-    modules: "VR Modules"
+    "vr-modules": "VR Modules",
+    assessment: "Assessment"
   };
-  title.textContent = map[section] || "Center Dashboard";
+  title.textContent = map[section] || "Dashboard";
+}
+
+function mapNavToSection(navId) {
+  const map = {
+    dashboard: "dashboard",
+    specialists: "specialists",
+    children: "children",
+    "vr-modules": "vr-modules",
+    assessment: "assessment"
+  };
+  return map[navId] || null;
+}
+
+function setActiveSidebarForSection(section) {
+  if (!shellSidebar || !window.UnitySphereShell?.setActiveNavItem) return;
+  const map = {
+    dashboard: "dashboard",
+    specialists: "specialists",
+    children: "children",
+    "vr-modules": "vr-modules",
+    assessment: "assessment"
+  };
+  const navId = map[section];
+  if (navId) {
+    window.UnitySphereShell.setActiveNavItem(shellSidebar, navId);
+  }
+}
+
+function setWelcomeName() {
+  const welcome = document.getElementById("welcomeName");
+  if (!welcome) return;
+  welcome.textContent = center.name || center.username || "Center";
+}
+
+function bindAssessmentFilters() {
+  const childSearch = document.getElementById("assessmentChildSearch");
+  const childList = document.getElementById("assessmentChildList");
+  const childSelect = document.getElementById("assessmentChildSelect");
+
+  childSearch?.addEventListener("input", () => {
+    const term = childSearch.value.trim().toLowerCase();
+    if (childSelect) childSelect.value = "";
+    const filtered = assessmentChildrenCache.filter(child =>
+      String(child.name || "").toLowerCase().includes(term)
+    );
+    renderAssessmentChildrenList(filtered);
+  });
+
+  childList?.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-child-id]");
+    if (!option) return;
+    if (childSearch) childSearch.value = option.textContent;
+    if (childSelect) childSelect.value = option.dataset.childId;
+    handleAssessmentChildSelect(option.dataset.childId);
+  });
+
+  childSelect?.addEventListener("change", () => {
+    const selectedId = childSelect.value;
+    if (!selectedId) return;
+    const child = assessmentChildrenCache.find(item => String(item.child_id) === String(selectedId));
+    if (childSearch) childSearch.value = child?.name || "";
+    handleAssessmentChildSelect(selectedId);
+  });
+}
+
+async function loadAssessmentSection() {
+  await loadAssessmentChildren();
+  clearAssessmentDetails();
+}
+
+async function loadAssessmentChildren() {
+  const res = await apiRequest("listChildren", { center_id: centerId });
+  if (handleApiFailure(res)) return;
+  const children = res.children || [];
+  assessmentChildrenCache = [...children].sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" })
+  );
+  renderAssessmentChildrenList(assessmentChildrenCache);
+  renderAssessmentChildSelect(assessmentChildrenCache);
+}
+
+function renderAssessmentChildrenList(children) {
+  const list = document.getElementById("assessmentChildList");
+  if (!list) return;
+  list.innerHTML = "";
+  const wrapper = list.closest(".child-dropdown");
+  if (wrapper) {
+    wrapper.classList.toggle("has-items", children.length > 0);
+  }
+  children.forEach(child => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "child-option";
+    btn.setAttribute("role", "option");
+    btn.dataset.childId = child.child_id;
+    btn.textContent = child.name || `Child ${child.child_id}`;
+    list.appendChild(btn);
+  });
+}
+
+function renderAssessmentChildSelect(children) {
+  const select = document.getElementById("assessmentChildSelect");
+  if (!select) return;
+  select.innerHTML = '<option value="">Select child</option>';
+  children.forEach(child => {
+    const option = document.createElement("option");
+    option.value = child.child_id;
+    option.textContent = child.name || `Child ${child.child_id}`;
+    select.appendChild(option);
+  });
+}
+
+function clearAssessmentDetails() {
+  const details = document.getElementById("assessmentDetails");
+  const emptyCard = document.getElementById("assessmentEmptyCard");
+  if (details) details.style.display = "none";
+  if (emptyCard) emptyCard.style.display = "grid";
+  clearAssessmentCharts();
+}
+
+function clearAssessmentCharts() {
+  Object.values(assessmentCharts).forEach(chart => {
+    if (chart && typeof chart.destroy === "function") chart.destroy();
+  });
+  assessmentCharts = {};
+}
+
+async function handleAssessmentChildSelect(childId) {
+  const child = assessmentChildrenCache.find(item => String(item.child_id) === String(childId));
+  if (!child) return;
+
+  const avatar = document.getElementById("assessmentChildAvatar");
+  if (avatar) {
+    const photo = child.photo || child.photo_url || child.photo_base64 || "";
+    avatar.classList.toggle("has-photo", Boolean(photo));
+    avatar.style.backgroundImage = photo ? `url('${photo}')` : "";
+    avatar.setAttribute("data-initials", getInitials(child.name || "Child"));
+  }
+
+  const centerLabel = child.center_name || center.name || child.center_id || centerId || "--";
+  setText("assessmentChildName", child.name || "Child");
+  setText("assessmentChildAge", `Age: ${child.age || "--"}`);
+  setText("assessmentChildCenter", `Center: ${centerLabel}`);
+
+  const details = document.getElementById("assessmentDetails");
+  const emptyCard = document.getElementById("assessmentEmptyCard");
+  if (details) details.style.display = "grid";
+  if (emptyCard) emptyCard.style.display = "none";
+
+  const assessmentData = await fetchAssessmentData(child.child_id);
+  renderAssessmentCharts(assessmentData);
+}
+
+async function fetchAssessmentData(childId) {
+  const domains = [
+    "Cognitive",
+    "Language & Communication",
+    "Social & Emotional",
+    "Motor & Sensory",
+    "Early Academic Skills",
+    "Executive Function"
+  ];
+
+  let radarScores = null;
+  let progressScores = null;
+
+  const res = await apiRequest("listAssessmentResponses", { child_id: childId });
+  if (res?.success && Array.isArray(res.responses) && res.responses.length) {
+    const responses = res.responses;
+    const grouped = domains.reduce((acc, domain) => {
+      acc[domain] = [];
+      return acc;
+    }, {});
+
+    responses.forEach(r => {
+      const domain = r.category || r.domain || "";
+      const score = Number(r.score || 0);
+      if (grouped[domain]) grouped[domain].push(score);
+    });
+
+    radarScores = domains.map(domain => {
+      const scores = grouped[domain] || [];
+      if (!scores.length) return 0;
+      const avg = scores.reduce((acc, value) => acc + value, 0) / scores.length;
+      return Math.round(avg);
+    });
+
+    const sorted = [...responses]
+      .filter(r => r.created_at || r.date)
+      .sort((a, b) => new Date(a.created_at || a.date) - new Date(b.created_at || b.date))
+      .slice(-5);
+    if (sorted.length) {
+      progressScores = sorted.map(r => Math.round(Number(r.score || 0)));
+    }
+  }
+
+  if (!radarScores) {
+    radarScores = [72, 64, 70, 58, 66, 74];
+  }
+  if (!progressScores) {
+    progressScores = [58, 64, 70, 76, 82];
+  }
+
+  return { domains, radarScores, progressScores };
+}
+
+function renderAssessmentCharts({ domains, radarScores, progressScores }) {
+  if (!window.Chart) return;
+
+  clearAssessmentCharts();
+
+  const radarCtx = document.getElementById("assessmentRadarChart")?.getContext("2d");
+  if (radarCtx) {
+    assessmentCharts.radar = new Chart(radarCtx, {
+      type: "radar",
+      data: {
+        labels: domains,
+        datasets: [
+          {
+            label: "Score",
+            data: radarScores,
+            backgroundColor: "rgba(168, 85, 247, 0.25)",
+            borderColor: "#a855f7",
+            pointBackgroundColor: "#a855f7",
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        scales: {
+          r: {
+            angleLines: { color: "rgba(255,255,255,0.08)" },
+            grid: { color: "rgba(255,255,255,0.08)" },
+            pointLabels: { color: "#cfd2e5", font: { size: 11 } },
+            ticks: { color: "#9aa0b4", backdropColor: "transparent" },
+            suggestedMin: 0,
+            suggestedMax: 100
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  const lineCtx = document.getElementById("assessmentProgressChart")?.getContext("2d");
+  if (lineCtx) {
+    assessmentCharts.progress = new Chart(lineCtx, {
+      type: "line",
+      data: {
+        labels: ["S1", "S2", "S3", "S4", "S5"],
+        datasets: [
+          {
+            label: "Progress",
+            data: progressScores,
+            borderColor: "#a855f7",
+            backgroundColor: "rgba(168, 85, 247, 0.15)",
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        scales: {
+          x: { ticks: { color: "#9aa0b4" }, grid: { color: "rgba(255,255,255,0.05)" } },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { color: "#9aa0b4" },
+            grid: { color: "rgba(255,255,255,0.05)" }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 }
 
 function applyGlobalSearch(query) {
@@ -594,12 +896,12 @@ async function saveAssignedModules() {
 
     closeModal("assignModulesModal");
     showToast("Modules updated");
-    loadSection("modules");
-    loadOverview();
-  } finally {
-    setButtonLoading(saveBtn, false);
+      loadSection("vr-modules");
+      loadOverview();
+    } finally {
+      setButtonLoading(saveBtn, false);
+    }
   }
-}
 
 function openAddSpecialistModal() {
   removeSpecialistCenterInput();
