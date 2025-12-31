@@ -38,6 +38,7 @@
         <button class="nav-link active" data-section="overview" aria-label="Overview" title="Overview">Overview</button>
         <button class="nav-link" data-section="children" aria-label="My Children" title="My Children">My Children</button>
         <button class="nav-link" data-section="assessments" aria-label="Assessments" title="Assessments">Assessments</button>
+        <button class="nav-link" data-section="settings" aria-label="Settings" title="Settings">Settings</button>
       </div>
         <!-- ===== OVERVIEW ===== -->
         <section id="section-overview" class="section active">
@@ -154,6 +155,39 @@
             </div>
 
             <div class="stacked-list" id="assessmentsQuestionsList"></div>
+          </div>
+        </section>
+
+        <!-- ===== SETTINGS ===== -->
+        <section id="section-settings" class="section">
+          <div class="card full">
+            <div class="section-header">
+              <div>
+                <h2>Settings</h2>
+                <p class="hint">Account preferences and workspace controls.</p>
+              </div>
+            </div>
+            <div class="card-grid settings-grid">
+              <div class="card settings-card">
+                <div class="card-header">
+                  <h3>Profile Summary</h3>
+                </div>
+                <div class="profile-card">
+                  <div class="avatar profile-avatar" id="settingsAvatar" data-initials="SP"></div>
+                  <div>
+                    <div class="profile-name" id="settingsProfileName">Specialist</div>
+                    <div class="profile-meta">
+                      <span id="settingsProfileRole">Role: Specialist</span>
+                      <span id="settingsProfileCenter">Center: --</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="settings-actions">
+                  <button class="ghost" id="settingsRefreshBtn">Refresh data</button>
+                  <button class="ghost" id="settingsLogoutBtn">Log out</button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
     </main>

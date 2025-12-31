@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UnitySphere Smoke Test</title>
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="dashboard-page">
+  <main class="shell-content">
+    <section class="section active">
+      <div class="section-header">
+        <div>
+          <h2>Smoke Test Runner</h2>
+          <p class="hint">Runs basic end-to-end checks against the Apps Script backend.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Credentials</h3>
+        </div>
+        <div class="card-grid">
+          <div class="input-group">
+            <label for="adminUser">Admin Username</label>
+            <input id="adminUser" type="text" />
+          </div>
+          <div class="input-group">
+            <label for="adminPass">Admin Password</label>
+            <input id="adminPass" type="password" />
+          </div>
+          <div class="input-group">
+            <label for="centerUser">Center Username</label>
+            <input id="centerUser" type="text" />
+          </div>
+          <div class="input-group">
+            <label for="centerPass">Center Password</label>
+            <input id="centerPass" type="password" />
+          </div>
+          <div class="input-group">
+            <label for="specUser">Specialist Username</label>
+            <input id="specUser" type="text" />
+          </div>
+          <div class="input-group">
+            <label for="specPass">Specialist Password</label>
+            <input id="specPass" type="password" />
+          </div>
+        </div>
+        <div class="section-actions">
+          <button class="primary" id="runSmokeTest">Run Smoke Tests</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Results</h3>
+        </div>
+        <div class="stacked-list" id="smokeResults"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="common.js"></script>
+  <script src="smoke-test.js"></script>
+</body>
+</html>

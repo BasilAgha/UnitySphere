@@ -79,6 +79,7 @@ const COL_RESP_DATE        = 5;
 const COL_RESP_Q_ID        = 6;
 const COL_RESP_SCORE       = 7;
 const COL_RESP_NOTES       = 8;
+const COL_RESP_STATUS      = 9;
 
 // Children_Sessions
 const COL_SESS_ID          = 1;
@@ -137,6 +138,7 @@ function handleRequest(e) {
       case 'createCenter':         return createCenter(e);
       case 'updateCenter':         return updateCenter(e);
       case 'deleteCenter':         return deleteCenter(e);
+      case 'getCenterSpecialists': return getCenterSpecialists(e);
 
       // ---- SPECIALISTS ----
       case 'listSpecialists':      return listSpecialists(e);
@@ -157,6 +159,7 @@ function handleRequest(e) {
       case 'updateModule':         return updateModule(e);
       case 'deleteModule':         return deleteModule(e);
       case 'assignModuleToCenter': return assignModuleToCenter(e);
+      case 'assignModulesToCenter': return assignModulesToCenter(e);
       case 'removeModuleFromCenter': return removeModuleFromCenter(e);
       case 'listCenterModules':    return listCenterModules(e);
 
@@ -176,6 +179,7 @@ function handleRequest(e) {
 
       // ---- AUDIT ----
       case 'getAuditLog':          return getAuditLog(e);
+      case 'reportsDashboard':     return getDashboardReports(e);
 
       default:
         return jsonResponse({ success: false, error: 'Invalid action: ' + action });
@@ -254,6 +258,108 @@ function appendAuditLog(username, role, action, entityType, entityId, notes) {
     entityId || '',
     notes || ''
   ]);
+}
+
+function getActorContext(e) {
+  const role = String(e.parameter.actor_role || 'admin').trim() || 'admin';
+  const username = String(e.parameter.actor_username || '').trim();
+  let centerId = String(e.parameter.actor_center_id || '').trim();
+  let specialistId = String(e.parameter.actor_specialist_id || '').trim();
+
+  if (!centerId && role === 'center' && username) {
+    centerId = findCenterIdByUsername(username);
+  }
+  if (!specialistId && role === 'specialist' && username) {
+    specialistId = findSpecialistIdByUsername(username);
+  }
+  if (!centerId && role === 'specialist' && specialistId) {
+    centerId = findCenterIdBySpecialistId(specialistId);
+  }
+
+  return { role: role, username: username, center_id: centerId, specialist_id: specialistId };
+}
+
+function findCenterIdByUsername(username) {
+  const centers = getDataRangeValues(getSheet(SHEET_CENTERS));
+  for (let i = 0; i < centers.length; i++) {
+    if (String(centers[i][COL_CENTER_USERNAME - 1]).trim() === username &&
+        centers[i][COL_CENTER_STATUS - 1] !== 'deleted') {
+      return String(centers[i][COL_CENTER_ID - 1]);
+    }
+  }
+  return '';
+}
+
+function findSpecialistIdByUsername(username) {
+  const specs = getDataRangeValues(getSheet(SHEET_SPECIALISTS));
+  for (let i = 0; i < specs.length; i++) {
+    if (String(specs[i][COL_SPEC_USERNAME - 1]).trim() === username &&
+        specs[i][COL_SPEC_STATUS - 1] !== 'deleted') {
+      return String(specs[i][COL_SPEC_ID - 1]);
+    }
+  }
+  return '';
+}
+
+function findCenterIdBySpecialistId(specId) {
+  const specs = getDataRangeValues(getSheet(SHEET_SPECIALISTS));
+  for (let i = 0; i < specs.length; i++) {
+    if (String(specs[i][COL_SPEC_ID - 1]) === String(specId) &&
+        specs[i][COL_SPEC_STATUS - 1] !== 'deleted') {
+      return String(specs[i][COL_SPEC_CENTER_ID - 1] || '');
+    }
+  }
+  return '';
+}
+
+function ensureAdmin(actor) {
+  if (actor.role !== 'admin') {
+    return jsonResponse({ success: false, error: 'Admin access required' });
+  }
+  return null;
+}
+
+function ensureCenterAccess(actor, centerId) {
+  if (actor.role === 'center') {
+    if (!actor.center_id || String(centerId) !== String(actor.center_id)) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
+  }
+  if (actor.role === 'specialist' && centerId) {
+    if (!actor.center_id || String(centerId) !== String(actor.center_id)) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
+  }
+  return null;
+}
+
+function ensureSpecialistAccess(actor, specialistId) {
+  if (actor.role === 'specialist') {
+    if (!actor.specialist_id || String(specialistId) !== String(actor.specialist_id)) {
+      return jsonResponse({ success: false, error: 'Specialist access denied' });
+    }
+  }
+  return null;
+}
+
+function getChildRowById(childId) {
+  const data = getDataRangeValues(getSheet(SHEET_CHILDREN));
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][COL_CHILD_ID - 1]) === String(childId)) {
+      return data[i];
+    }
+  }
+  return null;
+}
+
+function getSessionRowById(sessionId) {
+  const data = getDataRangeValues(getSheet(SHEET_SESSIONS));
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][COL_SESS_ID - 1]) === String(sessionId)) {
+      return data[i];
+    }
+  }
+  return null;
 }
 
 // ====== AUTH / LOGIN ======
@@ -346,6 +452,9 @@ function login(e) {
 // ====== STATS ======
 
 function getAdminStats(e) {
+  const actor = getActorContext(e);
+  const denied = ensureAdmin(actor);
+  if (denied) return denied;
   const centers = getDataRangeValues(getSheet(SHEET_CENTERS))
     .filter(r => r[COL_CENTER_STATUS - 1] !== 'deleted');
   const specs = getDataRangeValues(getSheet(SHEET_SPECIALISTS))
@@ -368,8 +477,11 @@ function getAdminStats(e) {
 }
 
 function getCenterStats(e) {
+  const actor = getActorContext(e);
   const centerId = (e.parameter.center_id || '').trim();
   if (!centerId) return jsonResponse({ success: false, error: 'center_id is required' });
+  const denied = ensureCenterAccess(actor, centerId);
+  if (denied) return denied;
 
   const specs = getDataRangeValues(getSheet(SHEET_SPECIALISTS))
     .filter(r => r[COL_SPEC_CENTER_ID - 1] == centerId && r[COL_SPEC_STATUS - 1] !== 'deleted');
@@ -396,8 +508,11 @@ function getCenterStats(e) {
 }
 
 function getSpecialistStats(e) {
+  const actor = getActorContext(e);
   const specialistId = (e.parameter.specialist_id || '').trim();
   if (!specialistId) return jsonResponse({ success: false, error: 'specialist_id is required' });
+  const denied = ensureSpecialistAccess(actor, specialistId);
+  if (denied) return denied;
 
   const children = getDataRangeValues(getSheet(SHEET_CHILDREN))
     .filter(r => r[ COL_CHILD_SPEC_ID - 1 ] == specialistId && r[COL_CHILD_STATUS - 1] !== 'deleted');
@@ -406,7 +521,8 @@ function getSpecialistStats(e) {
     .filter(r => r[ COL_SESS_SPEC_ID - 1 ] == specialistId);
 
   const responses = getDataRangeValues(getSheet(SHEET_RESPONSES))
-    .filter(r => r[ COL_RESP_SPEC_ID - 1 ] == specialistId);
+    .filter(r => r[ COL_RESP_SPEC_ID - 1 ] == specialistId)
+    .filter(r => String(r[COL_RESP_STATUS - 1] || '').toLowerCase() !== 'deleted');
 
   return jsonResponse({
     success: true,
@@ -422,12 +538,20 @@ function getSpecialistStats(e) {
 // ====== CENTERS CRUD ======
 
 function listCenters(e) {
+  const actor = getActorContext(e);
+  const denied = ensureAdmin(actor);
+  if (denied) return denied;
+  const statusFilter = String(e.parameter.status || '').trim().toLowerCase();
   const data = getDataRangeValues(getSheet(SHEET_CENTERS));
   const children = getDataRangeValues(getSheet(SHEET_CHILDREN));
   const specs = getDataRangeValues(getSheet(SHEET_SPECIALISTS));
 
   const centers = data
-    .filter(r => r[COL_CENTER_STATUS - 1] !== 'deleted')
+    .filter(r => {
+      const status = String(r[COL_CENTER_STATUS - 1] || '').toLowerCase();
+      if (statusFilter) return status === statusFilter;
+      return status !== 'deleted';
+    })
     .map(r => {
       const id = r[COL_CENTER_ID - 1];
       const numChildren = children.filter(c => c[COL_CHILD_CENTER_ID - 1] == id && c[COL_CHILD_STATUS - 1] !== 'deleted').length;
@@ -448,12 +572,15 @@ function listCenters(e) {
 }
 
 function createCenter(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const name = (e.parameter.name || '').trim();
   const desc = (e.parameter.description || '').trim();
   const username = (e.parameter.username || '').trim();
   const password = (e.parameter.password || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!name || !username || !password) {
     return jsonResponse({ success: false, error: 'name, username, password required' });
@@ -477,9 +604,12 @@ function createCenter(e) {
 }
 
 function updateCenter(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const centerId = (e.parameter.center_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
   if (!centerId) return jsonResponse({ success: false, error: 'center_id required' });
 
   const sheet = getSheet(SHEET_CENTERS);
@@ -514,9 +644,12 @@ function updateCenter(e) {
 }
 
 function deleteCenter(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const centerId = (e.parameter.center_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
   if (!centerId) return jsonResponse({ success: false, error: 'center_id required' });
 
   const sheet = getSheet(SHEET_CENTERS);
@@ -542,12 +675,24 @@ function deleteCenter(e) {
 // ====== SPECIALISTS CRUD ======
 
 function listSpecialists(e) {
-  const centerIdFilter = (e.parameter.center_id || '').trim(); // optional
+  const actor = getActorContext(e);
+  if (actor.role === 'specialist') {
+    return jsonResponse({ success: false, error: 'Specialist access denied' });
+  }
+  let centerIdFilter = (e.parameter.center_id || '').trim(); // optional
+  const statusFilter = String(e.parameter.status || '').trim().toLowerCase();
+  if (actor.role === 'center') {
+    centerIdFilter = actor.center_id;
+  }
   const children = getDataRangeValues(getSheet(SHEET_CHILDREN));
   const data = getDataRangeValues(getSheet(SHEET_SPECIALISTS));
 
   const specs = data
-    .filter(r => r[COL_SPEC_STATUS - 1] !== 'deleted')
+    .filter(r => {
+      const status = String(r[COL_SPEC_STATUS - 1] || '').toLowerCase();
+      if (statusFilter) return status === statusFilter;
+      return status !== 'deleted';
+    })
     .filter(r => !centerIdFilter || r[COL_SPEC_CENTER_ID - 1] == centerIdFilter)
     .map(r => {
       const id = r[COL_SPEC_ID - 1];
@@ -569,18 +714,24 @@ function listSpecialists(e) {
 }
 
 function createSpecialist(e) {
+  const actorCtx = getActorContext(e);
   const name = (e.parameter.name || '').trim();
   const desc = (e.parameter.description || '').trim();
   const username = (e.parameter.username || '').trim();
   const password = (e.parameter.password || '').trim();
-  const type = (e.parameter.type || 'freelance').trim(); // freelance / center
-  const centerId = (e.parameter.center_id || '').trim(); // optional if freelance
+  let type = (e.parameter.type || 'freelance').trim(); // freelance / center
+  let centerId = (e.parameter.center_id || '').trim(); // optional if freelance
 
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!name || !username || !password) {
     return jsonResponse({ success: false, error: 'name, username, password required' });
+  }
+  if (actorCtx.role === 'center') {
+    type = 'center';
+    centerId = actorCtx.center_id;
+    if (!centerId) return jsonResponse({ success: false, error: 'center_id required' });
   }
 
   const sheet = getSheet(SHEET_SPECIALISTS);
@@ -603,11 +754,15 @@ function createSpecialist(e) {
 }
 
 function updateSpecialist(e) {
+  const actorCtx = getActorContext(e);
   const specId = (e.parameter.specialist_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!specId) return jsonResponse({ success: false, error: 'specialist_id required' });
+  if (actorCtx.role === 'specialist') {
+    return jsonResponse({ success: false, error: 'Specialist access denied' });
+  }
 
   const sheet = getSheet(SHEET_SPECIALISTS);
   const data = getDataRangeValues(sheet);
@@ -621,6 +776,12 @@ function updateSpecialist(e) {
   }
   if (foundRowIndex === -1) {
     return jsonResponse({ success: false, error: 'Specialist not found' });
+  }
+  if (actorCtx.role === 'center') {
+    const rowCenterId = data[foundRowIndex - 2][COL_SPEC_CENTER_ID - 1];
+    if (String(rowCenterId || '') !== String(actorCtx.center_id || '')) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
   }
 
   const name = e.parameter.name;
@@ -645,11 +806,15 @@ function updateSpecialist(e) {
 }
 
 function deleteSpecialist(e) {
+  const actorCtx = getActorContext(e);
   const specId = (e.parameter.specialist_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!specId) return jsonResponse({ success: false, error: 'specialist_id required' });
+  if (actorCtx.role === 'specialist') {
+    return jsonResponse({ success: false, error: 'Specialist access denied' });
+  }
 
   const sheet = getSheet(SHEET_SPECIALISTS);
   const data = getDataRangeValues(sheet);
@@ -664,6 +829,12 @@ function deleteSpecialist(e) {
   if (foundRowIndex === -1) {
     return jsonResponse({ success: false, error: 'Specialist not found' });
   }
+  if (actorCtx.role === 'center') {
+    const rowCenterId = data[foundRowIndex - 2][COL_SPEC_CENTER_ID - 1];
+    if (String(rowCenterId || '') !== String(actorCtx.center_id || '')) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
+  }
 
   sheet.getRange(foundRowIndex, COL_SPEC_STATUS).setValue('deleted');
   appendAuditLog(actor, role, 'delete', 'Specialist', specId, 'Soft delete specialist');
@@ -671,13 +842,31 @@ function deleteSpecialist(e) {
   return jsonResponse({ success: true });
 }
 
+function getCenterSpecialists(e) {
+  const actor = getActorContext(e);
+  const centerId = (e.parameter.center_id || '').trim();
+  if (!centerId) return jsonResponse({ success: false, error: 'center_id required' });
+  const denied = ensureCenterAccess(actor, centerId);
+  if (denied) return denied;
+  const params = { parameter: { center_id: centerId } };
+  return listSpecialists(params);
+}
+
 // ====== CHILDREN CRUD ======
 
 function listChildren(e) {
+  const actor = getActorContext(e);
   const nameFilter = (e.parameter.name || '').trim().toLowerCase();
-  const centerIdFilter = (e.parameter.center_id || '').trim();
-  const specIdFilter = (e.parameter.specialist_id || '').trim();
+  let centerIdFilter = (e.parameter.center_id || '').trim();
+  let specIdFilter = (e.parameter.specialist_id || '').trim();
   const statusFilter = (e.parameter.status || '').trim(); // active/deleted/empty
+  if (actor.role === 'center') {
+    centerIdFilter = actor.center_id;
+  }
+  if (actor.role === 'specialist') {
+    specIdFilter = actor.specialist_id;
+    centerIdFilter = actor.center_id || centerIdFilter;
+  }
 
   const children = getDataRangeValues(getSheet(SHEET_CHILDREN))
     .filter(r => !statusFilter ? (r[COL_CHILD_STATUS - 1] !== 'deleted') : (r[COL_CHILD_STATUS - 1] === statusFilter))
@@ -687,7 +876,8 @@ function listChildren(e) {
 
   // compute number of sessions & last assessment date
   const sessions = getDataRangeValues(getSheet(SHEET_SESSIONS));
-  const responses = getDataRangeValues(getSheet(SHEET_RESPONSES));
+  const responses = getDataRangeValues(getSheet(SHEET_RESPONSES))
+    .filter(r => String(r[COL_RESP_STATUS - 1] || '').toLowerCase() !== 'deleted');
 
   const childrenJson = children.map(r => {
     const childId = r[COL_CHILD_ID - 1];
@@ -719,17 +909,28 @@ function listChildren(e) {
 }
 
 function createChild(e) {
+  const actorCtx = getActorContext(e);
   const name = (e.parameter.name || '').trim();
   const age = (e.parameter.age || '').trim();
   const parentMobile = (e.parameter.parent_mobile || '').trim();
-  const specId = (e.parameter.specialist_id || '').trim();
-  const centerId = (e.parameter.center_id || '').trim();
+  let specId = (e.parameter.specialist_id || '').trim();
+  let centerId = (e.parameter.center_id || '').trim();
   const notes = (e.parameter.notes || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || '');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || '');
 
-  if (!name || !specId) {
-    return jsonResponse({ success: false, error: 'name and specialist_id required' });
+  if (!name) {
+    return jsonResponse({ success: false, error: 'name required' });
+  }
+  if (actorCtx.role === 'specialist') {
+    specId = actorCtx.specialist_id;
+    centerId = actorCtx.center_id || centerId;
+  }
+  if (actorCtx.role === 'center') {
+    centerId = actorCtx.center_id;
+  }
+  if (!specId && actorCtx.role === 'specialist') {
+    return jsonResponse({ success: false, error: 'specialist_id required' });
   }
 
   const sheet = getSheet(SHEET_CHILDREN);
@@ -752,9 +953,10 @@ function createChild(e) {
 }
 
 function updateChild(e) {
+  const actorCtx = getActorContext(e);
   const childId = (e.parameter.child_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || '');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || '');
 
   if (!childId) return jsonResponse({ success: false, error: 'child_id required' });
 
@@ -770,6 +972,18 @@ function updateChild(e) {
   }
   if (rowIndex === -1) {
     return jsonResponse({ success: false, error: 'Child not found' });
+  }
+  if (actorCtx.role === 'center') {
+    const rowCenterId = data[rowIndex - 2][COL_CHILD_CENTER_ID - 1];
+    if (String(rowCenterId || '') !== String(actorCtx.center_id || '')) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
+  }
+  if (actorCtx.role === 'specialist') {
+    const rowSpecId = data[rowIndex - 2][COL_CHILD_SPEC_ID - 1];
+    if (String(rowSpecId || '') !== String(actorCtx.specialist_id || '')) {
+      return jsonResponse({ success: false, error: 'Specialist access denied' });
+    }
   }
 
   const name = e.parameter.name;
@@ -794,9 +1008,10 @@ function updateChild(e) {
 }
 
 function deleteChild(e) {
+  const actorCtx = getActorContext(e);
   const childId = (e.parameter.child_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || '');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || '');
 
   if (!childId) return jsonResponse({ success: false, error: 'child_id required' });
 
@@ -813,6 +1028,18 @@ function deleteChild(e) {
   if (rowIndex === -1) {
     return jsonResponse({ success: false, error: 'Child not found' });
   }
+  if (actorCtx.role === 'center') {
+    const rowCenterId = data[rowIndex - 2][COL_CHILD_CENTER_ID - 1];
+    if (String(rowCenterId || '') !== String(actorCtx.center_id || '')) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
+  }
+  if (actorCtx.role === 'specialist') {
+    const rowSpecId = data[rowIndex - 2][COL_CHILD_SPEC_ID - 1];
+    if (String(rowSpecId || '') !== String(actorCtx.specialist_id || '')) {
+      return jsonResponse({ success: false, error: 'Specialist access denied' });
+    }
+  }
 
   sheet.getRange(rowIndex, COL_CHILD_STATUS).setValue('deleted');
   appendAuditLog(actor, role, 'delete', 'Child', childId, 'Soft delete child');
@@ -823,6 +1050,7 @@ function deleteChild(e) {
 // ====== CHILD PROFILE (Combines child + sessions + assessments) ======
 
 function getChildProfile(e) {
+  const actor = getActorContext(e);
   const childId = (e.parameter.child_id || '').trim();
   if (!childId) return jsonResponse({ success: false, error: 'child_id required' });
 
@@ -838,6 +1066,18 @@ function getChildProfile(e) {
   }
   if (!childRow) {
     return jsonResponse({ success: false, error: 'Child not found' });
+  }
+  if (actor.role === 'center') {
+    const rowCenterId = childRow[COL_CHILD_CENTER_ID - 1];
+    if (String(rowCenterId || '') !== String(actor.center_id || '')) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
+  }
+  if (actor.role === 'specialist') {
+    const rowSpecId = childRow[COL_CHILD_SPEC_ID - 1];
+    if (String(rowSpecId || '') !== String(actor.specialist_id || '')) {
+      return jsonResponse({ success: false, error: 'Specialist access denied' });
+    }
   }
 
   const sessionsData = getDataRangeValues(getSheet(SHEET_SESSIONS))
@@ -855,6 +1095,7 @@ function getChildProfile(e) {
 
   const responsesData = getDataRangeValues(getSheet(SHEET_RESPONSES))
     .filter(r => r[COL_RESP_CHILD_ID - 1] == childId)
+    .filter(r => String(r[COL_RESP_STATUS - 1] || '').toLowerCase() !== 'deleted')
     .map(r => ({
       response_id: r[COL_RESP_ID - 1],
       child_id: r[COL_RESP_CHILD_ID - 1],
@@ -863,7 +1104,8 @@ function getChildProfile(e) {
       date: r[COL_RESP_DATE - 1],
       question_id: r[COL_RESP_Q_ID - 1],
       score: r[COL_RESP_SCORE - 1],
-      notes: r[COL_RESP_NOTES - 1]
+      notes: r[COL_RESP_NOTES - 1],
+      status: r[COL_RESP_STATUS - 1]
     }));
 
   const childJson = {
@@ -888,11 +1130,20 @@ function getChildProfile(e) {
 // ====== MODULES CRUD + ASSIGNMENTS ======
 
 function listModules(e) {
+  const actor = getActorContext(e);
+  if (actor.role === 'specialist') {
+    return jsonResponse({ success: false, error: 'Specialist access denied' });
+  }
+  const statusFilter = String(e.parameter.status || '').trim().toLowerCase();
   const data = getDataRangeValues(getSheet(SHEET_MODULES));
   const assignments = getDataRangeValues(getSheet(SHEET_MODULE_ASSIGNMENTS));
 
   const modules = data
-    .filter(r => r[COL_MOD_STATUS - 1] !== 'deleted')
+    .filter(r => {
+      const status = String(r[COL_MOD_STATUS - 1] || '').toLowerCase();
+      if (statusFilter) return status === statusFilter;
+      return status !== 'deleted';
+    })
     .map(r => {
       const id = r[COL_MOD_ID - 1];
       const numCenters = assignments.filter(a => a[COL_ASSIGN_MOD_ID - 1] == id && a[COL_ASSIGN_STATUS - 1] !== 'deleted').length;
@@ -911,12 +1162,15 @@ function listModules(e) {
 }
 
 function createModule(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const name = (e.parameter.name || '').trim();
   const photo = (e.parameter.photo_url || '').trim();
   const desc = (e.parameter.description || '').trim();
   const minutes = (e.parameter.minutes_to_play || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!name) return jsonResponse({ success: false, error: 'name required' });
 
@@ -938,9 +1192,12 @@ function createModule(e) {
 }
 
 function updateModule(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const moduleId = (e.parameter.module_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!moduleId) return jsonResponse({ success: false, error: 'module_id required' });
 
@@ -976,9 +1233,12 @@ function updateModule(e) {
 }
 
 function deleteModule(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const moduleId = (e.parameter.module_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!moduleId) return jsonResponse({ success: false, error: 'module_id required' });
 
@@ -1003,16 +1263,32 @@ function deleteModule(e) {
 }
 
 function assignModuleToCenter(e) {
+  const actorCtx = getActorContext(e);
   const moduleId = (e.parameter.module_id || '').trim();
   const centerId = (e.parameter.center_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!moduleId || !centerId) {
     return jsonResponse({ success: false, error: 'module_id and center_id required' });
   }
+  if (actorCtx.role !== 'admin') {
+    const denied = ensureCenterAccess(actorCtx, centerId);
+    if (denied) return denied;
+  }
 
   const sheet = getSheet(SHEET_MODULE_ASSIGNMENTS);
+  const data = getDataRangeValues(sheet);
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][COL_ASSIGN_MOD_ID - 1]) === moduleId &&
+        String(data[i][COL_ASSIGN_CENTER_ID - 1]) === centerId) {
+      if (data[i][COL_ASSIGN_STATUS - 1] === 'deleted') {
+        sheet.getRange(i + 2, COL_ASSIGN_STATUS).setValue('active');
+        appendAuditLog(actor, role, 'update', 'Module_Assignment', data[i][COL_ASSIGN_ID - 1], 'Reactivated assignment');
+      }
+      return jsonResponse({ success: true, assignment_id: data[i][COL_ASSIGN_ID - 1] });
+    }
+  }
   const newId = generateId('assignment');
 
   sheet.appendRow([
@@ -1028,10 +1304,72 @@ function assignModuleToCenter(e) {
   return jsonResponse({ success: true, assignment_id: newId });
 }
 
+function assignModulesToCenter(e) {
+  const actorCtx = getActorContext(e);
+  const centerId = (e.parameter.center_id || '').trim();
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
+  let modulesJson = (e.parameter.module_ids_json || '').trim();
+  const moduleIdsParam = e.parameter.module_ids;
+
+  if (!centerId) return jsonResponse({ success: false, error: 'center_id required' });
+  if (actorCtx.role !== 'admin') {
+    const denied = ensureCenterAccess(actorCtx, centerId);
+    if (denied) return denied;
+  }
+
+  let moduleIds = [];
+  if (modulesJson) {
+    try {
+      moduleIds = JSON.parse(modulesJson);
+    } catch (ex) {
+      return jsonResponse({ success: false, error: 'Invalid module_ids_json: ' + ex.message });
+    }
+  } else if (moduleIdsParam) {
+    moduleIds = Array.isArray(moduleIdsParam) ? moduleIdsParam : [moduleIdsParam];
+  }
+
+  if (!moduleIds.length) {
+    return jsonResponse({ success: false, error: 'module_ids required' });
+  }
+
+  const sheet = getSheet(SHEET_MODULE_ASSIGNMENTS);
+  const data = getDataRangeValues(sheet);
+  const results = [];
+
+  moduleIds.forEach(rawId => {
+    const moduleId = String(rawId);
+    let existingRow = null;
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][COL_ASSIGN_MOD_ID - 1]) === moduleId &&
+          String(data[i][COL_ASSIGN_CENTER_ID - 1]) === centerId) {
+        existingRow = { rowIndex: i + 2, row: data[i] };
+        break;
+      }
+    }
+    if (existingRow) {
+      if (existingRow.row[COL_ASSIGN_STATUS - 1] === 'deleted') {
+        sheet.getRange(existingRow.rowIndex, COL_ASSIGN_STATUS).setValue('active');
+        appendAuditLog(actor, role, 'update', 'Module_Assignment', existingRow.row[COL_ASSIGN_ID - 1], 'Reactivated assignment');
+      }
+      results.push(existingRow.row[COL_ASSIGN_ID - 1]);
+      return;
+    }
+
+    const newId = generateId('assignment');
+    sheet.appendRow([newId, moduleId, centerId, 'active']);
+    appendAuditLog(actor, role, 'create', 'Module_Assignment', newId, 'Assigned module ' + moduleId + ' to center ' + centerId);
+    results.push(newId);
+  });
+
+  return jsonResponse({ success: true, assignment_ids: results });
+}
+
 function removeModuleFromCenter(e) {
+  const actorCtx = getActorContext(e);
   const assignmentId = (e.parameter.assignment_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!assignmentId) {
     return jsonResponse({ success: false, error: 'assignment_id required' });
@@ -1050,6 +1388,11 @@ function removeModuleFromCenter(e) {
   if (rowIndex === -1) {
     return jsonResponse({ success: false, error: 'Assignment not found' });
   }
+  if (actorCtx.role !== 'admin') {
+    const rowCenterId = data[rowIndex - 2][COL_ASSIGN_CENTER_ID - 1];
+    const denied = ensureCenterAccess(actorCtx, rowCenterId);
+    if (denied) return denied;
+  }
 
   sheet.getRange(rowIndex, COL_ASSIGN_STATUS).setValue('deleted');
   appendAuditLog(actor, role, 'delete', 'Module_Assignment', assignmentId, 'Soft delete module assignment');
@@ -1058,8 +1401,11 @@ function removeModuleFromCenter(e) {
 }
 
 function listCenterModules(e) {
+  const actor = getActorContext(e);
   const centerId = (e.parameter.center_id || '').trim();
   if (!centerId) return jsonResponse({ success: false, error: 'center_id required' });
+  const denied = ensureCenterAccess(actor, centerId);
+  if (denied) return denied;
 
   const modulesSheet = getSheet(SHEET_MODULES);
   const modulesData = getDataRangeValues(modulesSheet);
@@ -1096,8 +1442,17 @@ function listCenterModules(e) {
 // ====== ASSESSMENTS (Questions + Responses) ======
 
 function listQuestions(e) {
+  const actor = getActorContext(e);
+  if (actor.role === 'center') {
+    return jsonResponse({ success: false, error: 'Center access denied' });
+  }
+  const statusFilter = String(e.parameter.status || '').trim().toLowerCase();
   const data = getDataRangeValues(getSheet(SHEET_QUESTIONS))
-    .filter(r => r[COL_Q_STATUS - 1] !== 'deleted')
+    .filter(r => {
+      const status = String(r[COL_Q_STATUS - 1] || '').toLowerCase();
+      if (statusFilter) return status === statusFilter;
+      return status !== 'deleted';
+    })
     .map(r => ({
       question_id: r[COL_Q_ID - 1],
       question_text: r[COL_Q_TEXT - 1],
@@ -1109,11 +1464,14 @@ function listQuestions(e) {
 }
 
 function createQuestion(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const text = (e.parameter.question_text || '').trim();
   const category = (e.parameter.category || '').trim();
   const difficulty = (e.parameter.difficulty || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!text) return jsonResponse({ success: false, error: 'question_text required' });
 
@@ -1134,9 +1492,12 @@ function createQuestion(e) {
 }
 
 function updateQuestion(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const qId = (e.parameter.question_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!qId) return jsonResponse({ success: false, error: 'question_id required' });
 
@@ -1170,9 +1531,12 @@ function updateQuestion(e) {
 }
 
 function deleteQuestion(e) {
+  const actorCtx = getActorContext(e);
+  const denied = ensureAdmin(actorCtx);
+  if (denied) return denied;
   const qId = (e.parameter.question_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'admin');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'admin');
 
   if (!qId) return jsonResponse({ success: false, error: 'question_id required' });
 
@@ -1204,14 +1568,19 @@ function deleteQuestion(e) {
 // - notes (optional, for whole assessment)
 // - answers_json: JSON string array of {question_id, score, notes?}
 function createAssessment(e) {
+  const actorCtx = getActorContext(e);
   const childId = (e.parameter.child_id || '').trim();
-  const specId = (e.parameter.specialist_id || '').trim();
-  const centerId = (e.parameter.center_id || '').trim();
+  let specId = (e.parameter.specialist_id || '').trim();
+  let centerId = (e.parameter.center_id || '').trim();
   const date = (e.parameter.date || '').trim();
   const answersJson = (e.parameter.answers_json || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'specialist');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'specialist');
 
+  if (actorCtx.role === 'specialist') {
+    specId = actorCtx.specialist_id;
+    centerId = actorCtx.center_id || centerId;
+  }
   if (!childId || !specId || !date || !answersJson) {
     return jsonResponse({ success: false, error: 'child_id, specialist_id, date, answers_json required' });
   }
@@ -1236,7 +1605,8 @@ function createAssessment(e) {
       date,
       a.question_id,
       a.score,
-      a.notes || ''
+      a.notes || '',
+      'active'
     ]);
     createdIds.push(respId);
   });
@@ -1248,11 +1618,12 @@ function createAssessment(e) {
 
 // updateAssessment: here we assume front-end will re-send full set of responses to replace existing ones for that child & date
 function updateAssessment(e) {
+  const actorCtx = getActorContext(e);
   const childId = (e.parameter.child_id || '').trim();
   const date = (e.parameter.date || '').trim();
   const answersJson = (e.parameter.answers_json || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'specialist');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'specialist');
 
   if (!childId || !date || !answersJson) {
     return jsonResponse({ success: false, error: 'child_id, date, answers_json required' });
@@ -1268,11 +1639,11 @@ function updateAssessment(e) {
   const sheet = getSheet(SHEET_RESPONSES);
   const data = getDataRangeValues(sheet);
 
-  // delete existing responses for this child & date (soft delete by notes or just overwrite)
+  // soft delete existing responses for this child & date
   for (let i = data.length - 1; i >= 0; i--) {
     if (data[i][COL_RESP_CHILD_ID - 1] == childId &&
         String(data[i][COL_RESP_DATE - 1]) == date) {
-      sheet.deleteRow(i + 2); // adjust for header
+      sheet.getRange(i + 2, COL_RESP_STATUS).setValue('deleted');
     }
   }
 
@@ -1282,12 +1653,13 @@ function updateAssessment(e) {
     sheet.appendRow([
       respId,
       childId,
-      a.specialist_id || '', // optional
-      a.center_id || '',
+      a.specialist_id || actorCtx.specialist_id || '',
+      a.center_id || actorCtx.center_id || '',
       date,
       a.question_id,
       a.score,
-      a.notes || ''
+      a.notes || '',
+      'active'
     ]);
     createdIds.push(respId);
   });
@@ -1299,11 +1671,20 @@ function updateAssessment(e) {
 
 // listAssessmentResponses can filter by child, specialist, center, date range (simple)
 function listAssessmentResponses(e) {
-  const childId = (e.parameter.child_id || '').trim();
-  const specId = (e.parameter.specialist_id || '').trim();
-  const centerId = (e.parameter.center_id || '').trim();
+  const actor = getActorContext(e);
+  let childId = (e.parameter.child_id || '').trim();
+  let specId = (e.parameter.specialist_id || '').trim();
+  let centerId = (e.parameter.center_id || '').trim();
   const fromDate = (e.parameter.from_date || '').trim();
   const toDate = (e.parameter.to_date || '').trim();
+  const statusFilter = String(e.parameter.status || '').trim().toLowerCase();
+  if (actor.role === 'center') {
+    centerId = actor.center_id;
+  }
+  if (actor.role === 'specialist') {
+    specId = actor.specialist_id;
+    centerId = actor.center_id || centerId;
+  }
 
   const data = getDataRangeValues(getSheet(SHEET_RESPONSES));
 
@@ -1311,6 +1692,12 @@ function listAssessmentResponses(e) {
     if (childId && r[COL_RESP_CHILD_ID - 1] != childId) return false;
     if (specId && r[COL_RESP_SPEC_ID - 1] != specId) return false;
     if (centerId && r[COL_RESP_CENTER_ID - 1] != centerId) return false;
+    const status = String(r[COL_RESP_STATUS - 1] || '').toLowerCase();
+    if (statusFilter) {
+      if (status !== statusFilter) return false;
+    } else if (status === 'deleted') {
+      return false;
+    }
 
     if (fromDate) {
       if (new Date(r[COL_RESP_DATE - 1]) < new Date(fromDate)) return false;
@@ -1328,7 +1715,8 @@ function listAssessmentResponses(e) {
     date: r[COL_RESP_DATE - 1],
     question_id: r[COL_RESP_Q_ID - 1],
     score: r[COL_RESP_SCORE - 1],
-    notes: r[COL_RESP_NOTES - 1]
+    notes: r[COL_RESP_NOTES - 1],
+    status: r[COL_RESP_STATUS - 1]
   }));
 
   return jsonResponse({ success: true, responses: responses });
@@ -1337,8 +1725,19 @@ function listAssessmentResponses(e) {
 // ====== SESSIONS ======
 
 function listSessionsByChild(e) {
+  const actor = getActorContext(e);
   const childId = (e.parameter.child_id || '').trim();
   if (!childId) return jsonResponse({ success: false, error: 'child_id required' });
+  if (actor.role !== 'admin') {
+    const childRow = getChildRowById(childId);
+    if (!childRow) return jsonResponse({ success: false, error: 'Child not found' });
+    if (actor.role === 'center' && String(childRow[COL_CHILD_CENTER_ID - 1] || '') !== String(actor.center_id || '')) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
+    if (actor.role === 'specialist' && String(childRow[COL_CHILD_SPEC_ID - 1] || '') !== String(actor.specialist_id || '')) {
+      return jsonResponse({ success: false, error: 'Specialist access denied' });
+    }
+  }
 
   const data = getDataRangeValues(getSheet(SHEET_SESSIONS))
     .filter(r => r[COL_SESS_CHILD_ID - 1] == childId)
@@ -1365,16 +1764,21 @@ function listSessionsByChild(e) {
 // - duration_minutes
 // - notes
 function createSession(e) {
+  const actorCtx = getActorContext(e);
   const childId = (e.parameter.child_id || '').trim();
-  const specId = (e.parameter.specialist_id || '').trim();
-  const centerId = (e.parameter.center_id || '').trim();
+  let specId = (e.parameter.specialist_id || '').trim();
+  let centerId = (e.parameter.center_id || '').trim();
   const date = (e.parameter.date || '').trim();
   const modulesJson = (e.parameter.module_ids_json || '').trim();
   const duration = (e.parameter.duration_minutes || '').trim();
   const notes = (e.parameter.notes || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'specialist');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'specialist');
 
+  if (actorCtx.role === 'specialist') {
+    specId = actorCtx.specialist_id;
+    centerId = actorCtx.center_id || centerId;
+  }
   if (!childId || !specId || !date || !modulesJson) {
     return jsonResponse({ success: false, error: 'child_id, specialist_id, date, module_ids_json required' });
   }
@@ -1412,9 +1816,10 @@ function createSession(e) {
 // updateSession updates a single row (one module)
 // expects session_id
 function updateSession(e) {
+  const actorCtx = getActorContext(e);
   const sessId = (e.parameter.session_id || '').trim();
-  const actor = (e.parameter.actor_username || 'system');
-  const role = (e.parameter.actor_role || 'specialist');
+  const actor = (e.parameter.actor_username || actorCtx.username || 'system');
+  const role = (e.parameter.actor_role || actorCtx.role || 'specialist');
 
   if (!sessId) return jsonResponse({ success: false, error: 'session_id required' });
 
@@ -1430,6 +1835,15 @@ function updateSession(e) {
   }
   if (rowIndex === -1) {
     return jsonResponse({ success: false, error: 'Session not found' });
+  }
+  if (actorCtx.role !== 'admin') {
+    const row = data[rowIndex - 2];
+    if (actorCtx.role === 'center' && String(row[COL_SESS_CENTER_ID - 1] || '') !== String(actorCtx.center_id || '')) {
+      return jsonResponse({ success: false, error: 'Center access denied' });
+    }
+    if (actorCtx.role === 'specialist' && String(row[COL_SESS_SPEC_ID - 1] || '') !== String(actorCtx.specialist_id || '')) {
+      return jsonResponse({ success: false, error: 'Specialist access denied' });
+    }
   }
 
   const date = e.parameter.date;
@@ -1450,6 +1864,9 @@ function updateSession(e) {
 // ====== AUDIT LOG ======
 
 function getAuditLog(e) {
+  const actor = getActorContext(e);
+  const denied = ensureAdmin(actor);
+  if (denied) return denied;
   const limit = Number(e.parameter.limit || 100);
   const data = getDataRangeValues(getSheet(SHEET_AUDIT));
   const logs = data.slice(-limit).map(r => ({
@@ -1464,4 +1881,190 @@ function getAuditLog(e) {
   }));
 
   return jsonResponse({ success: true, logs: logs });
+}
+
+function getDashboardReports(e) {
+  const actor = getActorContext(e);
+  const denied = ensureAdmin(actor);
+  if (denied) return denied;
+
+  const centers = getDataRangeValues(getSheet(SHEET_CENTERS))
+    .filter(r => r[COL_CENTER_STATUS - 1] !== 'deleted');
+  const specs = getDataRangeValues(getSheet(SHEET_SPECIALISTS))
+    .filter(r => r[COL_SPEC_STATUS - 1] !== 'deleted');
+  const children = getDataRangeValues(getSheet(SHEET_CHILDREN))
+    .filter(r => r[COL_CHILD_STATUS - 1] !== 'deleted');
+  const modules = getDataRangeValues(getSheet(SHEET_MODULES))
+    .filter(r => r[COL_MOD_STATUS - 1] !== 'deleted');
+  const sessions = getDataRangeValues(getSheet(SHEET_SESSIONS));
+  const responses = getDataRangeValues(getSheet(SHEET_RESPONSES))
+    .filter(r => String(r[COL_RESP_STATUS - 1] || '').toLowerCase() !== 'deleted');
+  const audit = getDataRangeValues(getSheet(SHEET_AUDIT));
+
+  const moduleMap = {};
+  modules.forEach(r => {
+    moduleMap[r[COL_MOD_ID - 1]] = r[COL_MOD_NAME - 1];
+  });
+
+  const moduleUsage = {};
+  sessions.forEach(r => {
+    const modId = r[COL_SESS_MODULE_ID - 1];
+    if (!modId) return;
+    moduleUsage[modId] = (moduleUsage[modId] || 0) + 1;
+  });
+
+  const topModules = Object.keys(moduleUsage)
+    .map(id => ({ module_id: id, name: moduleMap[id] || id, sessions: moduleUsage[id] }))
+    .sort((a, b) => b.sessions - a.sessions)
+    .slice(0, 6);
+
+  const dayLabels = [];
+  const sessionByDay = [];
+  const assessmentByDay = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const label = Utilities.formatDate(d, Session.getScriptTimeZone(), 'EEE');
+    const key = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    dayLabels.push(label);
+    sessionByDay.push({ key: key, value: 0 });
+    assessmentByDay.push({ key: key, value: 0 });
+  }
+
+  sessions.forEach(r => {
+    const rawDate = r[COL_SESS_DATE - 1];
+    if (!rawDate) return;
+    const key = Utilities.formatDate(new Date(rawDate), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const idx = sessionByDay.findIndex(item => item.key === key);
+    if (idx === -1) return;
+    const duration = Number(r[COL_SESS_DURATION - 1]) || 1;
+    sessionByDay[idx].value += duration;
+  });
+
+  responses.forEach(r => {
+    const rawDate = r[COL_RESP_DATE - 1];
+    if (!rawDate) return;
+    const key = Utilities.formatDate(new Date(rawDate), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const idx = assessmentByDay.findIndex(item => item.key === key);
+    if (idx === -1) return;
+    assessmentByDay[idx].value += 1;
+  });
+
+  const scored = responses.map(r => Number(r[COL_RESP_SCORE - 1]) || 0);
+  const avgScore = scored.length
+    ? Math.round(scored.reduce((acc, val) => acc + val, 0) / scored.length)
+    : 0;
+
+  const centerScores = {};
+  responses.forEach(r => {
+    const centerId = r[COL_RESP_CENTER_ID - 1];
+    if (!centerId) return;
+    if (!centerScores[centerId]) {
+      centerScores[centerId] = { total: 0, count: 0 };
+    }
+    centerScores[centerId].total += Number(r[COL_RESP_SCORE - 1]) || 0;
+    centerScores[centerId].count += 1;
+  });
+
+  const centerMap = {};
+  centers.forEach(r => {
+    centerMap[r[COL_CENTER_ID - 1]] = r[COL_CENTER_NAME - 1];
+  });
+
+  const childrenByCenterMap = {};
+  children.forEach(r => {
+    const centerId = r[COL_CHILD_CENTER_ID - 1];
+    if (!centerId) return;
+    childrenByCenterMap[centerId] = (childrenByCenterMap[centerId] || 0) + 1;
+  });
+
+  const specialistsByCenterMap = {};
+  specs.forEach(r => {
+    const centerId = r[COL_SPEC_CENTER_ID - 1];
+    if (!centerId) return;
+    specialistsByCenterMap[centerId] = (specialistsByCenterMap[centerId] || 0) + 1;
+  });
+
+  const childrenByCenter = centers.map(r => {
+    const centerId = r[COL_CENTER_ID - 1];
+    return {
+      center_id: centerId,
+      name: centerMap[centerId] || centerId,
+      count: childrenByCenterMap[centerId] || 0
+    };
+  }).sort((a, b) => b.count - a.count);
+
+  const specialistsByCenter = centers.map(r => {
+    const centerId = r[COL_CENTER_ID - 1];
+    return {
+      center_id: centerId,
+      name: centerMap[centerId] || centerId,
+      count: specialistsByCenterMap[centerId] || 0
+    };
+  }).sort((a, b) => b.count - a.count);
+
+  const auditLabels = [];
+  const auditByDay = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const label = Utilities.formatDate(d, Session.getScriptTimeZone(), 'EEE');
+    const key = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    auditLabels.push(label);
+    auditByDay.push({ key: key, value: 0 });
+  }
+
+  audit.forEach(r => {
+    const rawDate = r[COL_LOG_TIMESTAMP - 1];
+    if (!rawDate) return;
+    const key = Utilities.formatDate(new Date(rawDate), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const idx = auditByDay.findIndex(item => item.key === key);
+    if (idx === -1) return;
+    auditByDay[idx].value += 1;
+  });
+
+  const centerProgress = Object.keys(centerScores).map(id => ({
+    center_id: id,
+    name: centerMap[id] || id,
+    score: centerScores[id].count
+      ? Math.round(centerScores[id].total / centerScores[id].count)
+      : 0
+  })).sort((a, b) => b.score - a.score).slice(0, 6);
+
+  const activity = audit.slice(-8).map(r => ({
+    log_id: r[COL_LOG_ID - 1],
+    timestamp: r[COL_LOG_TIMESTAMP - 1],
+    username: r[COL_LOG_USERNAME - 1],
+    role: r[COL_LOG_ROLE - 1],
+    action: r[COL_LOG_ACTION - 1],
+    entity_type: r[COL_LOG_ENTITY_TYPE - 1],
+    entity_id: r[COL_LOG_ENTITY_ID - 1],
+    notes: r[COL_LOG_NOTES - 1]
+  }));
+
+  return jsonResponse({
+    success: true,
+    totals: {
+      centers: centers.length,
+      specialists: specs.length,
+      children: children.length,
+      modules: modules.length
+    },
+    top_modules: topModules,
+    sessions_by_day: {
+      labels: dayLabels,
+      therapy: sessionByDay.map(item => item.value),
+      assessments: assessmentByDay.map(item => item.value)
+    },
+    children_by_center: childrenByCenter,
+    specialists_by_center: specialistsByCenter,
+    avg_assessment_score: avgScore,
+    center_progress: centerProgress,
+    recent_activity: activity,
+    audit_timeline: {
+      labels: auditLabels,
+      counts: auditByDay.map(item => item.value)
+    }
+  });
 }

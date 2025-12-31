@@ -8,6 +8,7 @@ let assignModulesAssignmentMap = new Map();
 let shellSidebar = null;
 let assessmentCharts = {};
 let assessmentChildrenCache = [];
+let allowedSections = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   authGuard("center");
@@ -28,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   bindAssessmentFilters();
+  updateSettingsProfile();
   loadSection("dashboard");
   setActiveSidebarForSection("dashboard");
   updateHeaderTitle("dashboard");
@@ -37,16 +39,24 @@ function initShell() {
   const sidebarHost = document.getElementById("appSidebar");
   const headerHost = document.getElementById("appHeader");
   if (!sidebarHost || !headerHost || !window.UnitySphereShell) return;
-  const sidebar = window.UnitySphereShell.buildSidebar({ role: "center", active: "dashboard" });
+  const role = "center";
+  const sidebar = window.UnitySphereShell.buildSidebar({ role, active: "dashboard" });
   const header = window.UnitySphereShell.buildHeader({ title: "Dashboard" });
   sidebarHost.replaceWith(sidebar);
   headerHost.replaceWith(header);
   shellSidebar = sidebar;
   window.UnitySphereShell.wireEscManager();
+  if (window.UnitySphereShell.applyRoleVisibility) {
+    window.UnitySphereShell.applyRoleVisibility({ role });
+  }
+  if (window.UnitySphereShell.getAllowedSectionIds) {
+    allowedSections = window.UnitySphereShell.getAllowedSectionIds(role);
+  }
 
   sidebar.addEventListener("click", (event) => {
     const nav = event.target.closest("[data-nav]");
     if (!nav || nav.classList.contains("disabled")) return;
+    if (allowedSections && !allowedSections.has(nav.dataset.nav)) return;
     const section = mapNavToSection(nav.dataset.nav);
     if (!section) return;
     switchSection(section);
@@ -60,6 +70,7 @@ function bindNavigation() {
   document.querySelectorAll(".nav-link").forEach(btn => {
     btn.addEventListener("click", () => {
       const section = btn.dataset.section;
+      if (allowedSections && !allowedSections.has(section)) return;
       switchSection(section);
       updateHeaderTitle(section);
       loadSection(section);
@@ -111,6 +122,9 @@ function loadSection(section) {
       break;
     case "assessment":
       loadAssessmentSection();
+      break;
+    case "settings":
+      updateSettingsProfile();
       break;
   }
 }
@@ -169,6 +183,7 @@ function resetSpecialistModal() {
   document.getElementById("specNameInput").value = "";
   document.getElementById("specUsernameInput").value = "";
   document.getElementById("specPasswordInput").value = "";
+  applyPasswordMaskTitle(document.getElementById("specPasswordInput"), "");
   document.getElementById("specDescriptionInput").value = "";
   setModalError("specModalError", "");
   setButtonLoading(document.getElementById("specSaveBtn"), false);
@@ -191,6 +206,25 @@ function getInitials(name = "") {
   const parts = cleaned.split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function applyPasswordMaskTitle(input, value) {
+  if (!input) return;
+  if (typeof MaskPasswordDisplay === "function" && value) {
+    input.title = MaskPasswordDisplay(value);
+  } else {
+    input.removeAttribute("title");
+  }
+}
+
+async function confirmDangerAction(message) {
+  if (typeof ConfirmDangerAction === "function") {
+    return ConfirmDangerAction(message);
+  }
+  if (typeof window.confirm === "function") {
+    return window.confirm(message);
+  }
+  return false;
 }
 
 function setUserAvatar() {
@@ -221,7 +255,8 @@ function updateHeaderTitle(section) {
     specialists: "Specialists",
     children: "Children",
     "vr-modules": "VR Modules",
-    assessment: "Assessment"
+    assessment: "Assessment",
+    settings: "Settings"
   };
   title.textContent = map[section] || "Dashboard";
 }
@@ -232,7 +267,8 @@ function mapNavToSection(navId) {
     specialists: "specialists",
     children: "children",
     "vr-modules": "vr-modules",
-    assessment: "assessment"
+    assessment: "assessment",
+    settings: "settings"
   };
   return map[navId] || null;
 }
@@ -244,7 +280,8 @@ function setActiveSidebarForSection(section) {
     specialists: "specialists",
     children: "children",
     "vr-modules": "vr-modules",
-    assessment: "assessment"
+    assessment: "assessment",
+    settings: "settings"
   };
   const navId = map[section];
   if (navId) {
@@ -256,6 +293,23 @@ function setWelcomeName() {
   const welcome = document.getElementById("welcomeName");
   if (!welcome) return;
   welcome.textContent = center.name || center.username || "Center";
+}
+
+function updateSettingsProfile() {
+  const name = center.name || center.username || "Center";
+  const centerLabel = center.name || center.center_id || "--";
+  setText("settingsProfileName", name);
+  setText("settingsProfileRole", "Role: Center");
+  setText("settingsProfileCenter", `Center: ${centerLabel}`);
+  const photo = center.photo || center.photo_url || "";
+  const avatar = document.getElementById("settingsAvatar");
+  if (typeof applyAvatarFallback === "function") {
+    applyAvatarFallback(avatar, name, photo);
+  } else if (avatar) {
+    avatar.setAttribute("data-initials", getInitials(name));
+    avatar.style.backgroundImage = photo ? `url('${photo}')` : "";
+    avatar.classList.toggle("has-photo", Boolean(photo));
+  }
 }
 
 function bindAssessmentFilters() {
@@ -340,7 +394,12 @@ function clearAssessmentDetails() {
   const details = document.getElementById("assessmentDetails");
   const emptyCard = document.getElementById("assessmentEmptyCard");
   if (details) details.style.display = "none";
-  if (emptyCard) emptyCard.style.display = "grid";
+  if (emptyCard) {
+    if (typeof EmptyState === "function") {
+      emptyCard.innerHTML = EmptyState("assessment", "Select a child to view assessment.");
+    }
+    emptyCard.style.display = "grid";
+  }
   clearAssessmentCharts();
 }
 
@@ -602,6 +661,7 @@ async function loadSpecialists() {
             <div class="avatar avatar-static${avatar ? " has-photo" : ""}" ${avatar ? `style="background-image:url('${avatar}')"` : `data-initials="${initials}"`}></div>
             <strong>${s.name || s.username || "Specialist"}</strong>
             <div class="specialist-role">${s.specialty || s.type || "Psychology"}</div>
+            <div class="card-meta">${StatusBadge(s.status)}</div>
             <div class="language-pills">
               <span class="pill small">EN</span>
             </div>
@@ -653,6 +713,7 @@ async function loadChildren() {
     card.innerHTML = `
       <header>
         <strong>${ch.name || "Child"}</strong>
+        ${StatusBadge(ch.status)}
         <span class="chip subtle">${ch.age || "N/A"} yrs</span>
       </header>
       <div class="module-meta">
@@ -698,6 +759,7 @@ async function loadModules() {
     card.innerHTML = `
       <header>
         <strong>${m.name || "VR Module"}</strong>
+        ${StatusBadge(m.status)}
         <span class="chip subtle">${m.minutes_to_play ?? 0} min</span>
       </header>
       <div class="hint">${m.description || "No description"}</div>
@@ -811,7 +873,14 @@ async function openAssignModulesModal(btn) {
   );
 
   if (!allModulesCache.length) {
-    assignedList.innerHTML = `<div class="empty-state"><div class="empty-title">No modules available</div><div>Ask an admin to add VR modules before assigning them.</div></div>`;
+    if (typeof EmptyState === "function") {
+      assignedList.innerHTML = EmptyState(
+        "modules available",
+        "Ask an admin to add VR modules before assigning them."
+      );
+    } else {
+      assignedList.innerHTML = `<div class="empty-state"><div class="empty-title">No modules available</div><div>Ask an admin to add VR modules before assigning them.</div></div>`;
+    }
     unassignedList.innerHTML = "";
     updateAssignModulesCounts(0, 0);
     openModal("assignModulesModal");
@@ -931,6 +1000,7 @@ function openEditSpecialistModal(specId) {
   document.getElementById("specNameInput").value = specialist.name || "";
   document.getElementById("specUsernameInput").value = specialist.username || "";
   document.getElementById("specPasswordInput").value = specialist.password || "";
+  applyPasswordMaskTitle(document.getElementById("specPasswordInput"), specialist.password || "");
   document.getElementById("specDescriptionInput").value = specialist.description || "";
   openModal("specialistModal");
 }
@@ -990,7 +1060,7 @@ async function saveSpecialist() {
 }
 
 async function deleteSpecialist(specId, btn) {
-  if (!confirm("Delete this specialist?")) return;
+  if (!(await confirmDangerAction("Delete this specialist?"))) return;
   setButtonLoading(btn, true, "Deleting...");
   const res = await apiRequest("deleteSpecialist", {
     specialist_id: specId,
@@ -1094,7 +1164,7 @@ async function saveChild() {
 }
 
 async function deleteChild(childId, btn) {
-  if (!confirm("Delete this child?")) return;
+  if (!(await confirmDangerAction("Delete this child?"))) return;
   setButtonLoading(btn, true, "Deleting...");
   const res = await apiRequest("deleteChild", {
     child_id: childId,

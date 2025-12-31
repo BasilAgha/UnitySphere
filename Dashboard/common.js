@@ -1,7 +1,7 @@
 /*****************************************************
  *  GLOBAL CONFIG
  *****************************************************/
-const API_URL = "https://script.google.com/macros/s/AKfycbxErCCEs6YOSy18SufoYe4ZSYSbh6yOvvu7pAvpygqtTUE2m1LPZ_z9xH1TjK3abDlS/exec"; // <-- Replace with your deployed Apps Script URL
+const API_URL = "https://script.google.com/macros/s/AKfycbyFq61EcSLBmy9Tq3A9T36J1cBiLJzpRyn0g40pjvcRP5tLnYNB8GiNDyNeKiJK4qvz/exec"; // <-- Replace with your deployed Apps Script URL
 
 
 /*****************************************************
@@ -17,6 +17,12 @@ async function apiRequest(action, params = {}) {
       fd.append(key, val);
     }
   });
+  const role = localStorage.getItem("role") || "";
+  const user = getCurrentUser();
+  if (role) fd.append("actor_role", role);
+  if (user?.username) fd.append("actor_username", user.username);
+  if (user?.center_id) fd.append("actor_center_id", user.center_id);
+  if (user?.specialist_id) fd.append("actor_specialist_id", user.specialist_id);
 
   try {
     const res = await fetch(API_URL, { method: "POST", body: fd });

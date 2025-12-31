@@ -1,13 +1,41 @@
 (function () {
-  const NAV_ITEMS = [
-    { id: "dashboard", label: "Dashboard", roles: ["admin", "center"] },
-    { id: "centers", label: "Centers", roles: ["admin"] },
-    { id: "specialists", label: "Specialists", roles: ["admin", "center", "specialist"] },
-    { id: "children", label: "Children", roles: ["center"] },
-    { id: "vr-modules", label: "VR Modules", roles: ["admin", "center", "specialist"] },
-    { id: "assessment", label: "Assessment", roles: ["admin", "center", "specialist"] },
-    { id: "settings", label: "Settings", roles: ["admin", "specialist"] },
-  ];
+  const ROLE_NAV = {
+    admin: [
+      { id: "dashboard", label: "Dashboard" },
+      { id: "centers", label: "Centers" },
+      { id: "specialists", label: "Specialists" },
+      { id: "children", label: "Children" },
+      { id: "vr-modules", label: "VR Modules" },
+      { id: "assessment", label: "Assessment" },
+      { id: "reports", label: "Reports" },
+      { id: "settings", label: "Settings" },
+    ],
+    center: [
+      { id: "dashboard", label: "Dashboard" },
+      { id: "specialists", label: "Specialists" },
+      { id: "children", label: "Children" },
+      { id: "vr-modules", label: "VR Modules" },
+      { id: "assessment", label: "Assessment" },
+      { id: "settings", label: "Settings" },
+    ],
+    specialist: [
+      { id: "overview", label: "Overview" },
+      { id: "children", label: "Children" },
+      { id: "assessments", label: "Assessments" },
+      { id: "settings", label: "Settings" },
+    ],
+  };
+
+  function getRoleNav(role) {
+    if (role && ROLE_NAV[role]) {
+      return ROLE_NAV[role].map((item) => ({ ...item }));
+    }
+    return [];
+  }
+
+  function getAllowedSectionIds(role) {
+    return new Set(getRoleNav(role).map((item) => item.id));
+  }
 
   function applyTheme(value) {
     const theme = value === "dark" ? "dark" : "light";
@@ -50,8 +78,8 @@
     const list = document.createElement("ul");
     list.className = "nav-list";
 
-    NAV_ITEMS.forEach((item) => {
-      if (role && item.roles && !item.roles.includes(role)) return;
+    const items = getRoleNav(role);
+    items.forEach((item) => {
       const li = document.createElement("li");
       const link = document.createElement("a");
       link.className = "nav-item";
@@ -60,12 +88,6 @@
 
       if (active === item.id) {
         link.classList.add("active");
-      }
-
-      if (role && item.roles && !item.roles.includes(role)) {
-        link.classList.add("disabled");
-        link.setAttribute("aria-disabled", "true");
-        link.tabIndex = -1;
       }
 
       li.appendChild(link);
@@ -123,6 +145,165 @@
     items.forEach((item) => item.classList.toggle("active", item.dataset.nav === active));
   }
 
+  function applyRoleVisibility({ role, root } = {}) {
+    if (!role) return;
+    const scope = root || document;
+    const allowed = getAllowedSectionIds(role);
+
+    scope.querySelectorAll(".section").forEach((section) => {
+      const rawId = section.id || "";
+      const sectionId = rawId.startsWith("section-") ? rawId.slice(8) : rawId;
+      if (!allowed.has(sectionId)) {
+        section.hidden = true;
+        section.setAttribute("aria-hidden", "true");
+        section.classList.remove("active");
+      } else {
+        section.hidden = false;
+        section.removeAttribute("aria-hidden");
+      }
+    });
+
+    scope.querySelectorAll("[data-section]").forEach((link) => {
+      const sectionId = link.dataset.section;
+      if (!sectionId) return;
+      if (!allowed.has(sectionId)) {
+        link.hidden = true;
+        link.setAttribute("aria-hidden", "true");
+        link.classList.add("disabled");
+        link.disabled = true;
+      } else {
+        link.hidden = false;
+        link.removeAttribute("aria-hidden");
+        link.classList.remove("disabled");
+        link.disabled = false;
+      }
+    });
+  }
+
+  function normalizeStatusValue(value, fallback = "active") {
+    return String(value || fallback).trim().toLowerCase();
+  }
+
+  function StatusBadge(status) {
+    const normalized = normalizeStatusValue(status);
+    const label = normalized
+      ? normalized.charAt(0).toUpperCase() + normalized.slice(1)
+      : "Active";
+    return `<span class="pill small status-badge is-${normalized}">${label}</span>`;
+  }
+
+  function EmptyState(component, message) {
+    const label = String(component || "items").trim();
+    const title = label ? `No ${label}` : "No data available";
+    const body = message ? `<div>${message}</div>` : "";
+    return `
+      <div class="empty-state">
+        <div class="empty-title">${title}</div>
+        ${body}
+        <div class="empty-actions"></div>
+      </div>
+    `;
+  }
+
+  function MaskPasswordDisplay(value) {
+    if (!value) return "********";
+    return "********";
+  }
+
+  function ensureConfirmModal() {
+    let modal = document.getElementById("confirmModal");
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.className = "modal-backdrop";
+    modal.id = "confirmModal";
+    modal.innerHTML = `
+      <div class="modal confirm-modal">
+        <div class="modal-header">
+          <div>
+            <h2 id="confirmTitle">Confirm action</h2>
+            <p class="modal-subtitle" id="confirmMessage">Are you sure?</p>
+          </div>
+          <button class="icon-button" data-close-modal="confirmModal">x</button>
+        </div>
+        <div class="modal-actions confirm-actions">
+          <button class="ghost" id="confirmCancel">Cancel</button>
+          <button class="primary danger" id="confirmOk">Yes, proceed</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function openConfirmModal(modal) {
+    if (typeof window.openModal === "function") {
+      window.openModal("confirmModal");
+      return;
+    }
+    modal.classList.add("active");
+  }
+
+  function closeConfirmModal(modal) {
+    if (typeof window.closeModal === "function") {
+      window.closeModal("confirmModal");
+      return;
+    }
+    modal.classList.remove("active");
+  }
+
+  function ConfirmDangerAction(message, options = {}) {
+    const modal = ensureConfirmModal();
+    const msgEl = modal.querySelector("#confirmMessage");
+    const titleEl = modal.querySelector("#confirmTitle");
+    const okBtn = modal.querySelector("#confirmOk");
+    const cancelBtn = modal.querySelector("#confirmCancel");
+    const closeBtn = modal.querySelector("[data-close-modal]");
+
+    if (msgEl) msgEl.textContent = message || "Are you sure?";
+    if (titleEl) titleEl.textContent = options.title || "Confirm action";
+    if (okBtn) okBtn.textContent = options.confirmText || "Yes, proceed";
+    if (cancelBtn) cancelBtn.textContent = options.cancelText || "Cancel";
+
+    openConfirmModal(modal);
+
+    return new Promise((resolve) => {
+      let settled = false;
+
+      const cleanup = () => {
+        if (settled) return;
+        settled = true;
+        if (okBtn) okBtn.removeEventListener("click", onOk);
+        if (cancelBtn) cancelBtn.removeEventListener("click", onCancel);
+        if (closeBtn) closeBtn.removeEventListener("click", onCancel);
+        modal.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onKeydown);
+        closeConfirmModal(modal);
+      };
+
+      const onOk = () => {
+        cleanup();
+        resolve(true);
+      };
+      const onCancel = () => {
+        cleanup();
+        resolve(false);
+      };
+      const onBackdrop = (event) => {
+        if (event.target === modal) onCancel();
+      };
+      const onKeydown = (event) => {
+        if (event.key === "Escape") onCancel();
+      };
+
+      if (okBtn) okBtn.addEventListener("click", onOk);
+      if (cancelBtn) cancelBtn.addEventListener("click", onCancel);
+      if (closeBtn) closeBtn.addEventListener("click", onCancel);
+      modal.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onKeydown);
+    });
+  }
+
   function wireEscManager() {
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
@@ -148,5 +329,19 @@
     wireEscManager,
     applyTheme,
     bindThemeToggle,
+    getRoleNav,
+    getAllowedSectionIds,
+    applyRoleVisibility,
+  };
+
+  window.StatusBadge = StatusBadge;
+  window.EmptyState = EmptyState;
+  window.MaskPasswordDisplay = MaskPasswordDisplay;
+  window.ConfirmDangerAction = ConfirmDangerAction;
+  window.UnitySphereUI = {
+    StatusBadge,
+    EmptyState,
+    MaskPasswordDisplay,
+    ConfirmDangerAction,
   };
 })();

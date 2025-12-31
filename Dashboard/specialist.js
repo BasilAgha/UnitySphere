@@ -8,6 +8,8 @@ let centerModulesCache = null;
 let childrenCache = [];
 let assessmentQuestionsCache = [];
 let currentChildProfile = null;
+let shellSidebar = null;
+let allowedSections = null;
 
 // ------------- INIT -------------
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,19 +29,31 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".nav-link").forEach(btn => {
     btn.addEventListener("click", () => {
       const section = btn.dataset.section;
+      if (allowedSections && !allowedSections.has(section)) return;
       switchSection(section);
       updateSectionContext(section);
       updateHeaderTitle(section);
       loadSection(section);
+      setActiveSidebarForSection(section);
     });
   });
 
   // logout
   document.getElementById("logoutBtn")?.addEventListener("click", logout);
+  document.getElementById("settingsLogoutBtn")?.addEventListener("click", logout);
 
   // refresh button
   document.getElementById("refreshAllBtn")?.addEventListener("click", () => {
     const btn = document.getElementById("refreshAllBtn");
+    setButtonLoading(btn, true, "Refreshing...");
+    const active = document.querySelector(".section.active")?.id.replace("section-", "") || "overview";
+    updateSectionContext(active);
+    updateHeaderTitle(active);
+    loadSection(active);
+    setTimeout(() => setButtonLoading(btn, false), 400);
+  });
+  document.getElementById("settingsRefreshBtn")?.addEventListener("click", () => {
+    const btn = document.getElementById("settingsRefreshBtn");
     setButtonLoading(btn, true, "Refreshing...");
     const active = document.querySelector(".section.active")?.id.replace("section-", "") || "overview";
     updateSectionContext(active);
@@ -85,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // initial section
   updateSectionContext("overview");
   updateHeaderTitle("overview");
+  updateSettingsProfile();
   loadSection("overview");
 });
 
@@ -92,11 +107,32 @@ function initShell() {
   const sidebarHost = document.getElementById("appSidebar");
   const headerHost = document.getElementById("appHeader");
   if (!sidebarHost || !headerHost || !window.UnitySphereShell) return;
-  const sidebar = window.UnitySphereShell.buildSidebar({ role: "specialist", active: "specialists" });
+  const role = "specialist";
+  const sidebar = window.UnitySphereShell.buildSidebar({ role, active: "overview" });
   const header = window.UnitySphereShell.buildHeader({ title: "Specialist Dashboard" });
   sidebarHost.replaceWith(sidebar);
   headerHost.replaceWith(header);
+  shellSidebar = sidebar;
   window.UnitySphereShell.wireEscManager();
+  if (window.UnitySphereShell.applyRoleVisibility) {
+    window.UnitySphereShell.applyRoleVisibility({ role });
+  }
+  if (window.UnitySphereShell.getAllowedSectionIds) {
+    allowedSections = window.UnitySphereShell.getAllowedSectionIds(role);
+  }
+
+  sidebar.addEventListener("click", (event) => {
+    const nav = event.target.closest("[data-nav]");
+    if (!nav) return;
+    if (allowedSections && !allowedSections.has(nav.dataset.nav)) return;
+    const section = mapNavToSection(nav.dataset.nav);
+    if (!section) return;
+    switchSection(section);
+    updateSectionContext(section);
+    updateHeaderTitle(section);
+    loadSection(section);
+    window.UnitySphereShell.setActiveNavItem(sidebar, nav.dataset.nav);
+  });
 }
 
 function initChildProfileTabs() {
@@ -142,13 +178,31 @@ function setSpecialistAvatar() {
   }
 }
 
+function updateSettingsProfile() {
+  const name = specialistUser.name || specialistUser.username || "Specialist";
+  const centerLabel = specialistUser.center_name || specialistUser.center_id || centerId || "--";
+  setText("settingsProfileName", name);
+  setText("settingsProfileRole", "Role: Specialist");
+  setText("settingsProfileCenter", `Center: ${centerLabel}`);
+  const avatar = document.getElementById("settingsAvatar");
+  const photo = specialistUser.photo || specialistUser.photo_url || "";
+  if (typeof applyAvatarFallback === "function") {
+    applyAvatarFallback(avatar, name, photo);
+  } else if (avatar) {
+    avatar.setAttribute("data-initials", getInitials(name));
+    avatar.style.backgroundImage = photo ? `url('${photo}')` : "";
+    avatar.classList.toggle("has-photo", Boolean(photo));
+  }
+}
+
 function updateHeaderTitle(section) {
   const title = document.querySelector(".shell-header .title");
   if (!title) return;
   const map = {
     overview: "Specialist Dashboard",
     children: "My Children",
-    assessments: "Assessments"
+    assessments: "Assessments",
+    settings: "Settings"
   };
   title.textContent = map[section] || "Specialist Dashboard";
 }
@@ -169,9 +223,44 @@ function updateSectionContext(section) {
   const map = {
     overview: "Overview",
     children: "Children",
-    assessments: "Assessments"
+    assessments: "Assessments",
+    settings: "Settings"
   };
   label.textContent = map[section] || "Overview";
+}
+
+async function confirmDangerAction(message) {
+  if (typeof ConfirmDangerAction === "function") {
+    return ConfirmDangerAction(message);
+  }
+  if (typeof window.confirm === "function") {
+    return window.confirm(message);
+  }
+  return false;
+}
+
+function mapNavToSection(navId) {
+  const map = {
+    overview: "overview",
+    children: "children",
+    assessments: "assessments",
+    settings: "settings"
+  };
+  return map[navId] || null;
+}
+
+function setActiveSidebarForSection(section) {
+  if (!shellSidebar || !window.UnitySphereShell?.setActiveNavItem) return;
+  const map = {
+    overview: "overview",
+    children: "children",
+    assessments: "assessments",
+    settings: "settings"
+  };
+  const navId = map[section];
+  if (navId) {
+    window.UnitySphereShell.setActiveNavItem(shellSidebar, navId);
+  }
 }
 
 // ------------- SECTION LOADER -------------
@@ -179,6 +268,7 @@ function loadSection(section) {
   if (section === "overview") loadOverview();
   if (section === "children") loadChildren();
   if (section === "assessments") loadAssessments();
+  if (section === "settings") updateSettingsProfile();
 }
 
 // ------------- OVERVIEW -------------
@@ -293,15 +383,31 @@ async function loadAssessmentsQuestions() {
   if (!questions) return;
 
   if (!questions.length) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-title">No assessment questions yet</div>
-        <div>Assessment questions have not been published. Ask an admin to add questions, then refresh.</div>
-        <div class="empty-actions">
-          <button class="ghost small" type="button" id="assessmentsEmptyRefresh">Refresh</button>
+    if (typeof EmptyState === "function") {
+      list.innerHTML = EmptyState(
+        "assessment questions yet",
+        "Assessment questions have not been published. Ask an admin to add questions, then refresh."
+      );
+      const actions = list.querySelector(".empty-actions");
+      if (actions) {
+        const refreshBtn = document.createElement("button");
+        refreshBtn.className = "ghost small";
+        refreshBtn.type = "button";
+        refreshBtn.id = "assessmentsEmptyRefresh";
+        refreshBtn.textContent = "Refresh";
+        actions.appendChild(refreshBtn);
+      }
+    } else {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-title">No assessment questions yet</div>
+          <div>Assessment questions have not been published. Ask an admin to add questions, then refresh.</div>
+          <div class="empty-actions">
+            <button class="ghost small" type="button" id="assessmentsEmptyRefresh">Refresh</button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
     document.getElementById("assessmentsEmptyRefresh")?.addEventListener("click", loadAssessmentsQuestions);
     return;
   }
@@ -364,7 +470,10 @@ function renderChildrenGrid() {
           <strong>${ch.name}</strong>
           <div class="hint">ID: ${ch.child_id}</div>
         </div>
-        <span class="chip subtle">${ch.age ? ch.age + " yrs" : "Age N/A"}</span>
+        <div>
+          <span class="chip subtle">${ch.age ? ch.age + " yrs" : "Age N/A"}</span>
+          ${StatusBadge(ch.status)}
+        </div>
       </header>
       <div class="module-meta">
         <span>Center: ${ch.center_id || "—"}</span>
@@ -468,7 +577,7 @@ async function saveChild() {
 }
 
 async function deleteChild(childId, btn) {
-  if (!confirm("Delete this child?")) return;
+  if (!(await confirmDangerAction("Delete this child?"))) return;
   setButtonLoading(btn, true, "Deleting...");
 
   const res = await apiRequest("deleteChild", {
@@ -521,15 +630,31 @@ async function openChildProfile(childId, btn) {
   const sessionsList = document.getElementById("childSessionsList");
   sessionsList.innerHTML = "";
   if (!sessions.length) {
-    sessionsList.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-title">No sessions yet</div>
-        <div>Log the first VR session to start tracking progress.</div>
-        <div class="empty-actions">
-          <button class="ghost small" type="button" data-add-session="${childId}">Add Session</button>
+    if (typeof EmptyState === "function") {
+      sessionsList.innerHTML = EmptyState(
+        "sessions yet",
+        "Log the first VR session to start tracking progress."
+      );
+      const actions = sessionsList.querySelector(".empty-actions");
+      if (actions) {
+        const addBtn = document.createElement("button");
+        addBtn.className = "ghost small";
+        addBtn.type = "button";
+        addBtn.dataset.addSession = childId;
+        addBtn.textContent = "Add Session";
+        actions.appendChild(addBtn);
+      }
+    } else {
+      sessionsList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-title">No sessions yet</div>
+          <div>Log the first VR session to start tracking progress.</div>
+          <div class="empty-actions">
+            <button class="ghost small" type="button" data-add-session="${childId}">Add Session</button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
   } else {
   sessions.forEach(s => {
     const item = document.createElement("div");
@@ -588,15 +713,31 @@ async function openChildProfile(childId, btn) {
       assessmentsList.appendChild(item);
     });
   if (!assessments.length) {
-    assessmentsList.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-title">No assessments yet</div>
-        <div>Add an assessment to capture scores for this child.</div>
-        <div class="empty-actions">
-          <button class="ghost small" type="button" data-add-assessment="${childId}">Add Assessment</button>
+    if (typeof EmptyState === "function") {
+      assessmentsList.innerHTML = EmptyState(
+        "assessments yet",
+        "Add an assessment to capture scores for this child."
+      );
+      const actions = assessmentsList.querySelector(".empty-actions");
+      if (actions) {
+        const addBtn = document.createElement("button");
+        addBtn.className = "ghost small";
+        addBtn.type = "button";
+        addBtn.dataset.addAssessment = childId;
+        addBtn.textContent = "Add Assessment";
+        actions.appendChild(addBtn);
+      }
+    } else {
+      assessmentsList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-title">No assessments yet</div>
+          <div>Add an assessment to capture scores for this child.</div>
+          <div class="empty-actions">
+            <button class="ghost small" type="button" data-add-assessment="${childId}">Add Assessment</button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
   }
   assessmentsList.querySelectorAll("[data-add-assessment]").forEach(btn =>
     btn.addEventListener("click", () => openAssessmentModalForCreate(btn.dataset.addAssessment))
