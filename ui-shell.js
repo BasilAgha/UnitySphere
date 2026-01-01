@@ -7,11 +7,9 @@
       { id: "children", label: "Children" },
       { id: "vr-modules", label: "VR Modules" },
       { id: "assessment", label: "Assessment" },
-      { id: "reports", label: "Reports" },
       { id: "settings", label: "Settings" },
     ],
     center: [
-      { id: "dashboard", label: "Dashboard" },
       { id: "specialists", label: "Specialists" },
       { id: "children", label: "Children" },
       { id: "vr-modules", label: "VR Modules" },

@@ -15,72 +15,8 @@
     <aside id="appSidebar"></aside>
     <header id="appHeader"></header>
     <main class="shell-content">
-      <!-- ================== DASHBOARD ================== -->
-      <section id="section-dashboard" class="section active">
-        <div class="section-header">
-          <div>
-            <h2>Dashboard</h2>
-            <p class="hint">Welcome back, <span id="welcomeName">Center</span>. Here is the center pulse.</p>
-          </div>
-        </div>
-
-        <div class="card-grid kpi-grid">
-          <div class="card kpi-card">
-            <div class="kpi-label">Specialists</div>
-            <div class="kpi-value" id="statSpecialists">0</div>
-            <div class="kpi-sub">Active specialists</div>
-          </div>
-          <div class="card kpi-card">
-            <div class="kpi-label">Children</div>
-            <div class="kpi-value" id="statChildren">0</div>
-            <div class="kpi-sub">Children in this center</div>
-          </div>
-          <div class="card kpi-card">
-            <div class="kpi-label">VR Modules</div>
-            <div class="kpi-value" id="statModules">0</div>
-            <div class="kpi-sub">Assigned modules</div>
-          </div>
-          <div class="card kpi-card">
-            <div class="kpi-label">Sessions</div>
-            <div class="kpi-value" id="statSessions">0</div>
-            <div class="kpi-sub">Total sessions logged</div>
-          </div>
-        </div>
-
-        <div class="card-grid dashboard-grid two-up">
-          <div class="card chart-card">
-            <div class="card-header">
-              <h3>Center Summary</h3>
-            </div>
-            <div class="grid-inline">
-              <div class="panel-stat">
-                <div class="hint">Avg children per specialist</div>
-                <strong id="summaryAvgChildren">0</strong>
-              </div>
-              <div class="panel-stat">
-                <div class="hint">Assigned modules</div>
-                <strong id="summaryModulesAssigned">0</strong>
-              </div>
-              <div class="panel-stat">
-                <div class="hint">Coverage of catalog</div>
-                <strong id="summaryModulesCoverage">0%</strong>
-              </div>
-            </div>
-            <div class="progress-bar">
-              <span id="summaryModulesCoverageBar" style="width:0%"></span>
-            </div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header">
-              <h3>Advanced Analytics</h3>
-            </div>
-            <div class="hint">Session trends, outcomes, and comparative benchmarks are coming in a later phase.</div>
-          </div>
-        </div>
-      </section>
-
       <!-- ================== SPECIALISTS ================== -->
-      <section id="section-specialists" class="section">
+      <section id="section-specialists" class="section active">
         <div class="section-header">
           <div>
             <h2>Specialists</h2>
@@ -92,6 +28,10 @@
               <span class="label">Add Specialist</span>
             </button>
           </div>
+        </div>
+        <div class="section-filter-tabs" data-section-filter="specialists">
+          <button class="pill small filter-tab active" type="button" data-section="specialists" data-status="active">Active</button>
+          <button class="pill small filter-tab" type="button" data-section="specialists" data-status="deleted">Deleted</button>
         </div>
 
         <div class="specialists-grid flip-grid" id="specialistsGrid">
@@ -121,6 +61,28 @@
             </button>
           </div>
         </div>
+        <div class="card-subsection">
+          <div class="grid-2-col">
+            <div class="input-group">
+              <label for="childNameFilter">Name</label>
+              <input id="childNameFilter" type="text" placeholder="Search child name" />
+            </div>
+            <div class="input-group">
+              <label for="childSpecialistFilter">Specialist</label>
+              <select id="childSpecialistFilter">
+                <option value="">All specialists</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="childStatusFilter">Status</label>
+              <select id="childStatusFilter">
+                <option value="">All</option>
+                <option value="active">Active</option>
+                <option value="deleted">Deleted</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         <div class="modules-grid" id="childrenGrid">
           <!-- Child cards -->
@@ -147,6 +109,10 @@
               <span class="label">Assign Modules</span>
             </button>
           </div>
+        </div>
+        <div class="section-filter-tabs" data-section-filter="vr-modules">
+          <button class="pill small filter-tab active" type="button" data-section="vr-modules" data-status="active">Active</button>
+          <button class="pill small filter-tab" type="button" data-section="vr-modules" data-status="deleted">Deleted</button>
         </div>
 
         <div class="modules-grid module-grid" id="modulesGrid">

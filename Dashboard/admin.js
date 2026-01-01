@@ -33,7 +33,6 @@ const SECTION_TITLES = {
   children: 'Children',
   'vr-modules': 'VR Modules',
   assessment: 'Assessment',
-  reports: 'Reports',
   settings: 'Settings'
 };
 let shellSidebar = null;
@@ -304,7 +303,10 @@ function setSectionStatusFilter(section, status) {
   updateSectionFilterTabs(section);
   const sectionEl = document.getElementById(`section-${section}`);
   if (sectionEl && sectionEl.classList.contains('active')) {
-    refreshSection(section);
+    setFilterTabsLoading(section, true, status);
+    Promise.resolve(refreshSection(section)).finally(() => {
+      setFilterTabsLoading(section, false, status);
+    });
   }
 }
 
@@ -315,6 +317,45 @@ function updateSectionFilterTabs(section) {
   wrapper.querySelectorAll('.filter-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.status === activeStatus);
   });
+}
+
+function setFilterTabsLoading(section, isLoading, status) {
+  const wrapper = document.querySelector(`.section-filter-tabs[data-section-filter="${section}"]`);
+  if (!wrapper) return;
+  wrapper.querySelectorAll('.filter-tab').forEach(btn => {
+    const isTarget = !status || btn.dataset.status === String(status);
+    btn.classList.toggle('btn-loading', isLoading && isTarget);
+    btn.disabled = isLoading;
+    if (isLoading && isTarget) {
+      btn.setAttribute('aria-busy', 'true');
+    } else {
+      btn.removeAttribute('aria-busy');
+    }
+  });
+}
+
+function setEmptyStateContent(emptyEl, { title, description, showActions = true } = {}) {
+  if (!emptyEl) return;
+  const titleEl = emptyEl.querySelector('.empty-title');
+  const descEl = titleEl?.nextElementSibling || null;
+  const actionsEl = emptyEl.querySelector('.empty-actions');
+
+  if (titleEl && !titleEl.dataset.defaultText) {
+    titleEl.dataset.defaultText = titleEl.textContent;
+  }
+  if (descEl && !descEl.dataset.defaultText) {
+    descEl.dataset.defaultText = descEl.textContent;
+  }
+
+  if (titleEl) {
+    titleEl.textContent = title ?? titleEl.dataset.defaultText ?? titleEl.textContent;
+  }
+  if (descEl) {
+    descEl.textContent = description ?? descEl.dataset.defaultText ?? descEl.textContent;
+  }
+  if (actionsEl) {
+    actionsEl.style.display = showActions ? '' : 'none';
+  }
 }
 
 function bindSectionFilterTabs() {
@@ -439,16 +480,15 @@ function applyGlobalSearch(query) {
 }
 
 // ===== VIEW SWITCHES =====
-function refreshSection(section) {
+async function refreshSection(section) {
   switch (section) {
-    case 'dashboard': loadDashboard(); break;
-    case 'centers': loadCenters(); break;
-    case 'specialists': loadSpecialists(); break;
-    case 'children': loadChildren(); break;
-    case 'vr-modules': loadModules(); break;
-    case 'assessment': loadAssessmentSection(); break;
+    case 'dashboard': await loadDashboard(); break;
+    case 'centers': await loadCenters(); break;
+    case 'specialists': await loadSpecialists(); break;
+    case 'children': await loadChildren(); break;
+    case 'vr-modules': await loadModules(); break;
+    case 'assessment': await loadAssessmentSection(); break;
     case 'settings': break;
-    case 'reports': break;
   }
 }
 
@@ -532,6 +572,14 @@ async function loadCenters() {
 
   const hasData = filteredCenters.length > 0;
   empty.style.display = hasData ? 'none' : 'block';
+  if (!hasData) {
+    const isDeleted = statusFilter === 'deleted';
+    setEmptyStateContent(empty, isDeleted ? {
+      title: 'No deleted centers',
+      description: 'There are no deleted centers right now. Switch to Active to manage current centers.',
+      showActions: false
+    } : { showActions: true });
+  }
   grid.style.display = view === 'card' ? 'grid' : 'none';
   if (tableWrap) tableWrap.style.display = view === 'table' ? 'block' : 'none';
   if (!hasData) return;
@@ -821,7 +869,17 @@ async function loadSpecialists() {
   markDataUpdated();
 
   const hasData = filteredSpecialists.length > 0;
-  if (empty) empty.style.display = hasData ? 'none' : 'block';
+  if (empty) {
+    empty.style.display = hasData ? 'none' : 'block';
+    if (!hasData) {
+      const isDeleted = statusFilter === 'deleted';
+      setEmptyStateContent(empty, isDeleted ? {
+        title: 'No deleted specialists',
+        description: 'There are no deleted specialists right now. Switch to Active to manage current specialists.',
+        showActions: false
+      } : { showActions: true });
+    }
+  }
   if (!hasData) return;
 
   const centerNameById = (centersCache || []).reduce((acc, center) => {
@@ -1091,7 +1149,16 @@ async function loadChildren() {
   markDataUpdated();
 
   const hasData = children.length > 0;
-  if (empty) empty.style.display = hasData ? 'none' : 'block';
+  if (empty) {
+    empty.style.display = hasData ? 'none' : 'block';
+    if (!hasData) {
+      const isDeleted = statusFilter === 'deleted';
+      setEmptyStateContent(empty, isDeleted ? {
+        title: 'No deleted children',
+        description: 'There are no deleted children right now. Switch to Active to view current children.'
+      } : {});
+    }
+  }
   if (!hasData) return;
 
   const centerNameById = (centersCache || []).reduce((acc, center) => {
@@ -1214,6 +1281,14 @@ async function loadModules() {
   markDataUpdated();
   const hasData = uniqueModules.length > 0;
   empty.style.display = hasData ? 'none' : 'block';
+  if (!hasData) {
+    const isDeleted = statusFilter === 'deleted';
+    setEmptyStateContent(empty, isDeleted ? {
+      title: 'No deleted VR modules',
+      description: 'There are no deleted VR modules right now. Switch to Active to manage current modules.',
+      showActions: false
+    } : { showActions: true });
+  }
   grid.style.display = view === 'card' ? 'grid' : 'none';
   if (tableWrap) tableWrap.style.display = view === 'table' ? 'block' : 'none';
   if (!hasData) return;

@@ -9,6 +9,10 @@ let shellSidebar = null;
 let assessmentCharts = {};
 let assessmentChildrenCache = [];
 let allowedSections = null;
+const sectionStatusFilters = {
+  specialists: "active",
+  "vr-modules": "active"
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   authGuard("center");
@@ -20,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initShell();
 
   bindNavigation();
+  bindSectionFilterTabs();
   bindCenterButtons();
   setUserAvatar();
   setWelcomeName();
@@ -30,9 +35,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   bindAssessmentFilters();
   updateSettingsProfile();
-  loadSection("dashboard");
-  setActiveSidebarForSection("dashboard");
-  updateHeaderTitle("dashboard");
+
+  const childStatusSelect = document.getElementById("childStatusFilter");
+  if (childStatusSelect && !childStatusSelect.value) {
+    childStatusSelect.value = "active";
+  }
+  document.getElementById("childNameFilter")?.addEventListener("input", () => {
+    loadChildren();
+  });
+  document.getElementById("childSpecialistFilter")?.addEventListener("change", () => {
+    loadChildren();
+  });
+  document.getElementById("childStatusFilter")?.addEventListener("change", () => {
+    loadChildren();
+  });
+
+  loadSection("specialists");
+  setActiveSidebarForSection("specialists");
+  updateHeaderTitle("specialists");
 });
 
 function initShell() {
@@ -40,8 +60,8 @@ function initShell() {
   const headerHost = document.getElementById("appHeader");
   if (!sidebarHost || !headerHost || !window.UnitySphereShell) return;
   const role = "center";
-  const sidebar = window.UnitySphereShell.buildSidebar({ role, active: "dashboard" });
-  const header = window.UnitySphereShell.buildHeader({ title: "Dashboard" });
+  const sidebar = window.UnitySphereShell.buildSidebar({ role, active: "specialists" });
+  const header = window.UnitySphereShell.buildHeader({ title: "Specialists" });
   sidebarHost.replaceWith(sidebar);
   headerHost.replaceWith(header);
   shellSidebar = sidebar;
@@ -61,6 +81,7 @@ function initShell() {
     if (!section) return;
     switchSection(section);
     updateHeaderTitle(section);
+    updateSectionFilterTabs(section);
     loadSection(section);
     window.UnitySphereShell.setActiveNavItem(sidebar, nav.dataset.nav);
   });
@@ -73,6 +94,7 @@ function bindNavigation() {
       if (allowedSections && !allowedSections.has(section)) return;
       switchSection(section);
       updateHeaderTitle(section);
+      updateSectionFilterTabs(section);
       loadSection(section);
       setActiveSidebarForSection(section);
     });
@@ -98,7 +120,7 @@ function bindCenterButtons() {
   document.getElementById("refreshAllBtn")?.addEventListener("click", () => {
     const btn = document.getElementById("refreshAllBtn");
     setButtonLoading(btn, true, "Refreshing...");
-    const active = document.querySelector(".section.active")?.id.replace("section-", "") || "dashboard";
+    const active = document.querySelector(".section.active")?.id.replace("section-", "") || "specialists";
     updateHeaderTitle(active);
     loadSection(active);
     setTimeout(() => setButtonLoading(btn, false), 400);
@@ -106,22 +128,19 @@ function bindCenterButtons() {
   document.getElementById("logoutBtn")?.addEventListener("click", logout);
 }
 
-function loadSection(section) {
+async function loadSection(section) {
   switch (section) {
-    case "dashboard":
-      loadOverview();
-      break;
     case "specialists":
-      loadSpecialists();
+      await loadSpecialists();
       break;
     case "children":
-      loadChildren();
+      await loadChildren();
       break;
     case "vr-modules":
-      loadModules();
+      await loadModules();
       break;
     case "assessment":
-      loadAssessmentSection();
+      await loadAssessmentSection();
       break;
     case "settings":
       updateSettingsProfile();
@@ -135,6 +154,85 @@ function handleApiFailure(res) {
     return true;
   }
   return false;
+}
+
+function normalizeStatus(value, fallback = "active") {
+  return String(value || fallback).trim().toLowerCase();
+}
+
+function getSectionStatusFilter(section) {
+  return sectionStatusFilters[section] || "active";
+}
+
+function setSectionStatusFilter(section, status) {
+  sectionStatusFilters[section] = normalizeStatus(status, "active");
+  updateSectionFilterTabs(section);
+  const sectionEl = document.getElementById(`section-${section}`);
+  if (sectionEl && sectionEl.classList.contains("active")) {
+    setFilterTabsLoading(section, true, status);
+    Promise.resolve(loadSection(section)).finally(() => {
+      setFilterTabsLoading(section, false, status);
+    });
+  }
+}
+
+function updateSectionFilterTabs(section) {
+  const wrapper = document.querySelector(`.section-filter-tabs[data-section-filter="${section}"]`);
+  if (!wrapper) return;
+  const activeStatus = getSectionStatusFilter(section);
+  wrapper.querySelectorAll(".filter-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.status === activeStatus);
+  });
+}
+
+function bindSectionFilterTabs() {
+  document.querySelectorAll(".section-filter-tabs .filter-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const section = btn.dataset.section;
+      const status = btn.dataset.status;
+      if (!section || !status) return;
+      setSectionStatusFilter(section, status);
+    });
+  });
+}
+
+function setFilterTabsLoading(section, isLoading, status) {
+  const wrapper = document.querySelector(`.section-filter-tabs[data-section-filter="${section}"]`);
+  if (!wrapper) return;
+  wrapper.querySelectorAll(".filter-tab").forEach(btn => {
+    const isTarget = !status || btn.dataset.status === String(status);
+    btn.classList.toggle("btn-loading", isLoading && isTarget);
+    btn.disabled = isLoading;
+    if (isLoading && isTarget) {
+      btn.setAttribute("aria-busy", "true");
+    } else {
+      btn.removeAttribute("aria-busy");
+    }
+  });
+}
+
+function setEmptyStateContent(emptyEl, { title, description, showActions = true } = {}) {
+  if (!emptyEl) return;
+  const titleEl = emptyEl.querySelector(".empty-title");
+  const descEl = titleEl?.nextElementSibling || null;
+  const actionsEl = emptyEl.querySelector(".empty-actions");
+
+  if (titleEl && !titleEl.dataset.defaultText) {
+    titleEl.dataset.defaultText = titleEl.textContent;
+  }
+  if (descEl && !descEl.dataset.defaultText) {
+    descEl.dataset.defaultText = descEl.textContent;
+  }
+
+  if (titleEl) {
+    titleEl.textContent = title ?? titleEl.dataset.defaultText ?? titleEl.textContent;
+  }
+  if (descEl) {
+    descEl.textContent = description ?? descEl.dataset.defaultText ?? descEl.textContent;
+  }
+  if (actionsEl) {
+    actionsEl.style.display = showActions ? "" : "none";
+  }
 }
 
 function setModalError(id, message) {
@@ -251,7 +349,6 @@ function updateHeaderTitle(section) {
   const title = document.querySelector(".shell-header .title");
   if (!title) return;
   const map = {
-    dashboard: "Dashboard",
     specialists: "Specialists",
     children: "Children",
     "vr-modules": "VR Modules",
@@ -263,7 +360,6 @@ function updateHeaderTitle(section) {
 
 function mapNavToSection(navId) {
   const map = {
-    dashboard: "dashboard",
     specialists: "specialists",
     children: "children",
     "vr-modules": "vr-modules",
@@ -276,7 +372,6 @@ function mapNavToSection(navId) {
 function setActiveSidebarForSection(section) {
   if (!shellSidebar || !window.UnitySphereShell?.setActiveNavItem) return;
   const map = {
-    dashboard: "dashboard",
     specialists: "specialists",
     children: "children",
     "vr-modules": "vr-modules",
@@ -293,6 +388,28 @@ function setWelcomeName() {
   const welcome = document.getElementById("welcomeName");
   if (!welcome) return;
   welcome.textContent = center.name || center.username || "Center";
+}
+
+async function ensureSpecialistsCache() {
+  if (specialistsCache && specialistsCache.length) return specialistsCache;
+  const res = await apiRequest("listSpecialists", { center_id: centerId });
+  if (handleApiFailure(res)) return [];
+  specialistsCache = res.specialists || [];
+  return specialistsCache;
+}
+
+function populateSpecialistFilterSelect(selectId, specialists, includeAllLabel = "All specialists") {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = `<option value="">${includeAllLabel}</option>`;
+  specialists.forEach(spec => {
+    const option = document.createElement("option");
+    option.value = spec.specialist_id;
+    option.textContent = spec.name || spec.username || `Specialist ${spec.specialist_id}`;
+    select.appendChild(option);
+  });
+  if (current) select.value = current;
 }
 
 function updateSettingsProfile() {
@@ -630,130 +747,282 @@ async function loadOverview() {
 }
 
 async function loadSpecialists() {
-  const res = await apiRequest("listSpecialists", { center_id: centerId });
-
   const grid = document.getElementById("specialistsGrid");
   const empty = document.getElementById("specialistsEmpty");
+  const statusFilter = getSectionStatusFilter("specialists");
   if (grid) grid.innerHTML = "";
   if (empty) empty.style.display = "none";
 
+  const params = { center_id: centerId };
+  if (statusFilter) params.status = statusFilter;
+  const res = await apiRequest("listSpecialists", params);
   if (handleApiFailure(res)) return;
 
   const list = res.specialists || [];
-  specialistsCache = list;
-  if (!list.length) {
-    if (empty) empty.style.display = "block";
-    return;
+  const filtered = statusFilter
+    ? list.filter(spec => normalizeStatus(spec.status) === statusFilter)
+    : list;
+
+  if (statusFilter !== "deleted") {
+    specialistsCache = filtered.slice();
+    populateSpecialistFilterSelect("childSpecialistFilter", specialistsCache);
   }
 
-  list.forEach(s => {
-    const card = document.createElement("div");
-    const avatar = s.photo || s.photo_url || "";
-    const initials = getInitials(s.name || s.username || "");
-    const experience = s.experience || s.years_experience || s.years || "";
-    const experienceText = experience ? `${experience} Years of Experience` : "Experience not listed";
-    const bio = s.bio || s.description || "Passionate specialist with extensive experience in technology-assisted child development.";
-    card.className = "specialist-card flip-card hover-lift";
+  const hasData = filtered.length > 0;
+  if (empty) {
+    empty.style.display = hasData ? "none" : "block";
+    if (!hasData) {
+      const isDeleted = statusFilter === "deleted";
+      setEmptyStateContent(empty, isDeleted ? {
+        title: "No deleted specialists",
+        description: "There are no deleted specialists right now. Switch to Active to manage current specialists.",
+        showActions: false
+      } : { showActions: true });
+    }
+  }
+  if (!hasData) return;
+
+  filtered.forEach(s => {
+    const status = normalizeStatus(s.status);
+    const isDeleted = status === "deleted";
+    const typeLabel = normalizeStatus(s.type || "freelance");
+    const card = document.createElement("article");
+    card.className = "specialist-card";
     card.innerHTML = `
-      <div class="flip-card-inner">
-        <div class="flip-card-face front">
-          <div class="specialist-front">
-            <div class="avatar avatar-static${avatar ? " has-photo" : ""}" ${avatar ? `style="background-image:url('${avatar}')"` : `data-initials="${initials}"`}></div>
-            <strong>${s.name || s.username || "Specialist"}</strong>
-            <div class="specialist-role">${s.specialty || s.type || "Psychology"}</div>
-            <div class="card-meta">${StatusBadge(s.status)}</div>
-            <div class="language-pills">
-              <span class="pill small">EN</span>
-            </div>
-          </div>
+      <div class="card-body">
+        <div class="title">${s.name || s.username || "Specialist"}</div>
+        <div class="card-meta">${StatusBadge(s.status)}</div>
+        <div class="desc">${s.description || "<span class=\"muted\">No description provided.</span>"}</div>
+        <div class="center-credentials">
+          <span class="pill small">${typeLabel === "center" ? "Center-linked" : "Freelance"}</span>
+          <span class="pill small">User: ${s.username || "-"}</span>
         </div>
-        <div class="flip-card-face back">
-          <div class="specialist-back">
-            <div class="specialist-bio">${bio}</div>
-            <div class="specialist-experience">${experienceText}</div>
-            <div class="card-actions">
-              <button class="icon-action" data-edit-specialist="${s.specialist_id}" aria-label="Edit specialist">✏️</button>
-              <button class="icon-action danger" data-delete-specialist="${s.specialist_id}" aria-label="Delete specialist">🗑️</button>
-            </div>
-          </div>
+        <div class="module-meta">
+          <span>Children: ${s.num_children ?? 0}</span>
         </div>
       </div>
+      <footer>
+        <div class="card-actions">
+          ${isDeleted
+            ? `<button class="ghost small" data-restore-spec="${s.specialist_id}">Restore</button>`
+            : `<button class="ghost small" data-edit-spec="${s.specialist_id}">Edit</button>
+               <button class="ghost small danger" data-delete-spec="${s.specialist_id}">Delete</button>`}
+        </div>
+      </footer>
     `;
     grid.appendChild(card);
   });
 
-  grid.querySelectorAll("[data-edit-specialist]").forEach(btn => {
-    btn.addEventListener("click", () => openEditSpecialistModal(btn.dataset.editSpecialist));
+  if (!grid.dataset.listener) {
+    grid.addEventListener("click", handleSpecialistCardClick);
+    grid.dataset.listener = "true";
+  }
+}
+
+async function handleSpecialistCardClick(event) {
+  const editBtn = event.target.closest("[data-edit-spec]");
+  const delBtn = event.target.closest("[data-delete-spec]");
+  const restoreBtn = event.target.closest("[data-restore-spec]");
+
+  if (editBtn) {
+    const id = editBtn.getAttribute("data-edit-spec");
+    setButtonLoading(editBtn, true, "Loading...");
+    try {
+      openEditSpecialistModal(id);
+    } finally {
+      setButtonLoading(editBtn, false);
+    }
+    return;
+  }
+
+  if (delBtn) {
+    const id = delBtn.getAttribute("data-delete-spec");
+    deleteSpecialist(id, delBtn);
+    return;
+  }
+
+  if (restoreBtn) {
+    const id = restoreBtn.getAttribute("data-restore-spec");
+    restoreSpecialist(id, restoreBtn);
+  }
+}
+
+async function restoreSpecialist(specId, btn) {
+  if (!(await confirmDangerAction("Restore this specialist?"))) return;
+  setButtonLoading(btn, true, "Restoring...");
+  const res = await apiRequest("updateSpecialist", {
+    specialist_id: specId,
+    status: "active",
+    center_id: centerId,
+    actor_username: center.username || getCurrentUsername(),
+    actor_role: "center"
   });
-  grid.querySelectorAll("[data-delete-specialist]").forEach(btn => {
-    btn.addEventListener("click", () => deleteSpecialist(btn.dataset.deleteSpecialist, btn));
-  });
+  if (handleApiFailure(res)) {
+    setButtonLoading(btn, false);
+    return;
+  }
+  showToast("Specialist restored");
+  loadSection("specialists");
+  setButtonLoading(btn, false);
 }
 
 async function loadChildren() {
-  const res = await apiRequest("listChildren", { center_id: centerId });
-
   const grid = document.getElementById("childrenGrid");
   const empty = document.getElementById("childrenEmpty");
   if (grid) grid.innerHTML = "";
   if (empty) empty.style.display = "none";
 
+  await ensureSpecialistsCache();
+  populateSpecialistFilterSelect("childSpecialistFilter", specialistsCache);
+
+  const nameFilter = document.getElementById("childNameFilter")?.value || "";
+  const specialistFilter = document.getElementById("childSpecialistFilter")?.value || "";
+  const statusFilter = document.getElementById("childStatusFilter")?.value || "active";
+
+  const params = { center_id: centerId };
+  if (nameFilter) params.name = nameFilter;
+  if (specialistFilter) params.specialist_id = specialistFilter;
+  if (statusFilter) params.status = statusFilter;
+
+  const res = await apiRequest("listChildren", params);
   if (handleApiFailure(res)) return;
 
   const list = res.children || [];
-  childrenCache = list;
-  if (!list.length) {
-    if (empty) empty.style.display = "block";
-    return;
-  }
+  const filtered = statusFilter
+    ? list.filter(child => normalizeStatus(child.status) === statusFilter)
+    : list;
+  childrenCache = filtered;
 
-  list.forEach(ch => {
+  const hasData = filtered.length > 0;
+  if (empty) {
+    empty.style.display = hasData ? "none" : "block";
+    if (!hasData) {
+      const isDeleted = statusFilter === "deleted";
+      setEmptyStateContent(empty, isDeleted ? {
+        title: "No deleted children",
+        description: "There are no deleted children right now. Switch to Active to view current children.",
+        showActions: false
+      } : {});
+    }
+  }
+  if (!hasData) return;
+
+  const specialistNameById = (specialistsCache || []).reduce((acc, spec) => {
+    acc[spec.specialist_id] = spec.name || spec.username || spec.specialist_id;
+    return acc;
+  }, {});
+
+  filtered.forEach(ch => {
+    const status = normalizeStatus(ch.status);
+    const isDeleted = status === "deleted";
     const card = document.createElement("article");
     card.className = "module-card";
     card.innerHTML = `
       <header>
-        <strong>${ch.name || "Child"}</strong>
-        ${StatusBadge(ch.status)}
-        <span class="chip subtle">${ch.age || "N/A"} yrs</span>
+        <div>
+          <strong>${ch.name || "Child"}</strong>
+          <div class="hint">ID: ${ch.child_id}</div>
+        </div>
+        <div>
+          <span class="chip subtle">${ch.age ? ch.age + " yrs" : "Age N/A"}</span>
+          ${StatusBadge(ch.status)}
+        </div>
       </header>
       <div class="module-meta">
-        <span>Spec: ${ch.specialist_id || "-"}</span>
+        <span>Parent: ${ch.parent_mobile || "-"}</span>
+        <span>Specialist: ${specialistNameById[ch.specialist_id] || "-"}</span>
         <span>Sessions: ${ch.num_sessions ?? 0}</span>
       </div>
       <div class="card-actions">
-        <button class="ghost small" data-edit-child="${ch.child_id}">Edit</button>
-        <button class="ghost small danger" data-delete-child="${ch.child_id}">Delete</button>
+        ${isDeleted
+          ? `<button class="ghost small" data-restore-child="${ch.child_id}">Restore</button>`
+          : `<button class="ghost small" data-edit-child="${ch.child_id}">Edit</button>
+             <button class="ghost small danger" data-delete-child="${ch.child_id}">Delete</button>`}
       </div>
     `;
     grid.appendChild(card);
   });
 
-  grid.querySelectorAll("[data-edit-child]").forEach(btn => {
-    btn.addEventListener("click", () => openEditChildModal(btn.dataset.editChild));
-  });
-  grid.querySelectorAll("[data-delete-child]").forEach(btn => {
-    btn.addEventListener("click", () => deleteChild(btn.dataset.deleteChild, btn));
-  });
+  if (!grid.dataset.listener) {
+    grid.addEventListener("click", handleChildCardClick);
+    grid.dataset.listener = "true";
+  }
 }
 
-async function loadModules() {
-  const res = await apiRequest("listCenterModules", { center_id: centerId });
+async function handleChildCardClick(event) {
+  const editBtn = event.target.closest("[data-edit-child]");
+  const delBtn = event.target.closest("[data-delete-child]");
+  const restoreBtn = event.target.closest("[data-restore-child]");
 
-  const grid = document.getElementById("modulesGrid");
-  const empty = document.getElementById("modulesEmpty");
-  if (grid) grid.innerHTML = "";
-  if (empty) empty.style.display = "none";
-
-  if (handleApiFailure(res)) return;
-
-  const list = res.modules || [];
-  allModulesCache = allModulesCache.length ? allModulesCache : [];
-  if (!list.length) {
-    if (empty) empty.style.display = "block";
+  if (editBtn) {
+    const id = editBtn.getAttribute("data-edit-child");
+    openEditChildModal(id);
     return;
   }
 
-  list.forEach(m => {
+  if (delBtn) {
+    const id = delBtn.getAttribute("data-delete-child");
+    deleteChild(id, delBtn);
+    return;
+  }
+
+  if (restoreBtn) {
+    const id = restoreBtn.getAttribute("data-restore-child");
+    restoreChild(id, restoreBtn);
+  }
+}
+
+async function restoreChild(childId, btn) {
+  if (!(await confirmDangerAction("Restore this child?"))) return;
+  setButtonLoading(btn, true, "Restoring...");
+  const res = await apiRequest("updateChild", {
+    child_id: childId,
+    status: "active",
+    center_id: centerId,
+    actor_username: center.username || getCurrentUsername(),
+    actor_role: "center"
+  });
+  if (handleApiFailure(res)) {
+    setButtonLoading(btn, false);
+    return;
+  }
+  showToast("Child restored");
+  loadSection("children");
+  setButtonLoading(btn, false);
+}
+
+async function loadModules() {
+  const grid = document.getElementById("modulesGrid");
+  const empty = document.getElementById("modulesEmpty");
+  const statusFilter = getSectionStatusFilter("vr-modules");
+  if (grid) grid.innerHTML = "";
+  if (empty) empty.style.display = "none";
+
+  const params = { center_id: centerId };
+  if (statusFilter) params.status = statusFilter;
+  const res = await apiRequest("listCenterModules", params);
+  if (handleApiFailure(res)) return;
+
+  const list = res.modules || [];
+  const filtered = statusFilter
+    ? list.filter(module => normalizeStatus(module.status) === statusFilter)
+    : list;
+
+  const hasData = filtered.length > 0;
+  if (empty) {
+    empty.style.display = hasData ? "none" : "block";
+    if (!hasData) {
+      const isDeleted = statusFilter === "deleted";
+      setEmptyStateContent(empty, isDeleted ? {
+        title: "No deleted VR modules",
+        description: "There are no deleted VR modules right now. Switch to Active to manage current modules.",
+        showActions: false
+      } : { showActions: true });
+    }
+  }
+  if (!hasData) return;
+
+  filtered.forEach(m => {
     const card = document.createElement("article");
     card.className = "module-card";
     card.innerHTML = `
@@ -965,8 +1234,7 @@ async function saveAssignedModules() {
 
     closeModal("assignModulesModal");
     showToast("Modules updated");
-      loadSection("vr-modules");
-      loadOverview();
+    loadSection("vr-modules");
     } finally {
       setButtonLoading(saveBtn, false);
     }
@@ -1053,7 +1321,6 @@ async function saveSpecialist() {
     closeModal("specialistModal");
     showToast(specialistId ? "Specialist updated" : "Specialist saved");
     loadSection("specialists");
-    loadOverview();
   } finally {
     setButtonLoading(saveBtn, false);
   }
@@ -1074,7 +1341,6 @@ async function deleteSpecialist(specId, btn) {
   }
   showToast("Specialist deleted");
   loadSection("specialists");
-  loadOverview();
   setButtonLoading(btn, false);
 }
 
@@ -1157,7 +1423,6 @@ async function saveChild() {
     closeModal("childModal");
     showToast(childId ? "Child updated" : "Child saved");
     loadSection("children");
-    loadOverview();
   } finally {
     setButtonLoading(saveBtn, false);
   }
@@ -1178,7 +1443,6 @@ async function deleteChild(childId, btn) {
   }
   showToast("Child deleted");
   loadSection("children");
-  loadOverview();
   setButtonLoading(btn, false);
 }
 
@@ -1217,3 +1481,6 @@ function removeSpecialistCenterInput() {
     }
   });
 }
+
+
+
