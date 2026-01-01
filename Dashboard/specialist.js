@@ -291,8 +291,10 @@ async function loadOverview() {
       const avg = sum / responses.length;
       setText("statAvgScore", avg.toFixed(1));
     } else {
-      setText("statAvgScore", "–");
+      setText("statAvgScore", "N/A");
     }
+  } else {
+    setText("statAvgScore", "N/A");
   }
 
   // children for recent lists
@@ -304,43 +306,85 @@ async function loadOverview() {
 
   // recently active children
   const recentChildrenList = document.getElementById("recentChildrenList");
-  recentChildrenList.innerHTML = "";
+  renderRecentChildren(recentChildrenList, children);
+  await renderRecentSessions(children);
+}
+
+function renderRecentChildren(list, children) {
+  if (!list) return;
+  list.innerHTML = "";
+  if (!children.length) {
+    list.textContent = "No children yet.";
+    return;
+  }
   children.slice(0, 5).forEach(ch => {
     const item = document.createElement("div");
     item.className = "recommendation";
     item.innerHTML = `
-      <div class="recommendation-icon">👦</div>
+      <div class="recommendation-icon"></div>
       <div class="recommendation-body">
-        <strong>${ch.name}</strong>
-        <span class="hint">
-          Sessions: ${ch.num_sessions || 0} · Age: ${ch.age || "N/A"}
-        </span>
+        <strong>${ch.name || "Child"}</strong>
+        <span class="hint">Sessions: ${ch.num_sessions || 0} | Age: ${ch.age || "N/A"}</span>
       </div>
     `;
-    recentChildrenList.appendChild(item);
+    list.appendChild(item);
+  });
+}
+
+async function renderRecentSessions(children) {
+  const list = document.getElementById("recentSessionsList");
+  if (!list) return;
+  list.innerHTML = "";
+  if (!children.length) {
+    list.textContent = "No sessions yet.";
+    return;
+  }
+
+  const candidates = children.slice(0, 6);
+  const profiles = await Promise.all(
+    candidates.map(ch => apiRequest("getChildProfile", { child_id: ch.child_id }))
+  );
+
+  const sessions = [];
+  profiles.forEach((res, idx) => {
+    if (!res?.success) return;
+    const child = res.child || candidates[idx];
+    (res.sessions || []).forEach(s => {
+      const rawDate = s.date || s.created_at || "";
+      const parsed = new Date(rawDate);
+      if (!Number.isNaN(parsed.valueOf())) {
+        sessions.push({
+          childName: child?.name || child?.username || "Child",
+          date: parsed,
+          duration: s.duration_minutes || 0,
+          moduleId: s.module_id || "N/A",
+          notes: s.notes || ""
+        });
+      }
+    });
   });
 
-  // latest sessions (very simple: fake from children for now)
-  const recentSessionsList = document.getElementById("recentSessionsList");
-  recentSessionsList.innerHTML = "";
-  children.slice(0, 5).forEach(ch => {
+  sessions.sort((a, b) => b.date - a.date);
+  const recent = sessions.slice(0, 5);
+  if (!recent.length) {
+    list.textContent = "No sessions yet.";
+    return;
+  }
+
+  recent.forEach(session => {
     const item = document.createElement("div");
     item.className = "recommendation";
     item.innerHTML = `
-      <div class="recommendation-icon">🎧</div>
+      <div class="recommendation-icon"></div>
       <div class="recommendation-body">
-        <strong>${ch.name}</strong>
+        <strong>${session.childName}</strong>
         <span class="hint">
-          Sessions: ${ch.num_sessions || 0} · Latest assessment:
-          ${
-            ch.latest_assessment_date
-              ? new Date(ch.latest_assessment_date).toLocaleDateString()
-              : "No assessments yet"
-          }
+          ${session.date.toLocaleDateString()} | Module: ${session.moduleId} | Duration: ${session.duration} min
         </span>
+        ${session.notes ? `<div class="hint">${session.notes}</div>` : ""}
       </div>
     `;
-    recentSessionsList.appendChild(item);
+    list.appendChild(item);
   });
 }
 
@@ -1093,3 +1137,4 @@ async function saveAssessment() {
     setButtonLoading(saveBtn, false);
   }
 }
+

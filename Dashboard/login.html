@@ -107,10 +107,12 @@
       <div class="login-title">UnitySphere</div>
       <div class="login-subtitle">Sign in to continue</div>
 
-      <input id="username" placeholder="Username" autocomplete="off" />
-      <input id="password" type="password" placeholder="Password" autocomplete="off" />
+      <form id="loginForm" onsubmit="event.preventDefault(); login();">
+        <input id="username" placeholder="Username" autocomplete="off" />
+        <input id="password" type="password" placeholder="Password" autocomplete="off" />
 
-      <button class="login-btn" id="loginBtn" onclick="login()" type="button">Login</button>
+        <button class="login-btn" id="loginBtn" type="submit">Login</button>
+      </form>
 
       <p id="error"></p>
     </div>

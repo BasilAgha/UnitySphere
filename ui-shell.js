@@ -35,33 +35,11 @@
     return new Set(getRoleNav(role).map((item) => item.id));
   }
 
-  function applyTheme(value) {
-    const theme = value === "dark" ? "dark" : "light";
+  function applyTheme() {
+    const theme = "dark";
     document.body.dataset.theme = theme;
     localStorage.setItem("unitysphere:theme", theme);
     return theme;
-  }
-
-  function updateThemeToggle(button, theme) {
-    if (!button) return;
-    button.innerHTML = theme === "light" ? "🌙" : "☀️";
-    button.setAttribute(
-      "aria-label",
-      theme === "light" ? "Switch to dark theme" : "Switch to light theme"
-    );
-  }
-
-  function bindThemeToggle(root) {
-    const btn = root.querySelector("[data-theme-toggle]");
-    if (!btn) return;
-    const stored = localStorage.getItem("unitysphere:theme") || "light";
-    const current = applyTheme(stored);
-    updateThemeToggle(btn, current);
-    btn.addEventListener("click", () => {
-      const next = document.body.dataset.theme === "light" ? "dark" : "light";
-      const applied = applyTheme(next);
-      updateThemeToggle(btn, applied);
-    });
   }
 
   function buildSidebar({ role, active }) {
@@ -113,28 +91,14 @@
 
     const actions = document.createElement("div");
     actions.className = "header-actions";
-
-    const theme = document.createElement("button");
-    theme.className = "icon-button";
-    theme.type = "button";
-    theme.innerHTML = "🌙";
-    theme.setAttribute("aria-label", "Switch to dark theme");
-    theme.dataset.themeToggle = "true";
-
-    const language = document.createElement("button");
-    language.className = "icon-button";
-    language.type = "button";
-    language.innerHTML = "🌐";
-    language.setAttribute("aria-label", "Language");
-
     const avatar = document.createElement("div");
     avatar.className = "avatar";
     avatar.textContent = "US";
 
-    actions.append(theme, language, avatar);
+    actions.append(avatar);
     inner.append(titleEl, actions);
     header.append(inner);
-    bindThemeToggle(header);
+    applyTheme();
     return header;
   }
 
@@ -326,7 +290,6 @@
     setActiveNavItem,
     wireEscManager,
     applyTheme,
-    bindThemeToggle,
     getRoleNav,
     getAllowedSectionIds,
     applyRoleVisibility,
@@ -343,3 +306,7 @@
     ConfirmDangerAction,
   };
 })();
+
+
+
+

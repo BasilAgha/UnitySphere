@@ -406,29 +406,11 @@ function initShell() {
 }
 
 function initSettingsControls() {
-  const themeBtn = document.getElementById('themeToggleBtn');
-  const langBtn = document.getElementById('languageToggleBtn');
-  const storedLang = localStorage.getItem('unitysphere:language') || 'en';
-
   applyThemePreference('dark');
-  applyLanguagePreference(storedLang);
   updateProfileSummary();
-
-  if (themeBtn) {
-    themeBtn.textContent = 'Theme: Dark';
-    themeBtn.disabled = true;
-    themeBtn.title = 'Theme is locked to dark mode';
-  }
-
-  langBtn?.addEventListener('click', () => {
-    const next = document.documentElement.lang === 'ar' ? 'en' : 'ar';
-    applyLanguagePreference(next);
-    localStorage.setItem('unitysphere:language', next);
-  });
 }
 
 function applyThemePreference(theme) {
-  const themeBtn = document.getElementById('themeToggleBtn');
   const value = 'dark';
   if (window.UnitySphereShell?.applyTheme) {
     window.UnitySphereShell.applyTheme(value);
@@ -436,14 +418,6 @@ function applyThemePreference(theme) {
     document.body.dataset.theme = value;
     localStorage.setItem('unitysphere:theme', value);
   }
-  if (themeBtn) themeBtn.textContent = 'Theme: Dark';
-}
-
-function applyLanguagePreference(lang) {
-  const langBtn = document.getElementById('languageToggleBtn');
-  const value = lang === 'ar' ? 'ar' : 'en';
-  document.documentElement.lang = value;
-  if (langBtn) langBtn.textContent = `Language: ${value.toUpperCase()}`;
 }
 
 function updateProfileSummary() {
@@ -2614,12 +2588,7 @@ function renderRecommendations(reportData) {
         const name = item.notes || '';
         return `${action.toUpperCase()}: ${entity} ${item.entity_id || ''} ${name}`.trim();
       })
-    : [
-        'Prioritize onboarding at centers below 60% progress.',
-        'Review VR module usage for kids under 8 sessions.',
-        'Schedule specialist pairing for high-demand centers.',
-        'Flag devices with repeated session drop-offs.'
-      ];
+    : ['No recent activity yet.'];
   items.forEach(text => {
     const li = document.createElement('li');
     li.textContent = text;

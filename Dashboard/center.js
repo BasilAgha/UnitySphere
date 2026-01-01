@@ -544,12 +544,26 @@ async function handleAssessmentChildSelect(childId) {
   setText("assessmentChildAge", `Age: ${child.age || "--"}`);
   setText("assessmentChildCenter", `Center: ${centerLabel}`);
 
+  const assessmentData = await fetchAssessmentData(child.child_id);
   const details = document.getElementById("assessmentDetails");
   const emptyCard = document.getElementById("assessmentEmptyCard");
+
+  if (!assessmentData.hasData) {
+    if (details) details.style.display = "none";
+    if (emptyCard) {
+      if (typeof EmptyState === "function") {
+        emptyCard.innerHTML = EmptyState("assessment data", "No assessment data yet for this child.");
+      } else {
+        emptyCard.textContent = "No assessment data yet for this child.";
+      }
+      emptyCard.style.display = "grid";
+    }
+    clearAssessmentCharts();
+    return;
+  }
+
   if (details) details.style.display = "grid";
   if (emptyCard) emptyCard.style.display = "none";
-
-  const assessmentData = await fetchAssessmentData(child.child_id);
   renderAssessmentCharts(assessmentData);
 }
 
@@ -563,11 +577,13 @@ async function fetchAssessmentData(childId) {
     "Executive Function"
   ];
 
-  let radarScores = null;
-  let progressScores = null;
+  let radarScores = [];
+  let progressScores = [];
+  let hasData = false;
 
   const res = await apiRequest("listAssessmentResponses", { child_id: childId });
   if (res?.success && Array.isArray(res.responses) && res.responses.length) {
+    hasData = true;
     const responses = res.responses;
     const grouped = domains.reduce((acc, domain) => {
       acc[domain] = [];
@@ -596,14 +612,11 @@ async function fetchAssessmentData(childId) {
     }
   }
 
-  if (!radarScores) {
-    radarScores = [72, 64, 70, 58, 66, 74];
-  }
-  if (!progressScores) {
-    progressScores = [58, 64, 70, 76, 82];
+  if (!hasData) {
+    radarScores = domains.map(() => 0);
   }
 
-  return { domains, radarScores, progressScores };
+  return { domains, radarScores, progressScores, hasData };
 }
 
 function renderAssessmentCharts({ domains, radarScores, progressScores }) {
