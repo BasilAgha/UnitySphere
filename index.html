@@ -1,0 +1,187 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UnitySphere Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><img src="Logo 03.png" alt="UnitySphere logo" /></div>
+      </div>
+      <nav class="nav">
+        <a class="nav-item active" aria-current="page" href="index.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 10.5L12 3l9 7.5"></path>
+              <path d="M6 10v9h12v-9"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Overview</span>
+        </a>
+        <a class="nav-item" href="centers.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="6" width="16" height="14" rx="2"></rect>
+              <path d="M9 6V4h6v2"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Centers</span>
+        </a>
+        <a class="nav-item" href="specialists.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="3"></circle>
+              <path d="M5 20c1.5-4 12.5-4 14 0"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Specialists</span>
+        </a>
+        <a class="nav-item" href="children.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="8" cy="9" r="3"></circle>
+              <circle cx="16" cy="9" r="3"></circle>
+              <path d="M3 20c1-4 9-4 10 0"></path>
+              <path d="M11 20c1-4 9-4 10 0"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Children</span>
+        </a>
+        <a class="nav-item" href="vr.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 10a8 8 0 0 1 16 0"></path>
+              <rect x="3" y="10" width="18" height="7" rx="3"></rect>
+              <path d="M8 17v3"></path>
+              <path d="M16 17v3"></path>
+            </svg>
+          </span>
+          <span class="nav-label">VR Experience</span>
+        </a>
+        <a class="nav-item" href="settings.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19 12a7 7 0 0 0-.1-1l2-1-2-3-2 1a7 7 0 0 0-1.7-1l.2-2.2h-3l.2 2.2a7 7 0 0 0-1.7 1l-2-1-2 3 2 1a7 7 0 0 0 0 2l-2 1 2 3 2-1a7 7 0 0 0 1.7 1l-.2 2.2h3l-.2-2.2a7 7 0 0 0 1.7-1l2 1 2-3-2-1c.07-.33.1-.66.1-1z"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Settings</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-card">
+          <div class="sidebar-card-icon">!</div>
+          <div class="sidebar-card-title">Reminder</div>
+          <div class="sidebar-card-text">Review VR session notes and update progress insights.</div>
+        </div>
+        <div class="sidebar-actions">
+          <button class="btn ghost logout-btn" type="button" data-logout>Logout</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="overview">
+        <header class="topbar">
+          <div>
+            <h1>Admin Overview</h1>
+            <p class="subtitle">Real-time telemetry from UnitySphere centers and VR clinics.</p>
+          </div>
+          <div class="topbar-actions">
+            <div class="search">
+              <input type="text" placeholder="Search centers, specialists, children" />
+            </div>
+            <button class="btn primary">New Report</button>
+          </div>
+        </header>
+
+        <section class="grid metrics">
+          <div class="card metric-card" style="--delay: 0.05s;">
+          <div class="metric-header">
+            <span id="metric-title-a">Session Completion Rate</span>
+            <div class="chip">Computed</div>
+          </div>
+          <div class="metric-value" id="metric-completion"></div>
+          <div class="metric-foot" id="metric-foot-a">All centers</div>
+          </div>
+          <div class="card metric-card" style="--delay: 0.1s;">
+          <div class="metric-header">
+            <span id="metric-title-b">Average Session Duration</span>
+            <div class="chip">Computed</div>
+          </div>
+          <div class="metric-value" id="metric-duration"></div>
+          <div class="metric-foot" id="metric-foot-b">Across child sessions</div>
+          </div>
+          <div class="card metric-card" style="--delay: 0.15s;">
+            <div class="metric-header">
+              <span>Learning Velocity</span>
+              <div class="chip">Week-over-week</div>
+            </div>
+            <div class="metric-value" id="metric-velocity"></div>
+            <div class="metric-foot">Accuracy delta</div>
+          </div>
+          <div class="card metric-card highlight" style="--delay: 0.2s;">
+            <div class="metric-header">
+              <span>Global Average Accuracy</span>
+              <div class="chip glow">Live</div>
+            </div>
+            <div class="donut-wrap">
+              <svg viewBox="0 0 120 120" class="donut" aria-label="Average accuracy donut chart">
+                <defs>
+                  <linearGradient id="donutGradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#6E7CFF" />
+                  <stop offset="100%" stop-color="#9B8CFF" />
+                  </linearGradient>
+                </defs>
+                <circle cx="60" cy="60" r="46" class="donut-track"></circle>
+                <circle cx="60" cy="60" r="46" class="donut-value" stroke="url(#donutGradient)"></circle>
+              </svg>
+              <div class="donut-center">
+                <div class="donut-value-text" id="metric-accuracy"></div>
+                <div class="muted">All sessions</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid charts">
+          <div class="card chart-card" style="--delay: 0.25s;">
+            <div class="card-header">
+              <div>
+                <h2>Weekly Sessions</h2>
+                <p class="muted">Curved trend from database telemetry</p>
+              </div>
+              <div class="pill">Past week</div>
+            </div>
+            <canvas id="sessionChart" height="180" aria-label="Line chart of sessions"></canvas>
+            <div class="chart-footer">
+              <span>Peak week</span>
+              <strong id="metric-peak"></strong>
+            </div>
+          </div>
+          <div class="card chart-card" style="--delay: 0.3s;">
+            <div class="card-header">
+              <div>
+                <h2>Progress Rate by Center</h2>
+                <p class="muted">Adaptive therapy completion</p>
+              </div>
+              <button class="btn ghost">Export</button>
+            </div>
+            <div class="progress-list" id="progress-list"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+
+

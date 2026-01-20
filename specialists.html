@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Specialists - UnitySphere</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><img src="Logo 03.png" alt="UnitySphere logo" /></div>
+      </div>
+      <nav class="nav">
+        <a class="nav-item" href="index.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 10.5L12 3l9 7.5"></path>
+              <path d="M6 10v9h12v-9"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Overview</span>
+        </a>
+        <a class="nav-item" href="centers.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="6" width="16" height="14" rx="2"></rect>
+              <path d="M9 6V4h6v2"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Centers</span>
+        </a>
+        <a class="nav-item active" aria-current="page" href="specialists.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="3"></circle>
+              <path d="M5 20c1.5-4 12.5-4 14 0"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Specialists</span>
+        </a>
+        <a class="nav-item" href="children.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="8" cy="9" r="3"></circle>
+              <circle cx="16" cy="9" r="3"></circle>
+              <path d="M3 20c1-4 9-4 10 0"></path>
+              <path d="M11 20c1-4 9-4 10 0"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Children</span>
+        </a>
+        <a class="nav-item" href="vr.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 10a8 8 0 0 1 16 0"></path>
+              <rect x="3" y="10" width="18" height="7" rx="3"></rect>
+              <path d="M8 17v3"></path>
+              <path d="M16 17v3"></path>
+            </svg>
+          </span>
+          <span class="nav-label">VR Experience</span>
+        </a>
+        <a class="nav-item" href="settings.html">
+          <span class="nav-icon">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19 12a7 7 0 0 0-.1-1l2-1-2-3-2 1a7 7 0 0 0-1.7-1l.2-2.2h-3l.2 2.2a7 7 0 0 0-1.7 1l-2-1-2 3 2 1a7 7 0 0 0 0 2l-2 1 2 3 2-1a7 7 0 0 0 1.7 1l-.2 2.2h3l-.2-2.2a7 7 0 0 0 1.7-1l2 1 2-3-2-1c.07-.33.1-.66.1-1z"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Settings</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-card">
+          <div class="sidebar-card-icon">!</div>
+          <div class="sidebar-card-title">Reminder</div>
+          <div class="sidebar-card-text">Review VR session notes and update progress insights.</div>
+        </div>
+        <div class="sidebar-actions">
+          <button class="btn ghost logout-btn" type="button" data-logout>Logout</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Specialists</h1>
+          <p class="subtitle">Meet the care team delivering XR sessions.</p>
+        </div>
+        <button class="btn primary" data-role="center-only">Add Specialist</button>
+      </header>
+
+      <section class="section">
+        <div class="section-header">
+          <h2>Specialist Directory</h2>
+          <div class="filters">
+            <label class="select">
+              <span>Sort</span>
+              <select id="specialist-filter">
+                <option value="az">A-Z</option>
+                <option value="za">Z-A</option>
+              </select>
+            </label>
+            <button class="btn ghost">Export</button>
+          </div>
+        </div>
+        <div class="grid cards" id="specialists-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="add-specialist-modal" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-specialist-title">
+      <div class="modal-header">
+        <div>
+          <h3 id="add-specialist-title">Add Specialist</h3>
+          <p class="muted">Enter specialist details.</p>
+        </div>
+        <button class="btn ghost modal-close" type="button" data-modal-close>Close</button>
+      </div>
+      <form class="modal-form" id="add-specialist-form" data-auto-close="false">
+        <label>
+          <span>Full name</span>
+          <input type="text" name="name" required />
+        </label>
+        <label>
+          <span>Center (optional)</span>
+          <select name="center" id="specialist-center"></select>
+        </label>
+        <label>
+          <span>Description</span>
+          <input type="text" name="description" required />
+        </label>
+        <label>
+          <span>Children (optional)</span>
+          <input type="number" name="children" min="0" />
+        </label>
+        <label>
+          <span>Username</span>
+          <input type="text" name="username" required />
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" required />
+        </label>
+        <div class="modal-actions">
+          <button class="btn ghost" type="button" data-modal-close>Cancel</button>
+          <button class="btn primary" type="submit">Add Specialist</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+
