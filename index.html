@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UnitySphere Dashboard</title>
+  <title data-i18n="title.index">UnitySphere Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -20,7 +20,7 @@
               <path d="M6 10v9h12v-9"></path>
             </svg>
           </span>
-          <span class="nav-label">Overview</span>
+          <span class="nav-label" data-i18n="nav.overview">Overview</span>
         </a>
         <a class="nav-item" href="centers.html">
           <span class="nav-icon">
@@ -29,7 +29,7 @@
               <path d="M9 6V4h6v2"></path>
             </svg>
           </span>
-          <span class="nav-label">Centers</span>
+          <span class="nav-label" data-i18n="nav.centers">Centers</span>
         </a>
         <a class="nav-item" href="specialists.html">
           <span class="nav-icon">
@@ -38,7 +38,7 @@
               <path d="M5 20c1.5-4 12.5-4 14 0"></path>
             </svg>
           </span>
-          <span class="nav-label">Specialists</span>
+          <span class="nav-label" data-i18n="nav.specialists">Specialists</span>
         </a>
         <a class="nav-item" href="children.html">
           <span class="nav-icon">
@@ -49,7 +49,7 @@
               <path d="M11 20c1-4 9-4 10 0"></path>
             </svg>
           </span>
-          <span class="nav-label">Children</span>
+          <span class="nav-label" data-i18n="nav.children">Children</span>
         </a>
         <a class="nav-item" href="vr.html">
           <span class="nav-icon">
@@ -60,7 +60,7 @@
               <path d="M16 17v3"></path>
             </svg>
           </span>
-          <span class="nav-label">VR Experience</span>
+          <span class="nav-label" data-i18n="nav.vr">VR Experience</span>
         </a>
         <a class="nav-item" href="settings.html">
           <span class="nav-icon">
@@ -69,17 +69,17 @@
               <path d="M19 12a7 7 0 0 0-.1-1l2-1-2-3-2 1a7 7 0 0 0-1.7-1l.2-2.2h-3l.2 2.2a7 7 0 0 0-1.7 1l-2-1-2 3 2 1a7 7 0 0 0 0 2l-2 1 2 3 2-1a7 7 0 0 0 1.7 1l-.2 2.2h3l-.2-2.2a7 7 0 0 0 1.7-1l2 1 2-3-2-1c.07-.33.1-.66.1-1z"></path>
             </svg>
           </span>
-          <span class="nav-label">Settings</span>
+          <span class="nav-label" data-i18n="nav.settings">Settings</span>
         </a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-card">
           <div class="sidebar-card-icon">!</div>
-          <div class="sidebar-card-title">Reminder</div>
-          <div class="sidebar-card-text">Review VR session notes and update progress insights.</div>
+          <div class="sidebar-card-title" data-i18n="sidebar.reminderTitle">Reminder</div>
+          <div class="sidebar-card-text" data-i18n="sidebar.reminderText">Review VR session notes and update progress insights.</div>
         </div>
         <div class="sidebar-actions">
-          <button class="btn ghost logout-btn" type="button" data-logout>Logout</button>
+          <button class="btn ghost logout-btn" type="button" data-logout data-i18n="sidebar.logout">Logout</button>
         </div>
       </div>
     </aside>
@@ -88,48 +88,86 @@
       <section class="overview">
         <header class="topbar">
           <div>
-            <h1>Admin Overview</h1>
-            <p class="subtitle">Real-time telemetry from UnitySphere centers and VR clinics.</p>
+            <h1 data-i18n="index.title">Admin Overview</h1>
+            <p class="subtitle" data-i18n="index.subtitle">Real-time telemetry from UnitySphere centers and VR clinics.</p>
           </div>
           <div class="topbar-actions">
-            <div class="search">
-              <input type="text" placeholder="Search centers, specialists, children" />
-            </div>
-            <button class="btn primary">New Report</button>
+            <button class="btn ghost lang-toggle" type="button" data-lang-toggle></button>
           </div>
         </header>
 
         <section class="grid metrics">
           <div class="card metric-card" style="--delay: 0.05s;">
           <div class="metric-header">
-            <span id="metric-title-a">Session Completion Rate</span>
-            <div class="chip">Computed</div>
+            <span id="metric-title-a" data-i18n="index.metric.sessionCompletionRate">Session Completion Rate</span>
+            <div class="metric-status">
+              <div class="chip status-default" data-i18n="index.metric.chip.computed">Computed</div>
+              <div class="chip status-await" data-i18n="status.awaiting">Awaiting Sessions</div>
+            </div>
           </div>
           <div class="metric-value" id="metric-completion"></div>
-          <div class="metric-foot" id="metric-foot-a">All centers</div>
+          <div class="metric-helper">
+            <span class="metric-helper-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 7v5l3 3"></path>
+              </svg>
+            </span>
+            <span class="metric-helper-text" data-i18n="empty.metric.completion">Completion rate appears after your first sessions sync.</span>
+          </div>
+          <div class="metric-foot" id="metric-foot-a" data-i18n="index.metric.allCenters">All centers</div>
           </div>
           <div class="card metric-card" style="--delay: 0.1s;">
           <div class="metric-header">
-            <span id="metric-title-b">Average Session Duration</span>
-            <div class="chip">Computed</div>
+            <span id="metric-title-b" data-i18n="index.metric.avgSessionDuration">Average Session Duration</span>
+            <div class="metric-status">
+              <div class="chip status-default" data-i18n="index.metric.chip.computed">Computed</div>
+              <div class="chip status-await" data-i18n="status.awaiting">Awaiting Sessions</div>
+            </div>
           </div>
           <div class="metric-value" id="metric-duration"></div>
-          <div class="metric-foot" id="metric-foot-b">Across child sessions</div>
+          <div class="metric-helper">
+            <span class="metric-helper-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="5" width="16" height="14" rx="3"></rect>
+                <path d="M8 3v4"></path>
+                <path d="M16 3v4"></path>
+              </svg>
+            </span>
+            <span class="metric-helper-text" data-i18n="empty.metric.duration">Average duration appears once sessions are recorded.</span>
+          </div>
+          <div class="metric-foot" id="metric-foot-b" data-i18n="index.metric.acrossChildSessions">Across child sessions</div>
           </div>
           <div class="card metric-card" style="--delay: 0.15s;">
             <div class="metric-header">
-              <span>Learning Velocity</span>
-              <div class="chip">Week-over-week</div>
+              <span data-i18n="index.metric.learningVelocity">Learning Velocity</span>
+              <div class="metric-status">
+                <div class="chip status-default" data-i18n="index.metric.chip.computed">Computed</div>
+                <div class="chip status-await" data-i18n="status.awaiting">Awaiting Sessions</div>
+              </div>
             </div>
             <div class="metric-value" id="metric-velocity"></div>
-            <div class="metric-foot">Accuracy delta</div>
+            <div class="metric-helper">
+              <span class="metric-helper-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 16l5-6 4 4 5-8"></path>
+                  <path d="M20 7v5h-5"></path>
+                </svg>
+              </span>
+              <span class="metric-helper-text" data-i18n="empty.metric.velocity">Learning velocity appears after enough sessions.</span>
+            </div>
+            <div class="metric-foot" data-i18n="index.metric.accuracyDelta">Accuracy delta</div>
           </div>
           <div class="card metric-card highlight" style="--delay: 0.2s;">
             <div class="metric-header">
-              <span>Global Average Accuracy</span>
-              <div class="chip glow">Live</div>
+              <span data-i18n="index.metric.globalAccuracy">Global Average Accuracy</span>
+              <div class="metric-status">
+                <div class="chip glow status-default" data-i18n="index.metric.chip.live">Live</div>
+                <div class="chip status-await" data-i18n="status.awaiting">Awaiting Sessions</div>
+              </div>
             </div>
             <div class="donut-wrap">
+              <div class="donut-glow-ring" aria-hidden="true"></div>
               <svg viewBox="0 0 120 120" class="donut" aria-label="Average accuracy donut chart">
                 <defs>
                   <linearGradient id="donutGradient" x1="0" y1="0" x2="1" y2="1">
@@ -142,7 +180,8 @@
               </svg>
               <div class="donut-center">
                 <div class="donut-value-text" id="metric-accuracy"></div>
-                <div class="muted">All sessions</div>
+                <div class="donut-empty-label" data-i18n="empty.metric.accuracy">Accuracy updates when sessions begin streaming.</div>
+                <div class="muted" data-i18n="index.metric.allSessions">All sessions</div>
               </div>
             </div>
           </div>
@@ -152,26 +191,54 @@
           <div class="card chart-card" style="--delay: 0.25s;">
             <div class="card-header">
               <div>
-                <h2>Weekly Sessions</h2>
-                <p class="muted">Curved trend from database telemetry</p>
+                <h2 data-i18n="index.chart.weeklySessions">Weekly Sessions</h2>
+                <p class="muted" data-i18n="index.chart.weeklySubtitle">Curved trend from database telemetry</p>
               </div>
-              <div class="pill">Past week</div>
+              <div class="pill" data-i18n="index.chart.pastWeek">Past week</div>
             </div>
-            <canvas id="sessionChart" height="180" aria-label="Line chart of sessions"></canvas>
+            <div class="chart-frame">
+              <div class="chart-grid" aria-hidden="true"></div>
+              <canvas id="sessionChart" height="180" aria-label="Line chart of sessions"></canvas>
+              <div class="chart-skeleton" aria-hidden="true"></div>
+              <div class="chart-empty">
+                <span class="chart-empty-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 18h16"></path>
+                    <path d="M6 14l3-4 4 3 5-7"></path>
+                  </svg>
+                </span>
+                <span data-i18n="empty.chart.weekly">Weekly sessions will plot once data arrives from centers.</span>
+              </div>
+            </div>
             <div class="chart-footer">
-              <span>Peak week</span>
+              <span data-i18n="index.chart.peakWeek">Peak week</span>
               <strong id="metric-peak"></strong>
             </div>
+            <div class="chart-caption" data-i18n="empty.chart.caption.weekly">Awaiting telemetry to draw the weekly trend.</div>
           </div>
           <div class="card chart-card" style="--delay: 0.3s;">
             <div class="card-header">
               <div>
-                <h2>Progress Rate by Center</h2>
-                <p class="muted">Adaptive therapy completion</p>
+                <h2 data-i18n="index.chart.progressByCenter">Progress Rate by Center</h2>
+                <p class="muted" data-i18n="index.chart.progressSubtitle">Adaptive therapy completion</p>
               </div>
-              <button class="btn ghost">Export</button>
+              <button class="btn ghost" data-i18n="index.chart.export">Export</button>
+            </div>
+            <div class="chart-frame slim">
+              <div class="chart-grid" aria-hidden="true"></div>
+              <div class="chart-skeleton" aria-hidden="true"></div>
+              <div class="chart-empty">
+                <span class="chart-empty-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 18h16"></path>
+                    <path d="M6 15l4-5 4 3 4-6"></path>
+                  </svg>
+                </span>
+                <span data-i18n="empty.chart.progress">Center progress rates will populate after sessions sync.</span>
+              </div>
             </div>
             <div class="progress-list" id="progress-list"></div>
+            <div class="chart-caption" data-i18n="empty.chart.caption.progress">Awaiting linked centers to report progress.</div>
           </div>
         </section>
       </section>

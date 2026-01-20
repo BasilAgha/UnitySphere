@@ -1,9 +1,344 @@
 const API_URL =
   "https://script.google.com/macros/s/AKfycbxEa5cGM1VmJ9FSrm0MG0frn1Nr2POy2RNmL_pba-tKAWaHy-tq-_tafvliq-qYW7WQfw/exec";
 const AUTH_STORAGE_KEY = "unitysphereUser";
+const LANG_STORAGE_KEY = "unitysphereLang";
 const LOGIN_PAGE = "login.html";
 const getById = (id) => (typeof document === "undefined" ? null : document.getElementById(id));
 const normalizeKey = (value) => String(value || "").toLowerCase().replace(/[\s_-]+/g, "");
+const DEFAULT_LANG = "ar";
+let currentLanguage = DEFAULT_LANG;
+
+const translations = {
+  en: {
+    "title.index": "UnitySphere Dashboard",
+    "title.centers": "Centers - UnitySphere",
+    "title.specialists": "Specialists - UnitySphere",
+    "title.children": "Children - UnitySphere",
+    "title.vr": "VR Experience - UnitySphere",
+    "title.settings": "Settings - UnitySphere",
+    "title.login": "Login - UnitySphere",
+    "nav.overview": "Overview",
+    "nav.centers": "Centers",
+    "nav.specialists": "Specialists",
+    "nav.children": "Children",
+    "nav.vr": "VR Experience",
+    "nav.settings": "Settings",
+    "sidebar.reminderTitle": "Reminder",
+    "sidebar.reminderText": "Review VR session notes and update progress insights.",
+    "sidebar.logout": "Logout",
+    "index.title": "Admin Overview",
+    "index.subtitle": "Real-time telemetry from UnitySphere centers and VR clinics.",
+    "index.metric.sessionCompletionRate": "Session Completion Rate",
+    "index.metric.avgSessionDuration": "Average Session Duration",
+    "index.metric.learningVelocity": "Learning Velocity",
+    "index.metric.globalAccuracy": "Global Average Accuracy",
+    "index.metric.allCenters": "All centers",
+    "index.metric.acrossChildSessions": "Across child sessions",
+    "index.metric.accuracyDelta": "Accuracy delta",
+    "index.metric.allSessions": "All sessions",
+    "index.metric.chip.computed": "Computed",
+    "index.metric.chip.week": "Week-over-week",
+    "index.metric.chip.live": "Live",
+    "index.chart.weeklySessions": "Weekly Sessions",
+    "index.chart.weeklySubtitle": "Curved trend from database telemetry",
+    "index.chart.pastWeek": "Past week",
+    "index.chart.peakWeek": "Peak week",
+    "index.chart.progressByCenter": "Progress Rate by Center",
+    "index.chart.progressSubtitle": "Adaptive therapy completion",
+    "index.chart.export": "Export",
+    "status.awaiting": "Awaiting Sessions",
+    "empty.metric.completion": "Completion rate appears after your first sessions sync.",
+    "empty.metric.duration": "Average duration appears once sessions are recorded.",
+    "empty.metric.velocity": "Learning velocity appears after enough sessions.",
+    "empty.metric.accuracy": "Accuracy updates when sessions begin streaming.",
+    "empty.chart.weekly": "Weekly sessions will plot once data arrives from centers.",
+    "empty.chart.progress": "Center progress rates will populate after sessions sync.",
+    "empty.chart.caption.weekly": "Awaiting telemetry to draw the weekly trend.",
+    "empty.chart.caption.progress": "Awaiting linked centers to report progress.",
+    "centers.title": "Centers",
+    "centers.subtitle": "Customer-based filtering with center performance snapshots.",
+    "centers.addCenter": "Add Center",
+    "centers.directory": "Center Directory",
+    "centers.filterLabel": "Centers",
+    "centers.allCenters": "All centers",
+    "centers.export": "Export",
+    "specialists.title": "Specialists",
+    "specialists.subtitle": "Meet the care team delivering XR sessions.",
+    "specialists.addSpecialist": "Add Specialist",
+    "specialists.directory": "Specialist Directory",
+    "specialists.sortLabel": "Sort",
+    "specialists.export": "Export",
+    "specialists.sort.az": "A-Z",
+    "specialists.sort.za": "Z-A",
+    "children.title": "Children",
+    "children.subtitle": "Profiles synced from Unity with specialist form answers.",
+    "children.syncedPill": "Synced from Unity",
+    "children.addChild": "Add Child",
+    "children.activeList": "Active List",
+    "children.tab.profile": "Profile",
+    "children.tab.responses": "Form Answers",
+    "children.summary.accuracy": "Accuracy",
+    "children.summary.sessions": "Sessions",
+    "children.summary.avgDuration": "Avg Duration",
+    "children.summary.trend": "Trend",
+    "children.performanceSnapshot": "Performance Snapshot",
+    "children.avgAttempts": "Avg attempts per question",
+    "children.sessionCompletionRate": "Session completion rate",
+    "children.primaryOperation": "Primary operation",
+    "settings.title": "Settings",
+    "settings.subtitle": "Manage contact details and communications.",
+    "settings.save": "Save Changes",
+    "settings.contactDetails": "Contact Details",
+    "settings.contactHint": "Editable fields with focus glow states.",
+    "settings.adminName": "Admin name",
+    "settings.email": "Email",
+    "settings.phone": "Phone",
+    "vr.title": "VR Experiences",
+    "vr.subtitle": "Manage immersive therapy modules and media previews.",
+    "vr.addExperience": "Add Experience",
+    "vr.library": "Experience Library",
+    "vr.archiveView": "Archive View",
+    "login.title": "Sign in",
+    "login.subtitle": "Use your UnitySphere credentials to continue.",
+    "login.username": "Username",
+    "login.password": "Password",
+    "login.signIn": "Sign In",
+    "modal.addCenter.title": "Add Center",
+    "modal.addCenter.subtitle": "Enter center details and admin credentials.",
+    "modal.close": "Close",
+    "modal.centerName": "Center name",
+    "modal.location": "Location",
+    "modal.specialists": "Specialists",
+    "modal.subscription": "Subscription plan",
+    "modal.contactEmail": "Contact email",
+    "modal.contactPhone": "Contact phone",
+    "modal.children": "Children",
+    "modal.adminUsername": "Admin username",
+    "modal.adminPassword": "Admin password",
+    "modal.cancel": "Cancel",
+    "modal.addCenterButton": "Add Center",
+    "modal.addSpecialist.title": "Add Specialist",
+    "modal.addSpecialist.subtitle": "Enter specialist details.",
+    "modal.fullName": "Full name",
+    "modal.centerOptional": "Center (optional)",
+    "modal.description": "Description",
+    "modal.childrenOptional": "Children (optional)",
+    "modal.username": "Username",
+    "modal.password": "Password",
+    "modal.addSpecialistButton": "Add Specialist",
+    "modal.addChild.title": "Add Child",
+    "modal.addChild.subtitle": "Assign a child to a specialist.",
+    "modal.childId": "ChildId",
+    "modal.age": "Age",
+    "modal.specialist": "Specialist",
+    "modal.addChildButton": "Add Child",
+    "modal.addExperience.title": "Add Experience",
+    "modal.addExperience.subtitle": "Enter experience details and media link.",
+    "modal.experienceName": "Experience name",
+    "modal.duration": "Duration",
+    "modal.durationPlaceholder": "e.g. 12 min",
+    "modal.difficulty": "Difficulty",
+    "modal.previewLink": "Preview link (optional)",
+    "modal.previewPlaceholder": "preview/experience-id",
+    "modal.coverUrl": "Cover image URL (optional)",
+    "modal.coverUrlPlaceholder": "https://...",
+    "modal.coverUpload": "Cover image upload (optional)",
+    "modal.assignedCenters": "Assigned centers (optional)",
+    "modal.addExperienceButton": "Add Experience",
+    "generic.noData": "No data",
+    "generic.noResponses": "No responses available.",
+    "generic.noChildSelected": "No child selected",
+    "generic.noProfileData": "No profile data available.",
+    "generic.noSessionData": "No session data available.",
+    "generic.noChildrenYet": "No children yet",
+    "generic.noCentersYet": "No centers yet",
+    "generic.noSpecialistsYet": "No specialists yet",
+    "generic.noExperiencesYet": "No experiences yet",
+    "generic.noCentersAvailable": "No centers available.",
+    "generic.addCentersHint": "Add centers to populate this list.",
+    "generic.addSpecialistsHint": "Add specialists to populate this list.",
+    "generic.addExperiencesHint": "Add VR experiences to populate this list.",
+    "generic.unspecified": "Unspecified",
+    "overview.centerSpecialists": "Center Specialists",
+    "overview.centerChildren": "Center Children",
+    "overview.notAvailable": "Not available for specialists",
+    "overview.linkedToCenter": "Linked to your center",
+    "overview.derivedFromSpecialists": "Derived from specialists",
+    "loading.text": "Loading..."
+  },
+  ar: {
+    "title.index": "لوحة UnitySphere",
+    "title.centers": "المراكز - UnitySphere",
+    "title.specialists": "الأخصائيون - UnitySphere",
+    "title.children": "الأطفال - UnitySphere",
+    "title.vr": "تجارب الواقع الافتراضي - UnitySphere",
+    "title.settings": "الإعدادات - UnitySphere",
+    "title.login": "تسجيل الدخول - UnitySphere",
+    "nav.overview": "نظرة عامة",
+    "nav.centers": "المراكز",
+    "nav.specialists": "الأخصائيون",
+    "nav.children": "الأطفال",
+    "nav.vr": "تجارب الواقع الافتراضي",
+    "nav.settings": "الإعدادات",
+    "sidebar.reminderTitle": "تذكير",
+    "sidebar.reminderText": "راجع ملاحظات جلسات الواقع الافتراضي وحدّث مؤشرات التقدم.",
+    "sidebar.logout": "تسجيل الخروج",
+    "index.title": "نظرة المشرف",
+    "index.subtitle": "قياس فوري من مراكز UnitySphere وعيادات الواقع الافتراضي.",
+    "index.metric.sessionCompletionRate": "معدل إكمال الجلسات",
+    "index.metric.avgSessionDuration": "متوسط مدة الجلسة",
+    "index.metric.learningVelocity": "سرعة التعلم",
+    "index.metric.globalAccuracy": "متوسط الدقة العالمي",
+    "index.metric.allCenters": "جميع المراكز",
+    "index.metric.acrossChildSessions": "عبر جلسات الأطفال",
+    "index.metric.accuracyDelta": "فرق الدقة",
+    "index.metric.allSessions": "كل الجلسات",
+    "index.metric.chip.computed": "محسوب",
+    "index.metric.chip.week": "أسبوع لأسبوع",
+    "index.metric.chip.live": "مباشر",
+    "index.chart.weeklySessions": "الجلسات الأسبوعية",
+    "index.chart.weeklySubtitle": "منحنى من بيانات قاعدة البيانات",
+    "index.chart.pastWeek": "الأسبوع الماضي",
+    "index.chart.peakWeek": "أعلى أسبوع",
+    "index.chart.progressByCenter": "معدل التقدم حسب المركز",
+    "index.chart.progressSubtitle": "اكتمال العلاج التكيفي",
+    "index.chart.export": "تصدير",
+    "status.awaiting": "بانتظار الجلسات",
+    "empty.metric.completion": "يظهر معدل الإكمال بعد مزامنة أولى الجلسات.",
+    "empty.metric.duration": "يظهر متوسط المدة بعد تسجيل الجلسات.",
+    "empty.metric.velocity": "تظهر سرعة التعلم بعد توفر جلسات كافية.",
+    "empty.metric.accuracy": "تتحدث الدقة عند بدء تدفق الجلسات.",
+    "empty.chart.weekly": "ستظهر الجلسات الأسبوعية بعد وصول البيانات من المراكز.",
+    "empty.chart.progress": "ستظهر معدلات تقدم المراكز بعد مزامنة الجلسات.",
+    "empty.chart.caption.weekly": "بانتظار القياسات لرسم الاتجاه الأسبوعي.",
+    "empty.chart.caption.progress": "بانتظار المراكز المرتبطة للإبلاغ عن التقدم.",
+    "centers.title": "المراكز",
+    "centers.subtitle": "تصفية حسب العملاء مع لقطات أداء المراكز.",
+    "centers.addCenter": "إضافة مركز",
+    "centers.directory": "دليل المراكز",
+    "centers.filterLabel": "المراكز",
+    "centers.allCenters": "كل المراكز",
+    "centers.export": "تصدير",
+    "specialists.title": "الأخصائيون",
+    "specialists.subtitle": "فريق الرعاية الذي يقدم جلسات XR.",
+    "specialists.addSpecialist": "إضافة أخصائي",
+    "specialists.directory": "دليل الأخصائيين",
+    "specialists.sortLabel": "الترتيب",
+    "specialists.export": "تصدير",
+    "specialists.sort.az": "أ-ي",
+    "specialists.sort.za": "ي-أ",
+    "children.title": "الأطفال",
+    "children.subtitle": "ملفات شخصية متزامنة من Unity مع إجابات الأخصائي.",
+    "children.syncedPill": "متزامن من Unity",
+    "children.addChild": "إضافة طفل",
+    "children.activeList": "القائمة النشطة",
+    "children.tab.profile": "الملف",
+    "children.tab.responses": "إجابات النموذج",
+    "children.summary.accuracy": "الدقة",
+    "children.summary.sessions": "الجلسات",
+    "children.summary.avgDuration": "متوسط المدة",
+    "children.summary.trend": "الاتجاه",
+    "children.performanceSnapshot": "لمحة الأداء",
+    "children.avgAttempts": "متوسط المحاولات لكل سؤال",
+    "children.sessionCompletionRate": "معدل إكمال الجلسة",
+    "children.primaryOperation": "العملية الأساسية",
+    "settings.title": "الإعدادات",
+    "settings.subtitle": "إدارة تفاصيل التواصل والرسائل.",
+    "settings.save": "حفظ التغييرات",
+    "settings.contactDetails": "تفاصيل التواصل",
+    "settings.contactHint": "حقول قابلة للتحرير مع إضاءة عند التركيز.",
+    "settings.adminName": "اسم المسؤول",
+    "settings.email": "البريد الإلكتروني",
+    "settings.phone": "الهاتف",
+    "vr.title": "تجارب الواقع الافتراضي",
+    "vr.subtitle": "إدارة وحدات العلاج الغامرة ومعاينات الوسائط.",
+    "vr.addExperience": "إضافة تجربة",
+    "vr.library": "مكتبة التجارب",
+    "vr.archiveView": "عرض الأرشيف",
+    "login.title": "تسجيل الدخول",
+    "login.subtitle": "استخدم بيانات UnitySphere للمتابعة.",
+    "login.username": "اسم المستخدم",
+    "login.password": "كلمة المرور",
+    "login.signIn": "تسجيل الدخول",
+    "modal.addCenter.title": "إضافة مركز",
+    "modal.addCenter.subtitle": "أدخل تفاصيل المركز وبيانات المسؤول.",
+    "modal.close": "إغلاق",
+    "modal.centerName": "اسم المركز",
+    "modal.location": "الموقع",
+    "modal.specialists": "الأخصائيون",
+    "modal.subscription": "خطة الاشتراك",
+    "modal.contactEmail": "البريد الإلكتروني",
+    "modal.contactPhone": "هاتف التواصل",
+    "modal.children": "الأطفال",
+    "modal.adminUsername": "اسم المستخدم للمسؤول",
+    "modal.adminPassword": "كلمة مرور المسؤول",
+    "modal.cancel": "إلغاء",
+    "modal.addCenterButton": "إضافة مركز",
+    "modal.addSpecialist.title": "إضافة أخصائي",
+    "modal.addSpecialist.subtitle": "أدخل تفاصيل الأخصائي.",
+    "modal.fullName": "الاسم الكامل",
+    "modal.centerOptional": "المركز (اختياري)",
+    "modal.description": "الوصف",
+    "modal.childrenOptional": "الأطفال (اختياري)",
+    "modal.username": "اسم المستخدم",
+    "modal.password": "كلمة المرور",
+    "modal.addSpecialistButton": "إضافة أخصائي",
+    "modal.addChild.title": "إضافة طفل",
+    "modal.addChild.subtitle": "اربط طفلاً بأخصائي.",
+    "modal.childId": "معرّف الطفل",
+    "modal.age": "العمر",
+    "modal.specialist": "الأخصائي",
+    "modal.addChildButton": "إضافة طفل",
+    "modal.addExperience.title": "إضافة تجربة",
+    "modal.addExperience.subtitle": "أدخل تفاصيل التجربة ورابط الوسائط.",
+    "modal.experienceName": "اسم التجربة",
+    "modal.duration": "المدة",
+    "modal.durationPlaceholder": "مثال: 12 دقيقة",
+    "modal.difficulty": "الصعوبة",
+    "modal.previewLink": "رابط المعاينة (اختياري)",
+    "modal.previewPlaceholder": "preview/experience-id",
+    "modal.coverUrl": "رابط صورة الغلاف (اختياري)",
+    "modal.coverUrlPlaceholder": "https://...",
+    "modal.coverUpload": "رفع صورة الغلاف (اختياري)",
+    "modal.assignedCenters": "المراكز المعينة (اختياري)",
+    "modal.addExperienceButton": "إضافة تجربة",
+    "generic.noData": "لا توجد بيانات",
+    "generic.noResponses": "لا توجد إجابات متاحة.",
+    "generic.noChildSelected": "لم يتم اختيار طفل",
+    "generic.noProfileData": "لا توجد بيانات للملف الشخصي.",
+    "generic.noSessionData": "لا توجد بيانات للجلسات.",
+    "generic.noChildrenYet": "لا يوجد أطفال بعد",
+    "generic.noCentersYet": "لا توجد مراكز بعد",
+    "generic.noSpecialistsYet": "لا يوجد أخصائيون بعد",
+    "generic.noExperiencesYet": "لا توجد تجارب بعد",
+    "generic.noCentersAvailable": "لا توجد مراكز متاحة.",
+    "generic.addCentersHint": "أضف مراكز لملء هذه القائمة.",
+    "generic.addSpecialistsHint": "أضف أخصائيين لملء هذه القائمة.",
+    "generic.addExperiencesHint": "أضف تجارب واقع افتراضي لملء هذه القائمة.",
+    "generic.unspecified": "غير محدد",
+    "overview.centerSpecialists": "أخصائيو المركز",
+    "overview.centerChildren": "أطفال المركز",
+    "overview.notAvailable": "غير متاح للأخصائيين",
+    "overview.linkedToCenter": "مرتبط بمركزك",
+    "overview.derivedFromSpecialists": "مستمد من الأخصائيين",
+    "loading.text": "جار التحميل..."
+  }
+};
+
+const getStoredLanguage = () => {
+  if (typeof window === "undefined") return DEFAULT_LANG;
+  const stored = localStorage.getItem(LANG_STORAGE_KEY);
+  return translations[stored] ? stored : DEFAULT_LANG;
+};
+
+const setCurrentLanguage = (lang) => {
+  currentLanguage = translations[lang] ? lang : DEFAULT_LANG;
+};
+
+const getTranslation = (key, fallback) => {
+  const table = translations[currentLanguage] || {};
+  return table[key] || fallback || key;
+};
 const getField = (obj, candidates = []) => {
   if (!obj) return "";
   const map = Object.keys(obj).reduce((acc, key) => {
@@ -37,7 +372,7 @@ const ensureLoadingOverlay = () => {
   overlay.innerHTML = `
     <div class="loading-card" role="status" aria-live="polite">
       <div class="loading-spinner"></div>
-      <div class="loading-text">Loading...</div>
+      <div class="loading-text">${getTranslation("loading.text", "Loading...")}</div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -91,7 +426,7 @@ const enforceAuth = () => {
   }
 };
 
-const apiPost = (payload = {}, message = "Loading...") => {
+const apiPost = (payload = {}, message = getTranslation("loading.text", "Loading...")) => {
   startLoading(message);
   return fetch(API_URL, {
     method: "POST",
@@ -103,7 +438,7 @@ const apiPost = (payload = {}, message = "Loading...") => {
 const apiGet = (route) => fetch(`${API_URL}?route=${encodeURIComponent(route)}`);
 
 const fetchRoute = async (route) => {
-  startLoading("Loading...");
+  startLoading(getTranslation("loading.text", "Loading..."));
   try {
     const response = await apiGet(route);
     const payload = await response.json();
@@ -221,12 +556,38 @@ const setText = (id, value) => {
   if (el) el.textContent = value;
 };
 
+const setMetricEmpty = (id) => {
+  const el = getById(id);
+  if (!el) return;
+  el.textContent = "";
+  el.classList.add("is-empty");
+  const card = el.closest(".metric-card");
+  if (card) card.classList.add("is-empty");
+  if (id === "metric-accuracy") {
+    const wrap = document.querySelector(".donut-wrap");
+    if (wrap) wrap.classList.add("is-empty");
+  }
+};
+
+const setMetricValue = (id, value) => {
+  const el = getById(id);
+  if (!el) return;
+  el.textContent = value;
+  el.classList.remove("is-empty");
+  const card = el.closest(".metric-card");
+  if (card) card.classList.remove("is-empty");
+  if (id === "metric-accuracy") {
+    const wrap = document.querySelector(".donut-wrap");
+    if (wrap) wrap.classList.remove("is-empty");
+  }
+};
+
 const setPlaceholderMetrics = () => {
-  setText("metric-completion", "No data");
-  setText("metric-duration", "No data");
-  setText("metric-velocity", "No data");
-  setText("metric-accuracy", "No data");
-  setText("metric-peak", "No data");
+  setMetricEmpty("metric-completion");
+  setMetricEmpty("metric-duration");
+  setMetricEmpty("metric-velocity");
+  setMetricEmpty("metric-accuracy");
+  setMetricEmpty("metric-peak");
 
   const donutValue = document.querySelector(".donut-value");
   if (donutValue) {
@@ -246,7 +607,7 @@ const renderEmptyListItem = (listEl, message) => {
     <div class="avatar">?</div>
     <div>
       <div class="child-name">${message}</div>
-      <div class="muted">No data</div>
+      <div class="muted">${getTranslation("generic.noData", "No data")}</div>
     </div>
   `;
   listEl.appendChild(item);
@@ -271,37 +632,50 @@ const renderEmptyProgress = () => {
   const list = getById("progress-list");
   if (!list) return;
   list.innerHTML = `
-    <div class="progress-item is-animated">
+    <div class="progress-item is-animated is-empty">
       <div class="meta">
-        <span>No data</span>
+        <span class="muted">${getTranslation("status.awaiting", "Awaiting Sessions")}</span>
         <strong>0%</strong>
       </div>
       <div class="progress-bar">
-        <div class="progress-fill" data-value="0"></div>
+        <div class="progress-fill skeleton-bar" data-value="0"></div>
+      </div>
+      <div class="progress-helper">
+        <span class="progress-helper-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 12h16"></path>
+            <path d="M7 8l5-4 5 4"></path>
+            <path d="M7 16l5 4 5-4"></path>
+          </svg>
+        </span>
+        <span>${getTranslation("empty.chart.progress", "Center progress rates will populate after sessions sync.")}</span>
       </div>
     </div>
   `;
 };
 
 const renderEmptyChildProfile = () => {
-  setText("child-name", "No child selected");
+  setText("child-name", getTranslation("generic.noChildSelected", "No child selected"));
   setText("child-id", "");
   setText("child-status", "");
   const status = getById("child-status");
   if (status) status.dataset.status = "";
-  setText("child-meta", "No profile data available.");
+  setText("child-meta", getTranslation("generic.noProfileData", "No profile data available."));
   setText("child-accuracy", "0%");
   setText("child-sessions", "0");
   setText("child-duration", "0 sec");
-  setText("child-trend", "No data");
+  setText("child-trend", getTranslation("generic.noData", "No data"));
   setText("child-attempts", "0.0");
   setText("child-completion", "0%");
-  setText("child-operation", "Unspecified");
-  setText("child-progress", "No session data available.");
+  setText("child-operation", getTranslation("generic.unspecified", "Unspecified"));
+  setText("child-progress", getTranslation("generic.noSessionData", "No session data available."));
 
   const responses = getById("child-responses");
   if (responses) {
-    responses.innerHTML = `<div class="muted">No session data available.</div>`;
+    responses.innerHTML = `<div class="muted">${getTranslation(
+      "generic.noSessionData",
+      "No session data available."
+    )}</div>`;
   }
 };
 
@@ -334,10 +708,12 @@ const initTabs = () => {
   });
 };
 
-const initModal = ({ buttonText, modalId, formId }) => {
-  const trigger = Array.from(document.querySelectorAll(".btn.primary")).find(
-    (button) => button.textContent.trim() === buttonText
-  );
+const initModal = ({ buttonText, triggerSelector, modalId, formId }) => {
+  const trigger = triggerSelector
+    ? document.querySelector(triggerSelector)
+    : Array.from(document.querySelectorAll(".btn.primary")).find(
+        (button) => button.textContent.trim() === buttonText
+      );
   const modal = getById(modalId);
   const form = formId ? getById(formId) : null;
   if (!trigger || !modal) return;
@@ -699,7 +1075,7 @@ const initExperienceCentersChecklist = () => {
     if (!Array.isArray(centers) || centers.length === 0) {
       const empty = document.createElement("div");
       empty.className = "checkbox-empty";
-      empty.textContent = "No centers available.";
+      empty.textContent = getTranslation("generic.noCentersAvailable", "No centers available.");
       list.appendChild(empty);
       return;
     }
@@ -744,8 +1120,8 @@ const renderCenters = (centers = []) => {
   const grid = getById("centers-grid");
   if (!grid) return;
   if (!Array.isArray(centers) || centers.length === 0) {
-    renderEmptyGridCard(grid, "center-card", "No centers yet", [
-      "Add centers to populate this list."
+    renderEmptyGridCard(grid, "center-card", getTranslation("generic.noCentersYet", "No centers yet"), [
+      getTranslation("generic.addCentersHint", "Add centers to populate this list.")
     ]);
     return;
   }
@@ -780,9 +1156,12 @@ const renderSpecialists = (specialists = []) => {
   if (!grid) return;
   const { role } = getUserContext();
   if (!Array.isArray(specialists) || specialists.length === 0) {
-    renderEmptyGridCard(grid, "specialist-card", "No specialists yet", [
-      "Add specialists to populate this list."
-    ]);
+    renderEmptyGridCard(
+      grid,
+      "specialist-card",
+      getTranslation("generic.noSpecialistsYet", "No specialists yet"),
+      [getTranslation("generic.addSpecialistsHint", "Add specialists to populate this list.")]
+    );
     return;
   }
 
@@ -842,8 +1221,8 @@ const renderVr = (experiences = []) => {
   const grid = getById("vr-grid");
   if (!grid) return;
   if (!Array.isArray(experiences) || experiences.length === 0) {
-    renderEmptyGridCard(grid, "vr-card", "No experiences yet", [
-      "Add VR experiences to populate this list."
+    renderEmptyGridCard(grid, "vr-card", getTranslation("generic.noExperiencesYet", "No experiences yet"), [
+      getTranslation("generic.addExperiencesHint", "Add VR experiences to populate this list.")
     ]);
     return;
   }
@@ -1082,15 +1461,23 @@ const initVr = () => {
 };
 
 const initModals = () => {
-  initModal({ buttonText: "Add Center", modalId: "add-center-modal", formId: "add-center-form" });
   initModal({
-    buttonText: "Add Specialist",
+    triggerSelector: '[data-modal-trigger="add-center-modal"]',
+    modalId: "add-center-modal",
+    formId: "add-center-form"
+  });
+  initModal({
+    triggerSelector: '[data-modal-trigger="add-specialist-modal"]',
     modalId: "add-specialist-modal",
     formId: "add-specialist-form"
   });
-  initModal({ buttonText: "Add Child", modalId: "add-child-modal", formId: "add-child-form" });
   initModal({
-    buttonText: "Add Experience",
+    triggerSelector: '[data-modal-trigger="add-child-modal"]',
+    modalId: "add-child-modal",
+    formId: "add-child-form"
+  });
+  initModal({
+    triggerSelector: '[data-modal-trigger="add-experience-modal"]',
     modalId: "add-experience-modal",
     formId: "add-experience-form"
   });
@@ -1100,7 +1487,10 @@ const renderChildResponses = (rawResponses) => {
   const responses = getById("child-responses");
   if (!responses) return;
   if (!rawResponses) {
-    responses.innerHTML = `<div class="muted">No responses available.</div>`;
+    responses.innerHTML = `<div class="muted">${getTranslation(
+      "generic.noResponses",
+      "No responses available."
+    )}</div>`;
     return;
   }
 
@@ -1146,7 +1536,9 @@ const renderChildDetail = (child) => {
   const metaBits = [];
   if (age) metaBits.push(`Age ${age}`);
   if (specialist) metaBits.push(`Specialist ${specialist}`);
-  const meta = metaBits.length ? metaBits.join(" | ") : "No profile data available.";
+  const meta = metaBits.length
+    ? metaBits.join(" | ")
+    : getTranslation("generic.noProfileData", "No profile data available.");
 
   setText("child-name", name);
   setText("child-id", ` | ChildId: ${childIdText}`);
@@ -1160,10 +1552,14 @@ const renderChildDetail = (child) => {
   setText("child-accuracy", getField(child, ["accuracy"]) || "0%");
   setText("child-sessions", getField(child, ["sessions", "sessionCount"]) || "0");
   setText("child-duration", getField(child, ["avgDuration", "duration"]) || "0 sec");
-  setText("child-trend", getField(child, ["trend"]) || "No data");
+  setText("child-trend", getField(child, ["trend"]) || getTranslation("generic.noData", "No data"));
   setText("child-attempts", getField(child, ["attempts", "avgAttempts"]) || "0.0");
   setText("child-completion", getField(child, ["completion", "completionRate"]) || "0%");
-  setText("child-operation", getField(child, ["operation", "primaryOperation"]) || "Unspecified");
+  setText(
+    "child-operation",
+    getField(child, ["operation", "primaryOperation"]) ||
+      getTranslation("generic.unspecified", "Unspecified")
+  );
   setText("child-progress", getField(child, ["progress", "notes"]) || "No session data available.");
 
   renderChildResponses(getField(child, ["responses", "formAnswers", "answers"]));
@@ -1176,7 +1572,7 @@ const renderChildrenList = (children = []) => {
   list.innerHTML = "";
 
   if (!Array.isArray(children) || children.length === 0) {
-    renderEmptyListItem(list, "No children yet");
+    renderEmptyListItem(list, getTranslation("generic.noChildrenYet", "No children yet"));
     renderEmptyChildProfile();
     return;
   }
@@ -1396,12 +1792,12 @@ const initOverviewCounts = () => {
   updateOverviewCounts = async () => {
     const { role, linkedId } = getUserContext();
     if (role !== "center_admin") {
-      setText("metric-completion", "—");
-      setText("metric-duration", "—");
-      if (titleA) titleA.textContent = "Center Specialists";
-      if (titleB) titleB.textContent = "Center Children";
-      if (footA) footA.textContent = "Not available for specialists";
-      if (footB) footB.textContent = "Not available for specialists";
+      setMetricEmpty("metric-completion");
+      setMetricEmpty("metric-duration");
+      if (titleA) titleA.textContent = getTranslation("overview.centerSpecialists", "Center Specialists");
+      if (titleB) titleB.textContent = getTranslation("overview.centerChildren", "Center Children");
+      if (footA) footA.textContent = getTranslation("overview.notAvailable", "Not available for specialists");
+      if (footB) footB.textContent = getTranslation("overview.notAvailable", "Not available for specialists");
       return;
     }
 
@@ -1431,16 +1827,16 @@ const initOverviewCounts = () => {
         return childSpecialistId && specialistIds.has(childSpecialistId);
       });
 
-      setText("metric-completion", String(filteredSpecialists.length));
-      setText("metric-duration", String(filteredChildren.length));
-      if (titleA) titleA.textContent = "Center Specialists";
-      if (titleB) titleB.textContent = "Center Children";
-      if (footA) footA.textContent = "Linked to your center";
-      if (footB) footB.textContent = "Derived from specialists";
+      setMetricValue("metric-completion", String(filteredSpecialists.length));
+      setMetricValue("metric-duration", String(filteredChildren.length));
+      if (titleA) titleA.textContent = getTranslation("overview.centerSpecialists", "Center Specialists");
+      if (titleB) titleB.textContent = getTranslation("overview.centerChildren", "Center Children");
+      if (footA) footA.textContent = getTranslation("overview.linkedToCenter", "Linked to your center");
+      if (footB) footB.textContent = getTranslation("overview.derivedFromSpecialists", "Derived from specialists");
     } catch (err) {
       console.error("Load overview counts failed.", err);
-      setText("metric-completion", "No data");
-      setText("metric-duration", "No data");
+      setMetricEmpty("metric-completion");
+      setMetricEmpty("metric-duration");
     }
   };
 
@@ -1477,19 +1873,67 @@ const initEmptyStates = () => {
   clearChartCanvas();
   renderEmptyProgress();
   renderEmptyChildProfile();
-  renderEmptyListItem(getById("children-list"), "No children yet");
-  renderEmptyGridCard(getById("centers-grid"), "center-card", "No centers yet", [
-    "Add centers to populate this list."
+  renderEmptyListItem(getById("children-list"), getTranslation("generic.noChildrenYet", "No children yet"));
+  renderEmptyGridCard(getById("centers-grid"), "center-card", getTranslation("generic.noCentersYet", "No centers yet"), [
+    getTranslation("generic.addCentersHint", "Add centers to populate this list.")
   ]);
-  renderEmptyGridCard(getById("specialists-grid"), "specialist-card", "No specialists yet", [
-    "Add specialists to populate this list."
+  renderEmptyGridCard(
+    getById("specialists-grid"),
+    "specialist-card",
+    getTranslation("generic.noSpecialistsYet", "No specialists yet"),
+    [getTranslation("generic.addSpecialistsHint", "Add specialists to populate this list.")]
+  );
+  renderEmptyGridCard(getById("vr-grid"), "vr-card", getTranslation("generic.noExperiencesYet", "No experiences yet"), [
+    getTranslation("generic.addExperiencesHint", "Add VR experiences to populate this list.")
   ]);
-  renderEmptyGridCard(getById("vr-grid"), "vr-card", "No experiences yet", [
-    "Add VR experiences to populate this list."
-  ]);
+  document.querySelectorAll(".chart-card").forEach((card) => card.classList.add("is-empty"));
+  const donutWrap = document.querySelector(".donut-wrap");
+  if (donutWrap) donutWrap.classList.add("is-empty");
+};
+
+const applyLanguage = (lang) => {
+  if (typeof document === "undefined") return;
+  setCurrentLanguage(lang);
+  const resolved = currentLanguage;
+  document.documentElement.lang = resolved;
+  document.documentElement.dir = resolved === "ar" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    const value = translations[resolved]?.[key];
+    if (value) el.textContent = value;
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    const value = translations[resolved]?.[key];
+    if (value) el.setAttribute("placeholder", value);
+  });
+  document.querySelectorAll("[data-lang-toggle]").forEach((button) => {
+    const label = resolved === "ar" ? "English" : "العربية";
+    const aria = resolved === "ar" ? "Switch to English" : "التبديل إلى العربية";
+    button.textContent = label;
+    button.setAttribute("aria-label", aria);
+  });
+  if (loadingState.label) {
+    loadingState.label.textContent = getTranslation("loading.text", "Loading...");
+  }
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LANG_STORAGE_KEY, resolved);
+  }
+};
+
+const initLanguageToggle = () => {
+  if (typeof document === "undefined") return;
+  applyLanguage(getStoredLanguage());
+  document.querySelectorAll("[data-lang-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const next = currentLanguage === "ar" ? "en" : "ar";
+      applyLanguage(next);
+    });
+  });
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  initLanguageToggle();
   enforceAuth();
   enforceRoleAccess();
   initLogin();
@@ -1513,3 +1957,4 @@ document.addEventListener("DOMContentLoaded", () => {
   initLogout();
   animateProgressBars();
 });
+

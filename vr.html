@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VR Experience - UnitySphere</title>
+  <title data-i18n="title.vr">VR Experience - UnitySphere</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -20,7 +20,7 @@
               <path d="M6 10v9h12v-9"></path>
             </svg>
           </span>
-          <span class="nav-label">Overview</span>
+          <span class="nav-label" data-i18n="nav.overview">Overview</span>
         </a>
         <a class="nav-item" href="centers.html">
           <span class="nav-icon">
@@ -29,7 +29,7 @@
               <path d="M9 6V4h6v2"></path>
             </svg>
           </span>
-          <span class="nav-label">Centers</span>
+          <span class="nav-label" data-i18n="nav.centers">Centers</span>
         </a>
         <a class="nav-item" href="specialists.html">
           <span class="nav-icon">
@@ -38,7 +38,7 @@
               <path d="M5 20c1.5-4 12.5-4 14 0"></path>
             </svg>
           </span>
-          <span class="nav-label">Specialists</span>
+          <span class="nav-label" data-i18n="nav.specialists">Specialists</span>
         </a>
         <a class="nav-item" href="children.html">
           <span class="nav-icon">
@@ -49,7 +49,7 @@
               <path d="M11 20c1-4 9-4 10 0"></path>
             </svg>
           </span>
-          <span class="nav-label">Children</span>
+          <span class="nav-label" data-i18n="nav.children">Children</span>
         </a>
         <a class="nav-item active" aria-current="page" href="vr.html">
           <span class="nav-icon">
@@ -60,7 +60,7 @@
               <path d="M16 17v3"></path>
             </svg>
           </span>
-          <span class="nav-label">VR Experience</span>
+          <span class="nav-label" data-i18n="nav.vr">VR Experience</span>
         </a>
         <a class="nav-item" href="settings.html">
           <span class="nav-icon">
@@ -69,17 +69,17 @@
               <path d="M19 12a7 7 0 0 0-.1-1l2-1-2-3-2 1a7 7 0 0 0-1.7-1l.2-2.2h-3l.2 2.2a7 7 0 0 0-1.7 1l-2-1-2 3 2 1a7 7 0 0 0 0 2l-2 1 2 3 2-1a7 7 0 0 0 1.7 1l-.2 2.2h3l-.2-2.2a7 7 0 0 0 1.7-1l2 1 2-3-2-1c.07-.33.1-.66.1-1z"></path>
             </svg>
           </span>
-          <span class="nav-label">Settings</span>
+          <span class="nav-label" data-i18n="nav.settings">Settings</span>
         </a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-card">
           <div class="sidebar-card-icon">!</div>
-          <div class="sidebar-card-title">Reminder</div>
-          <div class="sidebar-card-text">Review VR session notes and update progress insights.</div>
+          <div class="sidebar-card-title" data-i18n="sidebar.reminderTitle">Reminder</div>
+          <div class="sidebar-card-text" data-i18n="sidebar.reminderText">Review VR session notes and update progress insights.</div>
         </div>
         <div class="sidebar-actions">
-          <button class="btn ghost logout-btn" type="button" data-logout>Logout</button>
+          <button class="btn ghost logout-btn" type="button" data-logout data-i18n="sidebar.logout">Logout</button>
         </div>
       </div>
     </aside>
@@ -87,16 +87,19 @@
     <main class="main">
       <header class="topbar">
         <div>
-          <h1>VR Experiences</h1>
-          <p class="subtitle">Manage immersive therapy modules and media previews.</p>
+          <h1 data-i18n="vr.title">VR Experiences</h1>
+          <p class="subtitle" data-i18n="vr.subtitle">Manage immersive therapy modules and media previews.</p>
         </div>
-        <button class="btn primary">Add Experience</button>
+        <div class="topbar-actions">
+          <button class="btn ghost lang-toggle" type="button" data-lang-toggle></button>
+          <button class="btn primary" data-modal-trigger="add-experience-modal" data-i18n="vr.addExperience">Add Experience</button>
+        </div>
       </header>
 
       <section class="section">
         <div class="section-header">
-          <h2>Experience Library</h2>
-          <button class="btn ghost">Archive View</button>
+          <h2 data-i18n="vr.library">Experience Library</h2>
+          <button class="btn ghost" data-i18n="vr.archiveView">Archive View</button>
         </div>
         <div class="grid cards" id="vr-grid"></div>
       </section>
@@ -108,47 +111,47 @@
     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-experience-title">
       <div class="modal-header">
         <div>
-          <h3 id="add-experience-title">Add Experience</h3>
-          <p class="muted">Enter experience details and media link.</p>
+          <h3 id="add-experience-title" data-i18n="modal.addExperience.title">Add Experience</h3>
+          <p class="muted" data-i18n="modal.addExperience.subtitle">Enter experience details and media link.</p>
         </div>
-        <button class="btn ghost modal-close" type="button" data-modal-close>Close</button>
+        <button class="btn ghost modal-close" type="button" data-modal-close data-i18n="modal.close">Close</button>
       </div>
       <form class="modal-form" id="add-experience-form" data-auto-close="false">
         <label>
-          <span>Experience name</span>
+          <span data-i18n="modal.experienceName">Experience name</span>
           <input type="text" name="name" required />
         </label>
         <label>
-          <span>Description</span>
+          <span data-i18n="modal.description">Description</span>
           <input type="text" name="description" required />
         </label>
         <label>
-          <span>Duration</span>
-          <input type="text" name="duration" placeholder="e.g. 12 min" required />
+          <span data-i18n="modal.duration">Duration</span>
+          <input type="text" name="duration" placeholder="e.g. 12 min" required data-i18n-placeholder="modal.durationPlaceholder" />
         </label>
         <label>
-          <span>Difficulty</span>
+          <span data-i18n="modal.difficulty">Difficulty</span>
           <input type="text" name="difficulty" required />
         </label>
         <label class="full-span">
-          <span>Preview link (optional)</span>
-          <input type="text" name="video" placeholder="preview/experience-id" />
+          <span data-i18n="modal.previewLink">Preview link (optional)</span>
+          <input type="text" name="video" placeholder="preview/experience-id" data-i18n-placeholder="modal.previewPlaceholder" />
         </label>
         <label class="full-span">
-          <span>Cover image URL (optional)</span>
-          <input type="text" name="image" placeholder="https://..." />
+          <span data-i18n="modal.coverUrl">Cover image URL (optional)</span>
+          <input type="text" name="image" placeholder="https://..." data-i18n-placeholder="modal.coverUrlPlaceholder" />
         </label>
         <label class="full-span">
-          <span>Cover image upload (optional)</span>
+          <span data-i18n="modal.coverUpload">Cover image upload (optional)</span>
           <input type="file" name="imageFile" accept="image/*" />
         </label>
         <label class="full-span">
-          <span>Assigned centers (optional)</span>
+          <span data-i18n="modal.assignedCenters">Assigned centers (optional)</span>
           <div class="checkbox-list" id="experience-centers-list"></div>
         </label>
         <div class="modal-actions">
-          <button class="btn ghost" type="button" data-modal-close>Cancel</button>
-          <button class="btn primary" type="submit">Add Experience</button>
+          <button class="btn ghost" type="button" data-modal-close data-i18n="modal.cancel">Cancel</button>
+          <button class="btn primary" type="submit" data-i18n="modal.addExperienceButton">Add Experience</button>
         </div>
       </form>
     </div>

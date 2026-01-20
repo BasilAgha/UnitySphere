@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Settings - UnitySphere</title>
+  <title data-i18n="title.settings">Settings - UnitySphere</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -20,7 +20,7 @@
               <path d="M6 10v9h12v-9"></path>
             </svg>
           </span>
-          <span class="nav-label">Overview</span>
+          <span class="nav-label" data-i18n="nav.overview">Overview</span>
         </a>
         <a class="nav-item" href="centers.html">
           <span class="nav-icon">
@@ -29,7 +29,7 @@
               <path d="M9 6V4h6v2"></path>
             </svg>
           </span>
-          <span class="nav-label">Centers</span>
+          <span class="nav-label" data-i18n="nav.centers">Centers</span>
         </a>
         <a class="nav-item" href="specialists.html">
           <span class="nav-icon">
@@ -38,7 +38,7 @@
               <path d="M5 20c1.5-4 12.5-4 14 0"></path>
             </svg>
           </span>
-          <span class="nav-label">Specialists</span>
+          <span class="nav-label" data-i18n="nav.specialists">Specialists</span>
         </a>
         <a class="nav-item" href="children.html">
           <span class="nav-icon">
@@ -49,7 +49,7 @@
               <path d="M11 20c1-4 9-4 10 0"></path>
             </svg>
           </span>
-          <span class="nav-label">Children</span>
+          <span class="nav-label" data-i18n="nav.children">Children</span>
         </a>
         <a class="nav-item" href="vr.html">
           <span class="nav-icon">
@@ -60,7 +60,7 @@
               <path d="M16 17v3"></path>
             </svg>
           </span>
-          <span class="nav-label">VR Experience</span>
+          <span class="nav-label" data-i18n="nav.vr">VR Experience</span>
         </a>
         <a class="nav-item active" aria-current="page" href="settings.html">
           <span class="nav-icon">
@@ -69,17 +69,17 @@
               <path d="M19 12a7 7 0 0 0-.1-1l2-1-2-3-2 1a7 7 0 0 0-1.7-1l.2-2.2h-3l.2 2.2a7 7 0 0 0-1.7 1l-2-1-2 3 2 1a7 7 0 0 0 0 2l-2 1 2 3 2-1a7 7 0 0 0 1.7 1l-.2 2.2h3l-.2-2.2a7 7 0 0 0 1.7-1l2 1 2-3-2-1c.07-.33.1-.66.1-1z"></path>
             </svg>
           </span>
-          <span class="nav-label">Settings</span>
+          <span class="nav-label" data-i18n="nav.settings">Settings</span>
         </a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-card">
           <div class="sidebar-card-icon">!</div>
-          <div class="sidebar-card-title">Reminder</div>
-          <div class="sidebar-card-text">Review VR session notes and update progress insights.</div>
+          <div class="sidebar-card-title" data-i18n="sidebar.reminderTitle">Reminder</div>
+          <div class="sidebar-card-text" data-i18n="sidebar.reminderText">Review VR session notes and update progress insights.</div>
         </div>
         <div class="sidebar-actions">
-          <button class="btn ghost logout-btn" type="button" data-logout>Logout</button>
+          <button class="btn ghost logout-btn" type="button" data-logout data-i18n="sidebar.logout">Logout</button>
         </div>
       </div>
     </aside>
@@ -87,29 +87,32 @@
     <main class="main">
       <header class="topbar">
         <div>
-          <h1>Settings</h1>
-          <p class="subtitle">Manage contact details and communications.</p>
+          <h1 data-i18n="settings.title">Settings</h1>
+          <p class="subtitle" data-i18n="settings.subtitle">Manage contact details and communications.</p>
         </div>
-        <button class="btn primary" id="save-settings" data-role="center-only">Save Changes</button>
+        <div class="topbar-actions">
+          <button class="btn ghost lang-toggle" type="button" data-lang-toggle></button>
+          <button class="btn primary" id="save-settings" data-role="center-only" data-i18n="settings.save">Save Changes</button>
+        </div>
       </header>
 
       <section class="section">
         <div class="section-header">
-          <h2>Contact Details</h2>
-          <span class="muted">Editable fields with focus glow states.</span>
+          <h2 data-i18n="settings.contactDetails">Contact Details</h2>
+          <span class="muted" data-i18n="settings.contactHint">Editable fields with focus glow states.</span>
         </div>
         <div class="card settings" style="--delay: 0.1s;">
           <div class="settings-grid">
             <label>
-              <span>Admin name</span>
+              <span data-i18n="settings.adminName">Admin name</span>
               <input type="text" id="center-admin-name" value="" />
             </label>
             <label>
-              <span>Email</span>
+              <span data-i18n="settings.email">Email</span>
               <input type="email" id="center-email" value="" />
             </label>
             <label>
-              <span>Phone</span>
+              <span data-i18n="settings.phone">Phone</span>
               <input type="tel" id="center-phone" value="" />
             </label>
           </div>

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login - UnitySphere</title>
+  <title data-i18n="title.login">Login - UnitySphere</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="auth-page">
@@ -11,19 +11,22 @@
     <main class="main">
       <section class="section auth-section">
         <div class="card login-card">
-          <h1>Sign in</h1>
-          <p class="muted">Use your UnitySphere credentials to continue.</p>
+          <div class="topbar-actions login-actions">
+            <button class="btn ghost lang-toggle" type="button" data-lang-toggle></button>
+          </div>
+          <h1 data-i18n="login.title">Sign in</h1>
+          <p class="muted" data-i18n="login.subtitle">Use your UnitySphere credentials to continue.</p>
           <form class="modal-form login-form" id="login-form">
             <label>
-              <span>Username</span>
+              <span data-i18n="login.username">Username</span>
               <input type="text" name="username" autocomplete="username" required />
             </label>
             <label>
-              <span>Password</span>
+              <span data-i18n="login.password">Password</span>
               <input type="password" name="password" autocomplete="current-password" required />
             </label>
             <div class="modal-actions">
-              <button class="btn primary" type="submit">Sign In</button>
+              <button class="btn primary" type="submit" data-i18n="login.signIn">Sign In</button>
             </div>
             <div class="login-error" id="login-error"></div>
           </form>
