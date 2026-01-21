@@ -1,5 +1,5 @@
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbxEa5cGM1VmJ9FSrm0MG0frn1Nr2POy2RNmL_pba-tKAWaHy-tq-_tafvliq-qYW7WQfw/exec";
+  "https://script.google.com/macros/s/AKfycbyFqpP8v9OOBoi_ZXks_4rvDtcGyGBNWowIuHDhPTj0mTMXvkf6dYF3o5ceeaYnXb_1ZA/exec";
 const AUTH_STORAGE_KEY = "unitysphereUser";
 const LANG_STORAGE_KEY = "unitysphereLang";
 const LOGIN_PAGE = "login.html";
@@ -23,6 +23,10 @@ const translations = {
     "nav.children": "Children",
     "nav.vr": "VR Experience",
     "nav.settings": "Settings",
+    "nav.group.overview": "Overview",
+    "nav.group.management": "Management",
+    "nav.group.content": "Content",
+    "nav.group.system": "System",
     "sidebar.reminderTitle": "Reminder",
     "sidebar.reminderText": "Review VR session notes and update progress insights.",
     "sidebar.logout": "Logout",
@@ -32,6 +36,11 @@ const translations = {
     "index.metric.avgSessionDuration": "Average Session Duration",
     "index.metric.learningVelocity": "Learning Velocity",
     "index.metric.globalAccuracy": "Global Average Accuracy",
+    "index.metric.sessions": "Sessions",
+    "index.metric.children": "Children",
+    "index.metric.specialists": "Specialists",
+    "index.metric.activeChildren": "Active children",
+    "index.metric.activeSpecialists": "Active specialists",
     "index.metric.allCenters": "All centers",
     "index.metric.acrossChildSessions": "Across child sessions",
     "index.metric.accuracyDelta": "Accuracy delta",
@@ -51,6 +60,9 @@ const translations = {
     "empty.metric.duration": "Average duration appears once sessions are recorded.",
     "empty.metric.velocity": "Learning velocity appears after enough sessions.",
     "empty.metric.accuracy": "Accuracy updates when sessions begin streaming.",
+    "empty.metric.sessions": "Sessions will appear after your first sync.",
+    "empty.metric.children": "Children metrics appear once profiles sync.",
+    "empty.metric.specialists": "Specialists populate after the next directory sync.",
     "empty.chart.weekly": "Weekly sessions will plot once data arrives from centers.",
     "empty.chart.progress": "Center progress rates will populate after sessions sync.",
     "empty.chart.caption.weekly": "Awaiting telemetry to draw the weekly trend.",
@@ -62,6 +74,10 @@ const translations = {
     "centers.filterLabel": "Centers",
     "centers.allCenters": "All centers",
     "centers.export": "Export",
+    "centers.startDateLabel": "Start date",
+    "centers.endDateLabel": "End date",
+    "action.edit": "Edit",
+    "action.delete": "Delete",
     "specialists.title": "Specialists",
     "specialists.subtitle": "Meet the care team delivering XR sessions.",
     "specialists.addSpecialist": "Add Specialist",
@@ -105,6 +121,7 @@ const translations = {
     "login.signIn": "Sign In",
     "modal.addCenter.title": "Add Center",
     "modal.addCenter.subtitle": "Enter center details and admin credentials.",
+    "modal.editCenter.title": "Edit Center",
     "modal.close": "Close",
     "modal.centerName": "Center name",
     "modal.location": "Location",
@@ -117,8 +134,10 @@ const translations = {
     "modal.adminPassword": "Admin password",
     "modal.cancel": "Cancel",
     "modal.addCenterButton": "Add Center",
+    "modal.editCenterButton": "Save Center",
     "modal.addSpecialist.title": "Add Specialist",
     "modal.addSpecialist.subtitle": "Enter specialist details.",
+    "modal.editSpecialist.title": "Edit Specialist",
     "modal.fullName": "Full name",
     "modal.centerOptional": "Center (optional)",
     "modal.description": "Description",
@@ -126,6 +145,7 @@ const translations = {
     "modal.username": "Username",
     "modal.password": "Password",
     "modal.addSpecialistButton": "Add Specialist",
+    "modal.editSpecialistButton": "Save Specialist",
     "modal.addChild.title": "Add Child",
     "modal.addChild.subtitle": "Assign a child to a specialist.",
     "modal.childId": "ChildId",
@@ -134,6 +154,7 @@ const translations = {
     "modal.addChildButton": "Add Child",
     "modal.addExperience.title": "Add Experience",
     "modal.addExperience.subtitle": "Enter experience details and media link.",
+    "modal.editExperience.title": "Edit Experience",
     "modal.experienceName": "Experience name",
     "modal.duration": "Duration",
     "modal.durationPlaceholder": "e.g. 12 min",
@@ -145,6 +166,7 @@ const translations = {
     "modal.coverUpload": "Cover image upload (optional)",
     "modal.assignedCenters": "Assigned centers (optional)",
     "modal.addExperienceButton": "Add Experience",
+    "modal.editExperienceButton": "Save Experience",
     "generic.noData": "No data",
     "generic.noResponses": "No responses available.",
     "generic.noChildSelected": "No child selected",
@@ -180,6 +202,10 @@ const translations = {
     "nav.children": "الأطفال",
     "nav.vr": "تجارب الواقع الافتراضي",
     "nav.settings": "الإعدادات",
+    "nav.group.overview": "?????? ??????",
+    "nav.group.management": "???????",
+    "nav.group.content": "???????",
+    "nav.group.system": "??????",
     "sidebar.reminderTitle": "تذكير",
     "sidebar.reminderText": "راجع ملاحظات جلسات الواقع الافتراضي وحدّث مؤشرات التقدم.",
     "sidebar.logout": "تسجيل الخروج",
@@ -189,6 +215,11 @@ const translations = {
     "index.metric.avgSessionDuration": "متوسط مدة الجلسة",
     "index.metric.learningVelocity": "سرعة التعلم",
     "index.metric.globalAccuracy": "متوسط الدقة العالمي",
+    "index.metric.sessions": "???????",
+    "index.metric.children": "???????",
+    "index.metric.specialists": "??????????",
+    "index.metric.activeChildren": "??????? ???????",
+    "index.metric.activeSpecialists": "?????????? ???????",
     "index.metric.allCenters": "جميع المراكز",
     "index.metric.acrossChildSessions": "عبر جلسات الأطفال",
     "index.metric.accuracyDelta": "فرق الدقة",
@@ -208,6 +239,9 @@ const translations = {
     "empty.metric.duration": "يظهر متوسط المدة بعد تسجيل الجلسات.",
     "empty.metric.velocity": "تظهر سرعة التعلم بعد توفر جلسات كافية.",
     "empty.metric.accuracy": "تتحدث الدقة عند بدء تدفق الجلسات.",
+    "empty.metric.sessions": "????? ??????? ??? ??? ????? ??????.",
+    "empty.metric.children": "???? ?????? ??????? ??? ?????? ???????.",
+    "empty.metric.specialists": "??? ????? ?????????? ??? ?????? ?????? ???????.",
     "empty.chart.weekly": "ستظهر الجلسات الأسبوعية بعد وصول البيانات من المراكز.",
     "empty.chart.progress": "ستظهر معدلات تقدم المراكز بعد مزامنة الجلسات.",
     "empty.chart.caption.weekly": "بانتظار القياسات لرسم الاتجاه الأسبوعي.",
@@ -219,6 +253,10 @@ const translations = {
     "centers.filterLabel": "المراكز",
     "centers.allCenters": "كل المراكز",
     "centers.export": "تصدير",
+    "centers.startDateLabel": "تاريخ البداية",
+    "centers.endDateLabel": "تاريخ الانتهاء",
+    "action.edit": "تعديل",
+    "action.delete": "حذف",
     "specialists.title": "الأخصائيون",
     "specialists.subtitle": "فريق الرعاية الذي يقدم جلسات XR.",
     "specialists.addSpecialist": "إضافة أخصائي",
@@ -262,6 +300,7 @@ const translations = {
     "login.signIn": "تسجيل الدخول",
     "modal.addCenter.title": "إضافة مركز",
     "modal.addCenter.subtitle": "أدخل تفاصيل المركز وبيانات المسؤول.",
+    "modal.editCenter.title": "تعديل المركز",
     "modal.close": "إغلاق",
     "modal.centerName": "اسم المركز",
     "modal.location": "الموقع",
@@ -274,8 +313,10 @@ const translations = {
     "modal.adminPassword": "كلمة مرور المسؤول",
     "modal.cancel": "إلغاء",
     "modal.addCenterButton": "إضافة مركز",
+    "modal.editCenterButton": "حفظ المركز",
     "modal.addSpecialist.title": "إضافة أخصائي",
     "modal.addSpecialist.subtitle": "أدخل تفاصيل الأخصائي.",
+    "modal.editSpecialist.title": "تعديل الأخصائي",
     "modal.fullName": "الاسم الكامل",
     "modal.centerOptional": "المركز (اختياري)",
     "modal.description": "الوصف",
@@ -283,6 +324,7 @@ const translations = {
     "modal.username": "اسم المستخدم",
     "modal.password": "كلمة المرور",
     "modal.addSpecialistButton": "إضافة أخصائي",
+    "modal.editSpecialistButton": "حفظ الأخصائي",
     "modal.addChild.title": "إضافة طفل",
     "modal.addChild.subtitle": "اربط طفلاً بأخصائي.",
     "modal.childId": "معرّف الطفل",
@@ -291,6 +333,7 @@ const translations = {
     "modal.addChildButton": "إضافة طفل",
     "modal.addExperience.title": "إضافة تجربة",
     "modal.addExperience.subtitle": "أدخل تفاصيل التجربة ورابط الوسائط.",
+    "modal.editExperience.title": "تعديل التجربة",
     "modal.experienceName": "اسم التجربة",
     "modal.duration": "المدة",
     "modal.durationPlaceholder": "مثال: 12 دقيقة",
@@ -302,6 +345,7 @@ const translations = {
     "modal.coverUpload": "رفع صورة الغلاف (اختياري)",
     "modal.assignedCenters": "المراكز المعينة (اختياري)",
     "modal.addExperienceButton": "إضافة تجربة",
+    "modal.editExperienceButton": "حفظ التجربة",
     "generic.noData": "لا توجد بيانات",
     "generic.noResponses": "لا توجد إجابات متاحة.",
     "generic.noChildSelected": "لم يتم اختيار طفل",
@@ -356,6 +400,23 @@ const getField = (obj, candidates = []) => {
     }
   }
   return "";
+};
+
+const formatDateOnly = (value) => {
+  if (value == null || value === "") return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().split("T")[0];
+  }
+  if (typeof value === "number") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().split("T")[0];
+  }
+  const raw = String(value).trim();
+  if (!raw) return "";
+  if (raw.includes("T")) return raw.split("T")[0];
+  if (raw.includes(" ")) return raw.split(" ")[0];
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? raw : parsed.toISOString().split("T")[0];
 };
 
 const loadingState = {
@@ -438,30 +499,82 @@ const apiPost = (payload = {}, message = getTranslation("loading.text", "Loading
 const apiGet = (route) => fetch(`${API_URL}?route=${encodeURIComponent(route)}`);
 
 const fetchRoute = async (route) => {
-  startLoading(getTranslation("loading.text", "Loading..."));
-  try {
-    const response = await apiGet(route);
-    const payload = await response.json();
-    if (!response.ok || payload?.error) {
-      throw new Error(`Failed to load ${route}`);
-    }
-    return Array.isArray(payload) ? payload : [];
-  } finally {
-    stopLoading();
+  const response = await apiGet(route);
+  const payload = await response.json();
+  if (!response.ok || payload?.error) {
+    throw new Error(`Failed to load ${route}`);
   }
+  return Array.isArray(payload) ? payload : [];
+};
+
+const fetchAccount = async ({ specialistId, linkedId, accountId } = {}) => {
+  const resolvedSpecialistId = specialistId ? String(specialistId || "").trim() : "";
+  const resolvedLinkedId = linkedId ? String(linkedId || "").trim() : "";
+  const resolvedAccountId = accountId ? String(accountId || "").trim() : "";
+  if (!resolvedSpecialistId && !resolvedLinkedId && !resolvedAccountId) return null;
+  try {
+    const payloadRequest = { route: "getAccount" };
+    if (resolvedAccountId) {
+      payloadRequest.accountId = resolvedAccountId;
+    } else if (resolvedSpecialistId) {
+      payloadRequest.specialistId = resolvedSpecialistId;
+    } else {
+      payloadRequest.linkedId = resolvedLinkedId;
+    }
+    const response = await apiPost(payloadRequest);
+    const payload = await response.json();
+    if (response.ok && !payload?.error) {
+      return payload || null;
+    }
+  } catch (err) {
+    console.error("Account lookup failed via POST.", err);
+  }
+  try {
+    const query = resolvedAccountId
+      ? `getAccount&accountId=${encodeURIComponent(resolvedAccountId)}`
+      : resolvedSpecialistId
+        ? `getAccount&specialistId=${encodeURIComponent(resolvedSpecialistId)}`
+        : `getAccount&linkedId=${encodeURIComponent(resolvedLinkedId)}`;
+    const response = await apiGet(query);
+    const payload = await response.json();
+    if (response.ok && !payload?.error) {
+      return payload || null;
+    }
+  } catch (err) {
+    console.error("Account lookup failed via GET.", err);
+  }
+  return null;
 };
 
 const dataCache = {
   centers: null,
   specialists: null,
-  centerVr: null
+  centerVr: null,
+  accounts: null
+};
+
+const dataCachePromises = {};
+
+const invalidateCache = (...keys) => {
+  keys.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(dataCache, key)) {
+      dataCache[key] = null;
+    }
+  });
 };
 
 const getCachedRoute = async (key, route) => {
   if (Array.isArray(dataCache[key])) return dataCache[key];
-  const items = await fetchRoute(route);
-  dataCache[key] = items;
-  return items;
+  if (dataCachePromises[key]) return dataCachePromises[key];
+  dataCachePromises[key] = fetchRoute(route)
+    .then((items) => {
+      dataCache[key] = items;
+      return items;
+    })
+    .finally(() => {
+      delete dataCachePromises[key];
+    });
+  return dataCachePromises[key];
 };
 
 const getUserContext = () => {
@@ -472,6 +585,9 @@ const getUserContext = () => {
   };
 };
 
+const isCenterAdminRole = (role) => role === "center_admin" || role === "admin";
+const canManageChildren = (role) => isCenterAdminRole(role) || role === "specialist";
+
 const getCenterIdFromName = (centers, centerName) => {
   if (!Array.isArray(centers)) return "";
   const name = String(centerName || "").trim();
@@ -480,6 +596,92 @@ const getCenterIdFromName = (centers, centerName) => {
     (center) => normalizeKey(getField(center, ["name"])) === normalizeKey(name)
   );
   return getField(match, ["id"]);
+};
+
+const buildAccountsLookup = (accounts = []) => {
+  const byId = new Map();
+  const bySpecialistId = new Map();
+  if (!Array.isArray(accounts)) return { byId, bySpecialistId };
+  accounts.forEach((account) => {
+    const id = String(getField(account, ["id"]) || "").trim();
+    if (id) byId.set(normalizeKey(id), account);
+    const specialistId = String(getField(account, ["specialistId", "specialistID"]) || "").trim();
+    if (specialistId) bySpecialistId.set(normalizeKey(specialistId), account);
+  });
+  return { byId, bySpecialistId };
+};
+
+const attachAccountData = (record, lookup) => {
+  if (!record || !lookup) return record;
+  const existingAccountId = String(getField(record, ["accountId", "accountID"]) || "").trim();
+  const recordId = String(getField(record, ["id"]) || "").trim();
+  let account = null;
+  if (existingAccountId) {
+    account = lookup.byId.get(normalizeKey(existingAccountId)) || null;
+  }
+  if (!account && recordId) {
+    account = lookup.bySpecialistId.get(normalizeKey(recordId)) || null;
+  }
+  const resolvedAccountId = existingAccountId || (account ? String(getField(account, ["id"]) || "").trim() : "");
+  const username = account ? getField(account, ["username"]) : "";
+  const password = account ? getField(account, ["password"]) : "";
+  return Object.assign({}, record, {
+    accountId: resolvedAccountId || "",
+    accountUsername: username || "",
+    accountPassword: password || ""
+  });
+};
+
+const fetchCenterForEdit = async (centerId) => {
+  const resolvedId = String(centerId || "").trim();
+  if (!resolvedId) return null;
+  try {
+    const response = await apiPost({
+      route: "getCenter",
+      centerId: resolvedId
+    }, "Loading center...");
+    const payload = await response.json();
+    if (response.ok && !payload?.error) {
+      return payload || null;
+    }
+  } catch (err) {
+    console.error("Center lookup failed.", err);
+  }
+  return null;
+};
+
+const resolveCenterAdminAccount = (accounts = [], centerId) => {
+  if (!Array.isArray(accounts)) return null;
+  const resolvedId = String(centerId || "").trim();
+  if (!resolvedId) return null;
+  return accounts.find((account) => {
+    const role = String(getField(account, ["role"]) || "").trim().toLowerCase();
+    if (role !== "admin") return false;
+    const accountCenterId = String(getField(account, ["centerId", "centerID"]) || "").trim();
+    if (accountCenterId !== resolvedId) return false;
+    const active = getField(account, ["active"]);
+    if (active === true) return true;
+    return String(active || "").trim().toLowerCase() === "true";
+  }) || null;
+};
+
+const fetchCenterAdminAccount = async (centerId) => {
+  const resolvedId = String(centerId || "").trim();
+  if (!resolvedId) return null;
+  try {
+    const accounts = await getCachedRoute("accounts", "accounts");
+    const account = resolveCenterAdminAccount(accounts, resolvedId);
+    return account
+      ? {
+          id: getField(account, ["id"]),
+          username: getField(account, ["username"]) || "",
+          password: getField(account, ["password"]) || ""
+        }
+      : null;
+  } catch (err) {
+    console.error("Center admin lookup failed.", err);
+  }
+  return null;
 };
 
 const readFileAsDataUrl = (file) =>
@@ -583,9 +785,9 @@ const setMetricValue = (id, value) => {
 };
 
 const setPlaceholderMetrics = () => {
-  setMetricEmpty("metric-completion");
-  setMetricEmpty("metric-duration");
-  setMetricEmpty("metric-velocity");
+  setMetricEmpty("metric-sessions");
+  setMetricEmpty("metric-children");
+  setMetricEmpty("metric-specialists");
   setMetricEmpty("metric-accuracy");
   setMetricEmpty("metric-peak");
 
@@ -616,13 +818,20 @@ const renderEmptyListItem = (listEl, message) => {
 const renderEmptyGridCard = (gridEl, className, title, bodyLines) => {
   if (!gridEl) return;
   gridEl.innerHTML = "";
+  const lines = Array.isArray(bodyLines) ? bodyLines : [];
   const card = document.createElement("div");
   card.className = `card ${className}`;
   card.innerHTML = `
-    <div class="glow-line"></div>
-    <h3>${title}</h3>
-    <div class="meta">
-      ${bodyLines.map((line) => `<span>${line}</span>`).join("")}
+    <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+          <path d="M7 9h10"></path>
+          <path d="M7 13h6"></path>
+        </svg>
+      </div>
+      <div class="empty-state-title">${title}</div>
+      ${lines.map((line) => `<div class="empty-state-hint">${line}</div>`).join("")}
     </div>
   `;
   gridEl.appendChild(card);
@@ -763,15 +972,84 @@ const closeModalById = (modalId, formId) => {
   }
 };
 
+const openModalById = (modalId) => {
+  const modal = getById(modalId);
+  if (!modal) return;
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden", "false");
+};
+
+const setFormMode = (form, options) => {
+  if (!form) return;
+  const { mode, titleId, addTitleKey, editTitleKey, submitKey, submitEditKey } = options;
+  const isEdit = mode === "edit";
+  form.dataset.mode = mode;
+  const title = getById(titleId);
+  if (title) {
+    const titleKey = isEdit ? editTitleKey : addTitleKey;
+    if (titleKey) title.textContent = getTranslation(titleKey, title.textContent);
+  }
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton) {
+    const buttonKey = isEdit ? submitEditKey : submitKey;
+    if (buttonKey) submitButton.textContent = getTranslation(buttonKey, submitButton.textContent);
+  }
+  const username = form.querySelector('input[name="username"]');
+  const password = form.querySelector('input[name="password"]');
+  if (username) username.required = !isEdit;
+  if (password) password.required = !isEdit;
+  if (!isEdit) {
+    const idInput = form.querySelector('input[name="id"]');
+    if (idInput) idInput.value = "";
+  }
+};
+
+const setFormField = (form, name, value) => {
+  if (!form) return;
+  const input = form.querySelector(`[name="${name}"]`);
+  if (!input) return;
+  input.value = value == null ? "" : String(value);
+};
+
 const initAddCenterForm = () => {
   const form = getById("add-center-form");
   if (!form) return;
+  const modal = getById("add-center-modal");
+
+  const resetMode = () => {
+    setFormMode(form, {
+      mode: "add",
+      titleId: "add-center-title",
+      addTitleKey: "modal.addCenter.title",
+      editTitleKey: "modal.editCenter.title",
+      submitKey: "modal.addCenterButton",
+      submitEditKey: "modal.editCenterButton"
+    });
+    form.dataset.accountId = "";
+  };
+
+  resetMode();
+
+  if (modal) {
+    modal.querySelectorAll("[data-modal-close]").forEach((button) => {
+      button.addEventListener("click", resetMode);
+    });
+    modal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") resetMode();
+    });
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(form);
+    const mode = form.dataset.mode || "add";
+    const centerId = String(data.get("id") || "").trim();
+    const username = String(data.get("username") || "").trim();
+    const password = String(data.get("password") || "").trim();
+    const accountId = String(form.dataset.accountId || "").trim();
       const payload = {
-        route: "addCenter",
+        route: mode === "edit" ? "updateCenter" : "addCenter",
+        centerId,
         name: String(data.get("name") || "").trim(),
         location: String(data.get("location") || "").trim(),
         specialists: String(data.get("specialists") || "").trim(),
@@ -779,16 +1057,29 @@ const initAddCenterForm = () => {
         contactEmail: String(data.get("contactEmail") || "").trim(),
         contactPhone: String(data.get("contactPhone") || "").trim(),
         children: String(data.get("children") || "").trim(),
-        username: String(data.get("username") || "").trim(),
-        password: String(data.get("password") || "").trim()
+        username,
+        password,
+        accountId
       };
 
-    if (!payload.name || !payload.location || !payload.subscription || !payload.username || !payload.password) {
+    if (!payload.name || !payload.location || !payload.subscription) {
+      alert("Please fill the required fields.");
+      return;
+    }
+    if (mode === "add" && (!payload.username || !payload.password)) {
       alert("Please fill the required fields.");
       return;
     }
 
     try {
+      if (mode === "edit") {
+        if (!payload.centerId) {
+          alert("Missing center ID.");
+          return;
+        }
+        if (!payload.username) delete payload.username;
+        if (!payload.password) delete payload.password;
+      }
       const response = await apiPost(payload, "Saving center...");
       const result = await response.json();
       if (!response.ok || result?.error) {
@@ -796,7 +1087,13 @@ const initAddCenterForm = () => {
         return;
       }
       closeModalById("add-center-modal", "add-center-form");
+      resetMode();
+      invalidateCache("centers", "specialists", "centerVr", "accounts");
       if (typeof refreshCenters === "function") refreshCenters();
+      if (typeof refreshSpecialists === "function") refreshSpecialists();
+      if (typeof refreshChildren === "function") refreshChildren();
+      if (typeof updateOverviewCounts === "function") updateOverviewCounts();
+      if (typeof refreshVr === "function") refreshVr();
     } catch (err) {
       console.error("Add center failed.", err);
       alert("Could not add center. Please try again.");
@@ -808,31 +1105,84 @@ const initAddSpecialistForm = () => {
   const form = getById("add-specialist-form");
   if (!form) return;
   const { role, linkedId } = getUserContext();
+  const modal = getById("add-specialist-modal");
+
+  const resetMode = () => {
+    setFormMode(form, {
+      mode: "add",
+      titleId: "add-specialist-title",
+      addTitleKey: "modal.addSpecialist.title",
+      editTitleKey: "modal.editSpecialist.title",
+      submitKey: "modal.addSpecialistButton",
+      submitEditKey: "modal.editSpecialistButton"
+    });
+    form.dataset.accountId = "";
+  };
+
+  resetMode();
+
+  if (modal) {
+    modal.querySelectorAll("[data-modal-close]").forEach((button) => {
+      button.addEventListener("click", resetMode);
+    });
+    modal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") resetMode();
+    });
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (role !== "center_admin") {
+    if (!isCenterAdminRole(role)) {
       alert("Only center admins can add specialists.");
       return;
     }
     const data = new FormData(form);
+    const mode = form.dataset.mode || "add";
+    const specialistId = String(data.get("id") || "").trim();
+    const username = String(data.get("username") || "").trim();
+    const password = String(data.get("password") || "").trim();
+    const accountId = String(form.dataset.accountId || "").trim();
+    const selectedCenterName = String(data.get("center") || "").trim();
+    let resolvedCenterId = linkedId;
+    if (!resolvedCenterId && selectedCenterName) {
+      try {
+        const centers = await getCachedRoute("centers", "centers");
+        resolvedCenterId = getCenterIdFromName(centers, selectedCenterName);
+      } catch (err) {
+        console.error("Center lookup failed for specialist.", err);
+      }
+    }
     const payload = {
-      route: "addSpecialist",
+      route: mode === "edit" ? "updateSpecialist" : "addSpecialist",
+      specialistId,
       name: String(data.get("name") || "").trim(),
-      center: String(data.get("center") || "").trim(),
-      centerId: linkedId,
+      center: selectedCenterName,
+      centerId: resolvedCenterId,
       description: String(data.get("description") || "").trim(),
       children: String(data.get("children") || "").trim(),
-      username: String(data.get("username") || "").trim(),
-      password: String(data.get("password") || "").trim()
+      username,
+      password,
+      accountId
     };
 
-    if (!payload.name || !payload.description || !payload.username || !payload.password || !payload.centerId) {
+    if (!payload.name || !payload.description) {
+      alert("Please fill the required fields.");
+      return;
+    }
+    if (mode === "add" && (!payload.username || !payload.password)) {
       alert("Please fill the required fields.");
       return;
     }
 
     try {
+      if (mode === "edit") {
+        if (!payload.specialistId) {
+          alert("Missing specialist ID.");
+          return;
+        }
+        if (!payload.username) delete payload.username;
+        if (!payload.password) delete payload.password;
+      }
       const response = await apiPost(payload, "Saving specialist...");
       const result = await response.json();
       if (!response.ok || result?.error) {
@@ -840,6 +1190,8 @@ const initAddSpecialistForm = () => {
         return;
       }
       closeModalById("add-specialist-modal", "add-specialist-form");
+      resetMode();
+      invalidateCache("specialists", "accounts");
       if (typeof refreshSpecialists === "function") refreshSpecialists();
       if (typeof updateOverviewCounts === "function") updateOverviewCounts();
     } catch (err) {
@@ -955,6 +1307,10 @@ const initAddChildForm = () => {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (!canManageChildren(role)) {
+      alert("Only specialists or admins can add children.");
+      return;
+    }
     try {
       const data = new FormData(form);
       const childId = String(data.get("childId") || "").trim();
@@ -1015,10 +1371,34 @@ const initAddChildForm = () => {
 const initAddExperienceForm = () => {
   const form = getById("add-experience-form");
   if (!form) return;
+  const modal = getById("add-experience-modal");
+
+  const resetMode = () =>
+    setFormMode(form, {
+      mode: "add",
+      titleId: "add-experience-title",
+      addTitleKey: "modal.addExperience.title",
+      editTitleKey: "modal.editExperience.title",
+      submitKey: "modal.addExperienceButton",
+      submitEditKey: "modal.editExperienceButton"
+    });
+
+  resetMode();
+
+  if (modal) {
+    modal.querySelectorAll("[data-modal-close]").forEach((button) => {
+      button.addEventListener("click", resetMode);
+    });
+    modal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") resetMode();
+    });
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(form);
+    const mode = form.dataset.mode || "add";
+    const experienceId = String(data.get("id") || "").trim();
     const centersSelected = Array.from(
       form.querySelectorAll('input[name="centers"]:checked')
     ).map((input) => input.value);
@@ -1035,15 +1415,18 @@ const initAddExperienceForm = () => {
       }
     }
     const payload = {
-      route: "addVr",
+      route: mode === "edit" ? "updateVr" : "addVr",
+      vrId: experienceId,
       name: String(data.get("name") || "").trim(),
       description: String(data.get("description") || "").trim(),
       duration: String(data.get("duration") || "").trim(),
       difficulty: String(data.get("difficulty") || "").trim(),
       video: String(data.get("video") || "").trim(),
-      image,
       centers: centersSelected.join(", ")
     };
+    if (imageUrl || (fileInput && fileInput.files && fileInput.files[0])) {
+      payload.image = image;
+    }
 
     if (!payload.name || !payload.description || !payload.duration || !payload.difficulty) {
       alert("Please fill the required fields.");
@@ -1051,6 +1434,10 @@ const initAddExperienceForm = () => {
     }
 
     try {
+      if (mode === "edit" && !payload.vrId) {
+        alert("Missing experience ID.");
+        return;
+      }
       const response = await apiPost(payload, "Saving experience...");
       const result = await response.json();
       if (!response.ok || result?.error) {
@@ -1058,12 +1445,33 @@ const initAddExperienceForm = () => {
         return;
       }
       closeModalById("add-experience-modal", "add-experience-form");
+      resetMode();
+      invalidateCache("centerVr");
       if (typeof refreshVr === "function") refreshVr();
     } catch (err) {
       console.error("Add experience failed.", err);
       alert("Could not add experience. Please try again.");
     }
   });
+};
+
+let pendingExperienceCentersSelection = null;
+
+const applyExperienceCentersSelection = (names = []) => {
+  const list = getById("experience-centers-list");
+  if (!list) return;
+  const inputs = list.querySelectorAll('input[name="centers"]');
+  if (!inputs.length) {
+    pendingExperienceCentersSelection = names;
+    return;
+  }
+  const selected = new Set(
+    names.map((name) => String(name || "").trim()).filter(Boolean)
+  );
+  inputs.forEach((input) => {
+    input.checked = selected.has(input.value);
+  });
+  pendingExperienceCentersSelection = null;
 };
 
 const initExperienceCentersChecklist = () => {
@@ -1096,6 +1504,9 @@ const initExperienceCentersChecklist = () => {
       label.appendChild(text);
       list.appendChild(label);
     });
+    if (pendingExperienceCentersSelection) {
+      applyExperienceCentersSelection(pendingExperienceCentersSelection);
+    }
   };
 
   const loadCenters = async () => {
@@ -1116,9 +1527,131 @@ const initExperienceCentersChecklist = () => {
   loadCenters();
 };
 
+const openCenterEditModal = (center) => {
+  const form = getById("add-center-form");
+  if (!form) return;
+  form.reset();
+  setFormMode(form, {
+    mode: "edit",
+    titleId: "add-center-title",
+    addTitleKey: "modal.addCenter.title",
+    editTitleKey: "modal.editCenter.title",
+    submitKey: "modal.addCenterButton",
+    submitEditKey: "modal.editCenterButton"
+  });
+  setFormField(form, "id", getField(center, ["id"]));
+  setFormField(form, "name", getField(center, ["name"]));
+  setFormField(form, "location", getField(center, ["location"]));
+  setFormField(form, "specialists", getField(center, ["specialists"]));
+  setFormField(form, "subscription", getField(center, ["subscription"]));
+  setFormField(form, "contactEmail", getField(center, ["contactEmail", "email"]));
+  setFormField(form, "contactPhone", getField(center, ["contactPhone", "phone"]));
+  setFormField(form, "children", getField(center, ["children"]));
+  form.dataset.accountId = "";
+  setFormField(form, "username", "");
+  setFormField(form, "password", "");
+  openModalById("add-center-modal");
+};
+
+const applyCenterEditData = (center, account = {}) => {
+  const form = getById("add-center-form");
+  if (!form || !center) return;
+  setFormField(form, "id", getField(center, ["id"]));
+  setFormField(form, "name", getField(center, ["name"]));
+  setFormField(form, "location", getField(center, ["location"]));
+  setFormField(form, "specialists", getField(center, ["specialists"]));
+  setFormField(form, "subscription", getField(center, ["subscription"]));
+  setFormField(form, "contactEmail", getField(center, ["contactEmail", "email"]));
+  setFormField(form, "contactPhone", getField(center, ["contactPhone", "phone"]));
+  setFormField(form, "children", getField(center, ["children"]));
+  form.dataset.accountId = String(account.id || "").trim();
+  setFormField(form, "username", account.username || "");
+  setFormField(form, "password", account.password || "");
+};
+
+const openSpecialistEditModal = (specialist) => {
+  const form = getById("add-specialist-form");
+  if (!form) return;
+  form.reset();
+  setFormMode(form, {
+    mode: "edit",
+    titleId: "add-specialist-title",
+    addTitleKey: "modal.addSpecialist.title",
+    editTitleKey: "modal.editSpecialist.title",
+    submitKey: "modal.addSpecialistButton",
+    submitEditKey: "modal.editSpecialistButton"
+  });
+  setFormField(form, "id", getField(specialist, ["id"]));
+  setFormField(form, "name", getField(specialist, ["name"]));
+  setFormField(form, "center", getField(specialist, ["center"]));
+  setFormField(form, "description", getField(specialist, ["description"]));
+  setFormField(form, "children", getField(specialist, ["children"]));
+  const specialistId = getField(specialist, ["id"]);
+  const accountId = getField(specialist, ["accountId", "accountID"]) || "";
+  const accountUsername =
+    String(specialist.accountUsername || "").trim() ||
+    getField(specialist, ["username"]) ||
+    "";
+  const accountPassword =
+    String(specialist.accountPassword || "").trim() ||
+    getField(specialist, ["password"]) ||
+    "";
+  form.dataset.accountId = accountId ? String(accountId).trim() : "";
+  setFormField(form, "username", accountUsername);
+  setFormField(form, "password", accountPassword);
+  openModalById("add-specialist-modal");
+  if ((!accountUsername || !accountPassword) && (accountId || specialistId)) {
+    fetchAccount({ accountId, specialistId }).then((account) => {
+      if (!account) return;
+      form.dataset.accountId = String(account.id || accountId || "").trim();
+      setFormField(form, "username", account.username || "");
+      setFormField(form, "password", account.password || "");
+    });
+  }
+};
+
+const openExperienceEditModal = async (experience) => {
+  const form = getById("add-experience-form");
+  if (!form) return;
+  form.reset();
+  setFormMode(form, {
+    mode: "edit",
+    titleId: "add-experience-title",
+    addTitleKey: "modal.addExperience.title",
+    editTitleKey: "modal.editExperience.title",
+    submitKey: "modal.addExperienceButton",
+    submitEditKey: "modal.editExperienceButton"
+  });
+  setFormField(form, "id", getField(experience, ["id"]));
+  setFormField(form, "name", getField(experience, ["name"]));
+  setFormField(form, "description", getField(experience, ["description"]));
+  setFormField(form, "duration", getField(experience, ["duration"]));
+  setFormField(form, "difficulty", getField(experience, ["difficulty"]));
+  setFormField(form, "video", getField(experience, ["video"]));
+  setFormField(form, "image", getField(experience, ["image"]));
+  const vrId = getField(experience, ["id"]);
+  if (vrId) {
+    try {
+      const centerVr = await getCachedRoute("centerVr", "centerVr");
+      const assigned = centerVr
+        .filter((item) => normalizeKey(getField(item, ["vrId", "id"])) === normalizeKey(vrId))
+        .map((item) => getField(item, ["center"]))
+        .filter(Boolean);
+      applyExperienceCentersSelection(assigned);
+    } catch (err) {
+      console.error("Load experience centers failed.", err);
+    }
+  }
+  openModalById("add-experience-modal");
+};
+
 const renderCenters = (centers = []) => {
   const grid = getById("centers-grid");
   if (!grid) return;
+  const { role } = getUserContext();
+  const isAdmin = isCenterAdminRole(role);
+  const editLabel = getTranslation("action.edit", "Edit");
+  const deleteLabel = getTranslation("action.delete", "Delete");
   if (!Array.isArray(centers) || centers.length === 0) {
     renderEmptyGridCard(grid, "center-card", getTranslation("generic.noCentersYet", "No centers yet"), [
       getTranslation("generic.addCentersHint", "Add centers to populate this list.")
@@ -1127,26 +1660,118 @@ const renderCenters = (centers = []) => {
   }
 
   grid.innerHTML = "";
+  const startLabel = getTranslation("centers.startDateLabel", "Start date");
+  const endLabel = getTranslation("centers.endDateLabel", "End date");
   centers.forEach((center, index) => {
+    const centerId = getField(center, ["id"]);
     const name = String(center.name || "").trim() || "Unnamed center";
     const location = String(center.location || "").trim() || "No location";
     const plan = String(center.subscription || "").trim() || "No plan";
     const email = String(center.contactEmail || "").trim() || "No email";
     const phone = String(center.contactPhone || "").trim() || "No phone";
+    const startDate = formatDateOnly(getField(center, ["startDate", "start_date"]));
+    const endDate = formatDateOnly(getField(center, ["endDate", "end_date"]));
+    const actions =
+      isAdmin
+        ? `<div class="card-actions">
+            <button class="btn secondary small" data-center-edit="${centerId}" data-center-id="${centerId}">${editLabel}</button>
+            <button class="btn danger small" data-center-delete="${centerId}">${deleteLabel}</button>
+          </div>`
+        : "";
 
     const card = document.createElement("div");
     card.className = "card center-card";
     card.style.setProperty("--delay", `${index * 0.05}s`);
     card.innerHTML = `
-      <div class="glow-line"></div>
-      <h3>${name}</h3>
-      <div class="meta">
-        <span>Location: ${location}</span>
-        <span>Plan: ${plan}</span>
-        <span>Email: ${email}</span>
-        <span>Phone: ${phone}</span>
+      <div class="card-header">
+        <div>
+          <div class="glow-line"></div>
+          <h3 class="card-title">${name}</h3>
+        </div>
       </div>
+      <div class="card-body">
+        <div class="meta">
+          <div class="meta-row">
+            <span class="meta-label">Location</span>
+            <span class="meta-value">${location}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Plan</span>
+            <span class="meta-value">${plan}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Email</span>
+            <span class="meta-value">${email}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Phone</span>
+            <span class="meta-value">${phone}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">${startLabel}</span>
+            <span class="meta-value">${startDate || "-"}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">${endLabel}</span>
+            <span class="meta-value">${endDate || "-"}</span>
+          </div>
+        </div>
+      </div>
+      ${actions ? `<div class="card-footer">${actions}</div>` : ""}
     `;
+    if (isAdmin) {
+      const editButton = card.querySelector("[data-center-edit]");
+      const deleteButton = card.querySelector("[data-center-delete]");
+      if (editButton) {
+        editButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          if (!centerId) return;
+          openCenterEditModal(center);
+          try {
+            const [payload, account] = await Promise.all([
+              fetchCenterForEdit(centerId),
+              fetchCenterAdminAccount(centerId)
+            ]);
+            if (!payload || payload.error) {
+              alert(payload?.error || "Could not load center.");
+              return;
+            }
+            const centerData = payload.center || payload;
+            applyCenterEditData(centerData, account || {});
+          } catch (err) {
+            console.error("Center edit fetch failed.", err);
+            alert("Could not load center.");
+          }
+        });
+      }
+      if (deleteButton) {
+        deleteButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          if (!centerId) return;
+          if (!confirm("Delete this center?")) return;
+          try {
+            const response = await apiPost(
+              { route: "deleteCenter", centerId },
+              "Deleting center..."
+            );
+            const result = await response.json();
+            if (!response.ok || result?.error) {
+              alert(result?.error || "Could not delete center.");
+              return;
+            }
+            invalidateCache("centers", "specialists", "centerVr", "accounts");
+            if (typeof refreshCenters === "function") refreshCenters();
+            if (typeof refreshSpecialists === "function") refreshSpecialists();
+            if (typeof refreshChildren === "function") refreshChildren();
+            if (typeof updateOverviewCounts === "function") updateOverviewCounts();
+            if (typeof refreshVr === "function") refreshVr();
+          } catch (err) {
+            console.error("Delete center failed.", err);
+            alert("Could not delete center.");
+          }
+        });
+      }
+    }
     grid.appendChild(card);
   });
 };
@@ -1155,6 +1780,9 @@ const renderSpecialists = (specialists = []) => {
   const grid = getById("specialists-grid");
   if (!grid) return;
   const { role } = getUserContext();
+  const isAdmin = isCenterAdminRole(role);
+  const editLabel = getTranslation("action.edit", "Edit");
+  const deleteLabel = getTranslation("action.delete", "Delete");
   if (!Array.isArray(specialists) || specialists.length === 0) {
     renderEmptyGridCard(
       grid,
@@ -1171,24 +1799,78 @@ const renderSpecialists = (specialists = []) => {
     const center = String(specialist.center || "").trim() || "No center";
     const description = String(specialist.description || "").trim() || "No description";
     const children = String(specialist.children || "").trim() || "0";
+    const specialistId = getField(specialist, ["id"]);
 
     const card = document.createElement("div");
     card.className = "card specialist-card";
     card.style.setProperty("--delay", `${index * 0.05}s`);
     card.innerHTML = `
-      <div class="glow-line"></div>
-      <h3>${name}</h3>
-      <div class="meta">
-        <span>Center: ${center}</span>
-        <span>Children: ${children}</span>
-        <span>${description}</span>
+      <div class="card-header">
+        <div>
+          <div class="glow-line"></div>
+          <h3 class="card-title">${name}</h3>
+        </div>
       </div>
-      ${role === "center_admin" ? `<button class="btn ghost small" data-specialist-id="${getField(specialist, ["id"])}">Delete</button>` : ""}
+      <div class="card-body">
+        <div class="meta">
+          <div class="meta-row">
+            <span class="meta-label">Center</span>
+            <span class="meta-value">${center}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Children</span>
+            <span class="meta-value">${children}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Description</span>
+            <span class="meta-value">${description}</span>
+          </div>
+        </div>
+      </div>
+      ${isAdmin
+        ? `<div class="card-footer">
+            <div class="card-actions">
+              <button class="btn secondary small" data-specialist-edit="${specialistId}">${editLabel}</button>
+              <button class="btn danger small" data-specialist-id="${specialistId}">${deleteLabel}</button>
+            </div>
+          </div>`
+        : ""}
     `;
+    if (isAdmin) {
+      const editButton = card.querySelector("[data-specialist-edit]");
+      if (editButton) {
+        editButton.dataset.username = specialist.accountUsername || "";
+        editButton.dataset.password = specialist.accountPassword || "";
+        if (specialist.accountId) {
+          editButton.dataset.accountId = specialist.accountId;
+        }
+      }
+    }
     grid.appendChild(card);
   });
 
-  if (role === "center_admin") {
+  if (isAdmin) {
+    grid.querySelectorAll("[data-specialist-edit]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const specialistId = button.getAttribute("data-specialist-edit");
+        if (!specialistId) return;
+        const specialist = specialists.find(
+          (item) => normalizeKey(getField(item, ["id"])) === normalizeKey(specialistId)
+        );
+        if (!specialist) return;
+        const accountUsername = button.dataset.username || "";
+        const accountPassword = button.dataset.password || "";
+        const accountId = button.dataset.accountId || getField(specialist, ["accountId", "accountID"]) || "";
+        openSpecialistEditModal(
+          Object.assign({}, specialist, {
+            accountId,
+            accountUsername,
+            accountPassword
+          })
+        );
+      });
+    });
     grid.querySelectorAll("[data-specialist-id]").forEach((button) => {
       button.addEventListener("click", async (event) => {
         event.preventDefault();
@@ -1205,6 +1887,7 @@ const renderSpecialists = (specialists = []) => {
             alert(result?.error || "Could not delete specialist.");
             return;
           }
+          invalidateCache("specialists", "accounts");
           if (typeof refreshSpecialists === "function") refreshSpecialists();
           if (typeof refreshChildren === "function") refreshChildren();
           if (typeof updateOverviewCounts === "function") updateOverviewCounts();
@@ -1220,6 +1903,10 @@ const renderSpecialists = (specialists = []) => {
 const renderVr = (experiences = []) => {
   const grid = getById("vr-grid");
   if (!grid) return;
+  const { role } = getUserContext();
+  const isAdmin = isCenterAdminRole(role);
+  const editLabel = getTranslation("action.edit", "Edit");
+  const deleteLabel = getTranslation("action.delete", "Delete");
   if (!Array.isArray(experiences) || experiences.length === 0) {
     renderEmptyGridCard(grid, "vr-card", getTranslation("generic.noExperiencesYet", "No experiences yet"), [
       getTranslation("generic.addExperiencesHint", "Add VR experiences to populate this list.")
@@ -1235,24 +1922,90 @@ const renderVr = (experiences = []) => {
     const difficulty = String(experience.difficulty || "").trim() || "No difficulty";
     const image = String(experience.image || "").trim();
     const video = String(experience.video || "").trim();
+    const vrId = getField(experience, ["id"]);
+    const actions =
+      isAdmin
+        ? `<div class="card-actions">
+            <button class="btn secondary small" data-vr-edit="${vrId}">${editLabel}</button>
+            <button class="btn danger small" data-vr-delete="${vrId}">${deleteLabel}</button>
+          </div>`
+        : "";
+    const preview = video
+      ? `<a class="preview-link" href="${video}" target="_blank" rel="noreferrer">Preview</a>`
+      : `<span class="preview-link">Preview</span>`;
+    const footerClass = actions ? "card-footer spread" : "card-footer";
 
     const card = document.createElement("div");
     card.className = "card vr-card";
     card.style.setProperty("--delay", `${index * 0.05}s`);
     card.innerHTML = `
-      <div class="vr-media">
-        ${image ? `<img src="${image}" alt="${name}">` : ""}
-        <div class="overlay"></div>
+      <div class="card-header">
+        <div>
+          <div class="glow-line"></div>
+          <h3 class="card-title">${name}</h3>
+          <p class="muted">${description}</p>
+        </div>
       </div>
-      <div>
-        <h3>${name}</h3>
-        <p class="muted">${description}</p>
+      <div class="card-body">
+        <div class="vr-media">
+          ${image ? `<img src="${image}" alt="${name}">` : ""}
+          <div class="overlay"></div>
+        </div>
+        <div class="meta">
+          <div class="meta-row">
+            <span class="meta-label">Duration</span>
+            <span class="meta-value">${duration}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Difficulty</span>
+            <span class="meta-value">${difficulty}</span>
+          </div>
+        </div>
       </div>
-      <div class="vr-meta">
-        <span>${duration} • ${difficulty}</span>
-        ${video ? `<a href="${video}" target="_blank" rel="noreferrer">Preview</a>` : "<span>Preview</span>"}
+      <div class="${footerClass}">
+        <div class="vr-meta">${preview}</div>
+        ${actions}
       </div>
     `;
+    if (isAdmin) {
+      const editButton = card.querySelector("[data-vr-edit]");
+      const deleteButton = card.querySelector("[data-vr-delete]");
+      if (editButton) {
+        editButton.addEventListener("click", (event) => {
+          event.preventDefault();
+          const id = editButton.getAttribute("data-vr-edit");
+          if (!id) return;
+          const experienceData = experiences.find(
+            (item) => normalizeKey(getField(item, ["id"])) === normalizeKey(id)
+          );
+          if (!experienceData) return;
+          openExperienceEditModal(experienceData);
+        });
+      }
+      if (deleteButton) {
+        deleteButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          if (!vrId) return;
+          if (!confirm("Delete this experience?")) return;
+          try {
+            const response = await apiPost(
+              { route: "deleteVr", vrId },
+              "Deleting experience..."
+            );
+            const result = await response.json();
+            if (!response.ok || result?.error) {
+              alert(result?.error || "Could not delete experience.");
+              return;
+            }
+            invalidateCache("centerVr");
+            if (typeof refreshVr === "function") refreshVr();
+          } catch (err) {
+            console.error("Delete experience failed.", err);
+            alert("Could not delete experience.");
+          }
+        });
+      }
+    }
     grid.appendChild(card);
   });
 };
@@ -1281,8 +2034,12 @@ const initCenters = () => {
 
   const loadCenters = async () => {
     try {
-      centersCache = await fetchRoute("centers");
-      dataCache.centers = centersCache;
+      const needsSpecialist = role === "specialist" && linkedId;
+      const [centers, specialists] = await Promise.all([
+        getCachedRoute("centers", "centers"),
+        needsSpecialist ? getCachedRoute("specialists", "specialists") : Promise.resolve([])
+      ]);
+      centersCache = centers;
       let filteredCenters = centersCache;
 
       if (role === "center_admin" && linkedId) {
@@ -1290,7 +2047,6 @@ const initCenters = () => {
           (center) => normalizeKey(getField(center, ["id"])) === normalizeKey(linkedId)
         );
       } else if (role === "specialist" && linkedId) {
-        const specialists = await getCachedRoute("specialists", "specialists");
         const specialist = specialists.find(
           (item) => normalizeKey(getField(item, ["id"])) === normalizeKey(linkedId)
         );
@@ -1355,12 +2111,17 @@ const initSpecialists = () => {
 
   const loadSpecialists = async () => {
     try {
-      specialistsCache = await fetchRoute("specialists");
-      dataCache.specialists = specialistsCache;
+      const needsCenters = role === "center_admin" && linkedId;
+      const [specialists, centers, accounts] = await Promise.all([
+        getCachedRoute("specialists", "specialists"),
+        needsCenters ? getCachedRoute("centers", "centers") : Promise.resolve([]),
+        getCachedRoute("accounts", "accounts")
+      ]);
+      const accountsLookup = buildAccountsLookup(accounts);
+      specialistsCache = specialists.map((specialist) => attachAccountData(specialist, accountsLookup));
       let filteredSpecialists = specialistsCache;
 
       if (role === "center_admin" && linkedId) {
-        const centers = await getCachedRoute("centers", "centers");
         filteredSpecialists = specialistsCache.filter((specialist) => {
           const specialistCenterId = getField(specialist, ["centerId", "centerID"]);
           if (specialistCenterId) {
@@ -1403,10 +2164,17 @@ const initVr = () => {
 
   const loadVr = async () => {
     try {
-      let experiences = await fetchRoute("vr");
+      const needsLinking = (role === "center_admin" || role === "specialist") && linkedId;
+      const [experiences, centers, specialists, centerVr] = await Promise.all([
+        fetchRoute("vr"),
+        needsLinking ? getCachedRoute("centers", "centers") : Promise.resolve([]),
+        needsLinking && role === "specialist"
+          ? getCachedRoute("specialists", "specialists")
+          : Promise.resolve([]),
+        needsLinking ? getCachedRoute("centerVr", "centerVr") : Promise.resolve([])
+      ]);
 
-      if ((role === "center_admin" || role === "specialist") && linkedId) {
-        const centers = await getCachedRoute("centers", "centers");
+      if (needsLinking) {
         let centerName = "";
         if (role === "center_admin") {
           const center = centers.find(
@@ -1414,7 +2182,6 @@ const initVr = () => {
           );
           centerName = getField(center, ["name"]);
         } else {
-          const specialists = await getCachedRoute("specialists", "specialists");
           const specialist = specialists.find(
             (item) => normalizeKey(getField(item, ["id"])) === normalizeKey(linkedId)
           );
@@ -1430,8 +2197,6 @@ const initVr = () => {
           }
         }
 
-        const centerVr = await getCachedRoute("centerVr", "centerVr");
-        dataCache.centerVr = centerVr;
         const matches = centerVr.filter(
           (item) => normalizeKey(getField(item, ["center"])) === normalizeKey(centerName)
         );
@@ -1569,6 +2334,7 @@ const renderChildrenList = (children = []) => {
   const list = getById("children-list");
   if (!list) return;
   const { role } = getUserContext();
+  const deleteLabel = getTranslation("action.delete", "Delete");
   list.innerHTML = "";
 
   if (!Array.isArray(children) || children.length === 0) {
@@ -1585,7 +2351,7 @@ const renderChildrenList = (children = []) => {
         ? String(childIdRaw)
         : "-";
     const meta = `ChildId: ${childIdText}`;
-    const allowDelete = role === "center_admin" || role === "specialist";
+    const allowDelete = canManageChildren(role);
     const li = document.createElement("li");
     li.className = "child-item";
     if (index === 0) li.classList.add("active");
@@ -1595,7 +2361,7 @@ const renderChildrenList = (children = []) => {
         <div class="child-name">${name}</div>
         <div class="muted">${meta}</div>
       </div>
-      ${allowDelete ? `<button class="btn ghost small child-delete" data-child-id="${childIdText}">Delete</button>` : ""}
+      ${allowDelete ? `<button class="btn danger small child-delete" data-child-id="${childIdText}">${deleteLabel}</button>` : ""}
     `;
     li.addEventListener("click", () => {
       list.querySelectorAll(".child-item").forEach((item) => item.classList.remove("active"));
@@ -1683,7 +2449,7 @@ const enforceRoleAccess = () => {
 
   document.querySelectorAll("[data-role]").forEach((el) => {
     const allowed = el.getAttribute("data-role");
-    if (allowed === "center-only" && role !== "center_admin") {
+    if (allowed === "center-only" && !isCenterAdminRole(role)) {
       el.style.display = "none";
     } else if (allowed === "specialist-only" && role !== "specialist") {
       el.style.display = "none";
@@ -1781,23 +2547,30 @@ const initLogout = () => {
 };
 
 const initOverviewCounts = () => {
-  const metricSpecialists = getById("metric-completion");
-  const metricChildren = getById("metric-duration");
-  const titleA = getById("metric-title-a");
-  const titleB = getById("metric-title-b");
-  const footA = getById("metric-foot-a");
-  const footB = getById("metric-foot-b");
-  if (!metricSpecialists || !metricChildren) return;
+  const metricSessions = getById("metric-sessions");
+  const metricChildren = getById("metric-children");
+  const metricSpecialists = getById("metric-specialists");
+  const titleSessions = getById("metric-title-sessions");
+  const titleChildren = getById("metric-title-children");
+  const titleSpecialists = getById("metric-title-specialists");
+  const footSessions = getById("metric-foot-sessions");
+  const footChildren = getById("metric-foot-children");
+  const footSpecialists = getById("metric-foot-specialists");
+  if (!metricSessions || !metricChildren || !metricSpecialists) return;
 
   updateOverviewCounts = async () => {
     const { role, linkedId } = getUserContext();
     if (role !== "center_admin") {
-      setMetricEmpty("metric-completion");
-      setMetricEmpty("metric-duration");
-      if (titleA) titleA.textContent = getTranslation("overview.centerSpecialists", "Center Specialists");
-      if (titleB) titleB.textContent = getTranslation("overview.centerChildren", "Center Children");
-      if (footA) footA.textContent = getTranslation("overview.notAvailable", "Not available for specialists");
-      if (footB) footB.textContent = getTranslation("overview.notAvailable", "Not available for specialists");
+      setMetricEmpty("metric-sessions");
+      setMetricEmpty("metric-children");
+      setMetricEmpty("metric-specialists");
+      const notAvailable = getTranslation("overview.notAvailable", "Not available for specialists");
+      if (titleSessions) titleSessions.textContent = getTranslation("index.metric.sessions", "Sessions");
+      if (titleChildren) titleChildren.textContent = getTranslation("index.metric.children", "Children");
+      if (titleSpecialists) titleSpecialists.textContent = getTranslation("index.metric.specialists", "Specialists");
+      if (footSessions) footSessions.textContent = notAvailable;
+      if (footChildren) footChildren.textContent = notAvailable;
+      if (footSpecialists) footSpecialists.textContent = notAvailable;
       return;
     }
 
@@ -1827,16 +2600,26 @@ const initOverviewCounts = () => {
         return childSpecialistId && specialistIds.has(childSpecialistId);
       });
 
-      setMetricValue("metric-completion", String(filteredSpecialists.length));
-      setMetricValue("metric-duration", String(filteredChildren.length));
-      if (titleA) titleA.textContent = getTranslation("overview.centerSpecialists", "Center Specialists");
-      if (titleB) titleB.textContent = getTranslation("overview.centerChildren", "Center Children");
-      if (footA) footA.textContent = getTranslation("overview.linkedToCenter", "Linked to your center");
-      if (footB) footB.textContent = getTranslation("overview.derivedFromSpecialists", "Derived from specialists");
+      const totalSessions = filteredChildren.reduce((sum, child) => {
+        const raw = getField(child, ["sessions", "sessionCount"]);
+        const value = Number.parseFloat(raw);
+        return Number.isFinite(value) ? sum + value : sum;
+      }, 0);
+
+      setMetricValue("metric-sessions", String(totalSessions));
+      setMetricValue("metric-children", String(filteredChildren.length));
+      setMetricValue("metric-specialists", String(filteredSpecialists.length));
+      if (titleSessions) titleSessions.textContent = getTranslation("index.metric.sessions", "Sessions");
+      if (titleChildren) titleChildren.textContent = getTranslation("index.metric.children", "Children");
+      if (titleSpecialists) titleSpecialists.textContent = getTranslation("index.metric.specialists", "Specialists");
+      if (footSessions) footSessions.textContent = getTranslation("index.metric.allSessions", "All sessions");
+      if (footChildren) footChildren.textContent = getTranslation("index.metric.activeChildren", "Active children");
+      if (footSpecialists) footSpecialists.textContent = getTranslation("index.metric.activeSpecialists", "Active specialists");
     } catch (err) {
       console.error("Load overview counts failed.", err);
-      setMetricEmpty("metric-completion");
-      setMetricEmpty("metric-duration");
+      setMetricEmpty("metric-sessions");
+      setMetricEmpty("metric-children");
+      setMetricEmpty("metric-specialists");
     }
   };
 
@@ -1932,6 +2715,20 @@ const initLanguageToggle = () => {
   });
 };
 
+const initPasswordToggles = () => {
+  document.querySelectorAll(".toggle-password").forEach((button) => {
+    button.addEventListener("click", () => {
+      const field = button.closest(".password-field");
+      if (!field) return;
+      const input = field.querySelector('input[type="password"], input[type="text"]');
+      if (!input) return;
+      const nextType = input.type === "password" ? "text" : "password";
+      input.type = nextType;
+      button.setAttribute("aria-label", nextType === "password" ? "Show password" : "Hide password");
+    });
+  });
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   initLanguageToggle();
   enforceAuth();
@@ -1955,6 +2752,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initEmptyStates();
   initOverviewCounts();
   initLogout();
+  initPasswordToggles();
   animateProgressBars();
 });
 

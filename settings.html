@@ -13,64 +13,76 @@
         <div class="brand-mark"><img src="Logo 03.png" alt="UnitySphere logo" /></div>
       </div>
       <nav class="nav">
-        <a class="nav-item" href="index.html">
-          <span class="nav-icon">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 10.5L12 3l9 7.5"></path>
-              <path d="M6 10v9h12v-9"></path>
-            </svg>
-          </span>
-          <span class="nav-label" data-i18n="nav.overview">Overview</span>
-        </a>
-        <a class="nav-item" href="centers.html">
-          <span class="nav-icon">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="4" y="6" width="16" height="14" rx="2"></rect>
-              <path d="M9 6V4h6v2"></path>
-            </svg>
-          </span>
-          <span class="nav-label" data-i18n="nav.centers">Centers</span>
-        </a>
-        <a class="nav-item" href="specialists.html">
-          <span class="nav-icon">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="8" r="3"></circle>
-              <path d="M5 20c1.5-4 12.5-4 14 0"></path>
-            </svg>
-          </span>
-          <span class="nav-label" data-i18n="nav.specialists">Specialists</span>
-        </a>
-        <a class="nav-item" href="children.html">
-          <span class="nav-icon">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="8" cy="9" r="3"></circle>
-              <circle cx="16" cy="9" r="3"></circle>
-              <path d="M3 20c1-4 9-4 10 0"></path>
-              <path d="M11 20c1-4 9-4 10 0"></path>
-            </svg>
-          </span>
-          <span class="nav-label" data-i18n="nav.children">Children</span>
-        </a>
-        <a class="nav-item" href="vr.html">
-          <span class="nav-icon">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 10a8 8 0 0 1 16 0"></path>
-              <rect x="3" y="10" width="18" height="7" rx="3"></rect>
-              <path d="M8 17v3"></path>
-              <path d="M16 17v3"></path>
-            </svg>
-          </span>
-          <span class="nav-label" data-i18n="nav.vr">VR Experience</span>
-        </a>
-        <a class="nav-item active" aria-current="page" href="settings.html">
-          <span class="nav-icon">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19 12a7 7 0 0 0-.1-1l2-1-2-3-2 1a7 7 0 0 0-1.7-1l.2-2.2h-3l.2 2.2a7 7 0 0 0-1.7 1l-2-1-2 3 2 1a7 7 0 0 0 0 2l-2 1 2 3 2-1a7 7 0 0 0 1.7 1l-.2 2.2h3l-.2-2.2a7 7 0 0 0 1.7-1l2 1 2-3-2-1c.07-.33.1-.66.1-1z"></path>
-            </svg>
-          </span>
-          <span class="nav-label" data-i18n="nav.settings">Settings</span>
-        </a>
+        <div class="nav-group">
+          <div class="nav-group-title" data-i18n="nav.group.overview">Overview</div>
+          <a class="nav-item" href="index.html">
+            <span class="nav-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 10.5L12 3l9 7.5"></path>
+                <path d="M6 10v9h12v-9"></path>
+              </svg>
+            </span>
+            <span class="nav-label" data-i18n="nav.overview">Overview</span>
+          </a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title" data-i18n="nav.group.management">Management</div>
+          <a class="nav-item" href="centers.html">
+            <span class="nav-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="6" width="16" height="14" rx="2"></rect>
+                <path d="M9 6V4h6v2"></path>
+              </svg>
+            </span>
+            <span class="nav-label" data-i18n="nav.centers">Centers</span>
+          </a>
+          <a class="nav-item" href="specialists.html">
+            <span class="nav-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="3"></circle>
+                <path d="M5 20c1.5-4 12.5-4 14 0"></path>
+              </svg>
+            </span>
+            <span class="nav-label" data-i18n="nav.specialists">Specialists</span>
+          </a>
+          <a class="nav-item" href="children.html">
+            <span class="nav-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="8" cy="9" r="3"></circle>
+                <circle cx="16" cy="9" r="3"></circle>
+                <path d="M3 20c1-4 9-4 10 0"></path>
+                <path d="M11 20c1-4 9-4 10 0"></path>
+              </svg>
+            </span>
+            <span class="nav-label" data-i18n="nav.children">Children</span>
+          </a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title" data-i18n="nav.group.content">Content</div>
+          <a class="nav-item" href="vr.html">
+            <span class="nav-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 10a8 8 0 0 1 16 0"></path>
+                <rect x="3" y="10" width="18" height="7" rx="3"></rect>
+                <path d="M8 17v3"></path>
+                <path d="M16 17v3"></path>
+              </svg>
+            </span>
+            <span class="nav-label" data-i18n="nav.vr">VR Experience</span>
+          </a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title" data-i18n="nav.group.system">System</div>
+          <a class="nav-item active" aria-current="page" href="settings.html">
+            <span class="nav-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19 12a7 7 0 0 0-.1-1l2-1-2-3-2 1a7 7 0 0 0-1.7-1l.2-2.2h-3l.2 2.2a7 7 0 0 0-1.7 1l-2-1-2 3 2 1a7 7 0 0 0 0 2l-2 1 2 3 2-1a7 7 0 0 0 1.7 1l-.2 2.2h3l-.2-2.2a7 7 0 0 0 1.7-1l2 1 2-3-2-1c.07-.33.1-.66.1-1z"></path>
+              </svg>
+            </span>
+            <span class="nav-label" data-i18n="nav.settings">Settings</span>
+          </a>
+        </div>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-card">

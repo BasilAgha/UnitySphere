@@ -21,11 +21,26 @@ function doPost(e) {
     if (route === "addCenter") {
       return jsonSuccess(addCenter(body));
     }
+    if (route === "updateCenter") {
+      return jsonSuccess(updateCenter(body));
+    }
+    if (route === "getCenter") {
+      return jsonSuccess(getCenterForEdit(body.centerId));
+    }
+    if (route === "deleteCenter") {
+      return jsonSuccess(deleteCenter(body.centerId));
+    }
     if (route === "addSpecialist") {
       return jsonSuccess(addSpecialist(body));
     }
+    if (route === "updateSpecialist") {
+      return jsonSuccess(updateSpecialist(body));
+    }
     if (route === "deleteSpecialist") {
       return jsonSuccess(deleteSpecialist(body.specialistId));
+    }
+    if (route === "getAccount") {
+      return jsonSuccess(getAccount(body));
     }
     if (route === "addChild") {
       return jsonSuccess(addChild(body));
@@ -35,6 +50,12 @@ function doPost(e) {
     }
     if (route === "addVr") {
       return jsonSuccess(addVr(body));
+    }
+    if (route === "updateVr") {
+      return jsonSuccess(updateVr(body));
+    }
+    if (route === "deleteVr") {
+      return jsonSuccess(deleteVr(body.vrId));
     }
     if (route === "childSessions") {
       return jsonSuccess(getChildSessions(body.childId));
@@ -51,10 +72,17 @@ function doGet(e) {
     const route = e.parameter.route;
 
     if (route === "centers") return jsonSuccess(getRows(SHEET_CENTERS));
+    if (route === "getCenter") {
+      return jsonSuccess(getCenterForEdit(e.parameter.centerId));
+    }
     if (route === "specialists") return jsonSuccess(getRows(SHEET_SPECIALISTS));
+    if (route === "accounts") return jsonSuccess(getRows(SHEET_ACCOUNTS));
     if (route === "children") return jsonSuccess(getChildrenRows());
     if (route === "vr") return jsonSuccess(getRows(SHEET_VR));
     if (route === "centerVr") return jsonSuccess(getRows(SHEET_CENTER_VR));
+    if (route === "getAccount") {
+      return jsonSuccess(getAccount(e.parameter));
+    }
 
     return jsonError("Invalid route");
   } catch (err) {
@@ -86,7 +114,11 @@ function handleLogin(username, password) {
   return {
     id: String(user.id || ""),
     role: String(user.role || "").trim().toLowerCase(),
-    linkedId: String(user.linkedId || "")
+    linkedId: String(
+      String(user.role || "").trim().toLowerCase() === "admin"
+        ? (user.centerId || user.linkedId || "")
+        : (user.specialistId || user.linkedId || "")
+    )
   };
 }
 
@@ -100,17 +132,33 @@ function addCenter(body) {
   const password = String(body.password || "").trim();
   const specialists = String(body.specialists || "").trim();
   const children = String(body.children || "").trim();
+  let startDate = String(body.startDate || "").trim();
+  let endDate = String(body.endDate || "").trim();
 
   if (!name || !location || !subscription || !username || !password) {
     return { error: "Missing required fields" };
   }
 
+  const now = new Date();
+  if (!startDate) {
+    startDate = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  }
+  if (!endDate) {
+    const next = new Date(now);
+    next.setFullYear(next.getFullYear() + 1);
+    endDate = Utilities.formatDate(next, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  }
+
   const centerId = getNextId(SHEET_CENTERS);
+  const accountId = getNextId(SHEET_ACCOUNTS);
   const centerRow = {
     id: centerId,
+    accountId,
     name,
     location,
     subscription,
+    startDate,
+    endDate,
     contactEmail,
     contactPhone,
     specialists,
@@ -120,16 +168,173 @@ function addCenter(body) {
   appendRow(SHEET_CENTERS, centerRow);
 
   const accountRow = {
-    id: getNextId(SHEET_ACCOUNTS),
+    id: accountId,
     username,
     password,
-    role: "center_admin",
+    role: "admin",
+    centerId: centerId,
     linkedId: centerId,
     active: true
   };
   appendRow(SHEET_ACCOUNTS, accountRow);
 
   return { ok: true, id: centerId };
+}
+
+function updateCenter(body) {
+  const centerId = String(body.centerId || body.id || "").trim();
+  const name = String(body.name || "").trim();
+  const location = String(body.location || "").trim();
+  const subscription = String(body.subscription || "").trim();
+  const contactEmail = String(body.contactEmail || "").trim();
+  const contactPhone = String(body.contactPhone || "").trim();
+  const specialists = String(body.specialists || "").trim();
+  const children = String(body.children || "").trim();
+  const startDate = String(body.startDate || "").trim();
+  const endDate = String(body.endDate || "").trim();
+
+  if (!centerId) {
+    return { error: "Missing centerId" };
+  }
+  if (!name || !location || !subscription) {
+    return { error: "Missing required fields" };
+  }
+
+  const centers = getRows(SHEET_CENTERS);
+  const center = centers.find(row =>
+    String(getFieldValue(row, ["id"]) || "").trim() === centerId
+  );
+  if (!center) {
+    return { error: "Center not found" };
+  }
+
+  const oldName = String(getFieldValue(center, ["name"]) || "").trim();
+  const updates = {
+    name,
+    location,
+    subscription,
+    contactEmail,
+    contactPhone,
+    specialists,
+    children
+  };
+  if (startDate) updates.startDate = startDate;
+  if (endDate) updates.endDate = endDate;
+
+  const updated = updateRowsByField(SHEET_CENTERS, ["id"], centerId, updates);
+  if (!updated) {
+    return { error: "Center not found" };
+  }
+
+  if (oldName && name && oldName !== name) {
+    updateRowsByField(SHEET_CENTER_VR, ["center"], oldName, { center: name });
+    updateRowsByField(SHEET_SPECIALISTS, ["centerId", "centerID"], centerId, { center: name });
+    updateRowsByField(SHEET_SPECIALISTS, ["center"], oldName, { center: name });
+  }
+
+  const accountUpdates = {};
+  if (body.username) {
+    accountUpdates.username = String(body.username || "").trim();
+  }
+  if (body.password) {
+    accountUpdates.password = String(body.password || "").trim();
+  }
+  if (Object.keys(accountUpdates).length) {
+    updateRowsByField(SHEET_ACCOUNTS, ["centerId", "centerID"], centerId, accountUpdates, row => {
+      const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
+      const active = String(getFieldValue(row, ["active"]) || "").trim().toLowerCase();
+      return role === "admin" && active === "true";
+    });
+  }
+
+  return { ok: true };
+}
+
+function getCenterForEdit(centerId) {
+  const resolvedId = String(centerId || "").trim();
+  if (!resolvedId) {
+    return { error: "Missing centerId" };
+  }
+
+  const centers = getRows(SHEET_CENTERS);
+  const center = centers.find(row =>
+    String(getFieldValue(row, ["id"]) || "").trim() === resolvedId
+  );
+  if (!center) {
+    return { error: "Center not found" };
+  }
+
+  const accounts = getRows(SHEET_ACCOUNTS);
+  const account = accounts.find(row => {
+    const rowCenterId = String(getFieldValue(row, ["centerId", "centerID"]) || "").trim();
+    if (rowCenterId !== resolvedId) return false;
+    const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
+    const active = String(getFieldValue(row, ["active"]) || "").trim().toLowerCase();
+    return role === "admin" && active === "true";
+  });
+
+  return {
+    center: center,
+    account: account
+      ? {
+          username: String(getFieldValue(account, ["username"]) || ""),
+          password: String(getFieldValue(account, ["password"]) || "")
+        }
+      : { username: "", password: "" }
+  };
+}
+
+function deleteCenter(centerId) {
+  const resolvedId = String(centerId || "").trim();
+  if (!resolvedId) {
+    return { error: "Missing centerId" };
+  }
+
+  const centers = getRows(SHEET_CENTERS);
+  const center = centers.find(row =>
+    String(getFieldValue(row, ["id"]) || "").trim() === resolvedId
+  );
+  if (!center) {
+    return { error: "Center not found" };
+  }
+
+  const centerName = String(getFieldValue(center, ["name"]) || "").trim();
+
+  deleteRowsByField(SHEET_CHILDREN, ["centerId", "centerID"], resolvedId);
+
+  const specialists = getRows(SHEET_SPECIALISTS);
+  const specialistIds = specialists
+    .filter(row => {
+      const rowCenterId = String(getFieldValue(row, ["centerId", "centerID"]) || "").trim();
+      const rowCenterName = String(getFieldValue(row, ["center"]) || "").trim();
+      return (rowCenterId && rowCenterId === resolvedId) || (centerName && rowCenterName === centerName);
+    })
+    .map(row => String(getFieldValue(row, ["id"]) || "").trim())
+    .filter(Boolean);
+
+  specialistIds.forEach(id => {
+    deleteRowsByField(SHEET_SPECIALISTS, ["id"], id);
+    deleteRowsByField(SHEET_ACCOUNTS, ["specialistId", "specialistID"], id, row => {
+      const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
+      return role === "specialist";
+    });
+  });
+
+  deleteRowsByField(SHEET_ACCOUNTS, ["linkedId"], resolvedId, row => {
+    const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
+    return role === "center_admin";
+  });
+  deleteRowsByField(SHEET_ACCOUNTS, ["centerId", "centerID"], resolvedId, row => {
+    const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
+    return role === "admin";
+  });
+
+  if (centerName) {
+    deleteRowsByField(SHEET_CENTER_VR, ["center"], centerName);
+  }
+
+  const deleted = deleteRowsByField(SHEET_CENTERS, ["id"], resolvedId);
+  return deleted ? { ok: true } : { error: "Center not found" };
 }
 
 function addSpecialist(body) {
@@ -146,28 +351,82 @@ function addSpecialist(body) {
   }
 
   const specialistId = getNextId(SHEET_SPECIALISTS);
+  const accountId = getNextId(SHEET_ACCOUNTS);
   const specialistRow = {
     id: specialistId,
+    accountId,
+    name,
+    center,
+    centerId,
+    description,
+    children,
+  };
+
+  appendRow(SHEET_SPECIALISTS, specialistRow);
+
+  const accountRow = {
+    id: accountId,
+    username,
+    password,
+    role: "specialist",
+    specialistId: specialistId,
+    active: true
+  };
+  appendRow(SHEET_ACCOUNTS, accountRow);
+
+  return { ok: true, id: specialistId };
+}
+
+function updateSpecialist(body) {
+  const specialistId = String(body.specialistId || body.id || "").trim();
+  const name = String(body.name || "").trim();
+  const center = String(body.center || "").trim();
+  const centerId = String(body.centerId || "").trim();
+  const description = String(body.description || "").trim();
+  const children = String(body.children || "").trim();
+
+  if (!specialistId) {
+    return { error: "Missing specialistId" };
+  }
+  if (!name || !description) {
+    return { error: "Missing required fields" };
+  }
+
+  const specialists = getRows(SHEET_SPECIALISTS);
+  const specialist = specialists.find(row =>
+    String(getFieldValue(row, ["id"]) || "").trim() === specialistId
+  );
+  if (!specialist) {
+    return { error: "Specialist not found" };
+  }
+
+  const updates = {
     name,
     center,
     centerId,
     description,
     children
   };
+  const updated = updateRowsByField(SHEET_SPECIALISTS, ["id"], specialistId, updates);
+  if (!updated) {
+    return { error: "Specialist not found" };
+  }
 
-  appendRow(SHEET_SPECIALISTS, specialistRow);
+  const accountUpdates = {};
+  if (body.username) {
+    accountUpdates.username = String(body.username || "").trim();
+  }
+  if (body.password) {
+    accountUpdates.password = String(body.password || "").trim();
+  }
+  if (Object.keys(accountUpdates).length) {
+    updateRowsByField(SHEET_ACCOUNTS, ["specialistId", "specialistID"], specialistId, accountUpdates, row => {
+      const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
+      return role === "specialist";
+    });
+  }
 
-  const accountRow = {
-    id: getNextId(SHEET_ACCOUNTS),
-    username,
-    password,
-    role: "specialist",
-    linkedId: specialistId,
-    active: true
-  };
-  appendRow(SHEET_ACCOUNTS, accountRow);
-
-  return { ok: true, id: specialistId };
+  return { ok: true };
 }
 
 function addChild(body) {
@@ -211,12 +470,49 @@ function deleteSpecialist(specialistId) {
   }
 
   const deleted = deleteRowsByField(SHEET_SPECIALISTS, ["id"], resolvedId);
-  deleteRowsByField(SHEET_ACCOUNTS, ["linkedId"], resolvedId, row => {
+  deleteRowsByField(SHEET_ACCOUNTS, ["specialistId", "specialistID"], resolvedId, row => {
     const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
     return role === "specialist";
   });
 
   return deleted ? { ok: true } : { error: "Specialist not found" };
+}
+
+function getAccount(body) {
+  const accountId = String((body && (body.accountId || body.id)) || "").trim();
+  const linkedId = String((body && body.linkedId) || "").trim();
+  const specialistId = String((body && body.specialistId) || "").trim();
+  const centerId = String((body && body.centerId) || "").trim();
+  if (!accountId && !linkedId && !specialistId && !centerId) {
+    return { error: "Missing accountId or linkedId" };
+  }
+
+  const accounts = getRows(SHEET_ACCOUNTS);
+  const match = accounts.find(row => {
+    if (accountId) {
+      const rowId = String(getFieldValue(row, ["id"]) || "").trim();
+      return rowId === accountId;
+    }
+    if (specialistId || linkedId) {
+      const rowSpecialistId = String(getFieldValue(row, ["specialistId", "specialistID"]) || "").trim();
+      if (rowSpecialistId && rowSpecialistId === (specialistId || linkedId)) return true;
+    }
+    if (centerId || linkedId) {
+      const rowCenterId = String(getFieldValue(row, ["centerId", "centerID"]) || "").trim();
+      if (rowCenterId && rowCenterId === (centerId || linkedId)) return true;
+    }
+    return false;
+  });
+
+  if (!match) {
+    return { error: "Account not found" };
+  }
+
+  return {
+    id: String(getFieldValue(match, ["id"]) || ""),
+    username: String(getFieldValue(match, ["username"]) || ""),
+    password: String(getFieldValue(match, ["password"]) || "")
+  };
 }
 
 function deleteChild(childId) {
@@ -270,6 +566,67 @@ function addVr(body) {
   }
 
   return { ok: true, id: vrId };
+}
+
+function updateVr(body) {
+  const vrId = String(body.vrId || body.id || "").trim();
+  const name = String(body.name || "").trim();
+  const description = String(body.description || "").trim();
+  const duration = String(body.duration || "").trim();
+  const difficulty = String(body.difficulty || "").trim();
+  const video = String(body.video || "").trim();
+  const centersRaw = String(body.centers || "").trim();
+
+  if (!vrId) {
+    return { error: "Missing vrId" };
+  }
+  if (!name || !description || !duration || !difficulty) {
+    return { error: "Missing required fields" };
+  }
+
+  const updates = {
+    name,
+    description,
+    duration,
+    difficulty,
+    video
+  };
+  if (Object.prototype.hasOwnProperty.call(body, "image")) {
+    updates.image = String(body.image || "").trim();
+  }
+
+  const updated = updateRowsByField(SHEET_VR, ["id"], vrId, updates);
+  if (!updated) {
+    return { error: "Experience not found" };
+  }
+
+  deleteRowsByField(SHEET_CENTER_VR, ["vrId", "id"], vrId);
+  if (centersRaw) {
+    centersRaw
+      .split(",")
+      .map(center => String(center || "").trim())
+      .filter(Boolean)
+      .forEach(centerName => {
+        appendRow(SHEET_CENTER_VR, {
+          center: centerName,
+          vrId,
+          vrName: name
+        });
+      });
+  }
+
+  return { ok: true };
+}
+
+function deleteVr(vrId) {
+  const resolvedId = String(vrId || "").trim();
+  if (!resolvedId) {
+    return { error: "Missing vrId" };
+  }
+
+  const deleted = deleteRowsByField(SHEET_VR, ["id"], resolvedId);
+  deleteRowsByField(SHEET_CENTER_VR, ["vrId", "id"], resolvedId);
+  return deleted ? { ok: true } : { error: "Experience not found" };
 }
 
 /* =========================
@@ -394,6 +751,56 @@ function deleteRowsByField(sheetName, fieldNames, matchValue, predicate) {
 
   rowsToDelete.reverse().forEach(rowIndex => sheet.deleteRow(rowIndex));
   return rowsToDelete.length > 0;
+}
+
+function updateRowsByField(sheetName, fieldNames, matchValue, updates, predicate) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  if (!sheet) return false;
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return false;
+
+  const headers = values[0];
+  const headerMap = headers.reduce((acc, header, index) => {
+    acc[normalizeKey(header)] = index;
+    return acc;
+  }, {});
+
+  const fieldIndexes = fieldNames
+    .map(name => headerMap[normalizeKey(name)])
+    .filter(index => index !== undefined);
+  if (!fieldIndexes.length) return false;
+
+  const normalizedUpdates = Object.keys(updates || {}).reduce((acc, key) => {
+    acc[normalizeKey(key)] = updates[key];
+    return acc;
+  }, {});
+
+  let updated = false;
+  for (var i = 1; i < values.length; i += 1) {
+    const row = values[i];
+    const matches = fieldIndexes.some(index => String(row[index] || "").trim() === String(matchValue));
+    if (!matches) continue;
+    if (predicate) {
+      const rowObj = headers.reduce((acc, header, idx) => {
+        acc[String(header || "").trim()] = row[idx];
+        return acc;
+      }, {});
+      if (!predicate(rowObj)) continue;
+    }
+
+    const nextRow = row.slice();
+    headers.forEach((header, idx) => {
+      const normalizedHeader = normalizeKey(header);
+      if (Object.prototype.hasOwnProperty.call(normalizedUpdates, normalizedHeader)) {
+        nextRow[idx] = normalizedUpdates[normalizedHeader];
+      }
+    });
+    sheet.getRange(i + 1, 1, 1, nextRow.length).setValues([nextRow]);
+    updated = true;
+  }
+
+  return updated;
 }
 
 function getNextId(sheetName) {
