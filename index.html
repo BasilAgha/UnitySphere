@@ -85,208 +85,162 @@
         </div>
       </nav>
       <div class="sidebar-footer">
-        <div class="sidebar-card">
-          <div class="sidebar-card-icon">!</div>
-          <div class="sidebar-card-title" data-i18n="sidebar.reminderTitle">Reminder</div>
-          <div class="sidebar-card-text" data-i18n="sidebar.reminderText">Review VR session notes and update progress insights.</div>
-        </div>
         <div class="sidebar-actions">
-          <button class="btn ghost logout-btn" type="button" data-logout data-i18n="sidebar.logout">Logout</button>
+          <button class="btn primary logout-btn" type="button" data-logout data-i18n="sidebar.logout">Logout</button>
         </div>
       </div>
     </aside>
 
     <main class="main">
+      <div class="page-topbar">
+        <button class="icon-btn" type="button" aria-label="Quick menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+            <path d="M9 5v14"></path>
+          </svg>
+        </button>
+        <button class="lang-toggle" type="button" data-lang-toggle></button>
+      </div>
       <section class="overview">
         <header class="topbar">
           <div>
             <h1 data-i18n="index.title">Admin Overview</h1>
-            <p class="subtitle" data-i18n="index.subtitle">Real-time telemetry from UnitySphere centers and VR clinics.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn ghost lang-toggle" type="button" data-lang-toggle></button>
           </div>
         </header>
 
-        <section class="grid metrics">
-          <div class="card metric-card highlight" style="--delay: 0.05s;">
+        <section class="grid metrics kpi-grid">
+          <div class="card metric-card metric-card--children kpi-card" style="--delay: 0.15s;" aria-label="Children KPI">
             <div class="card-header">
               <div>
-                <div class="glow-line"></div>
-                <h3 class="card-title" data-i18n="index.metric.globalAccuracy">Global Average Accuracy</h3>
-              </div>
-              <div class="metric-status">
-                <div class="chip glow status-default" data-i18n="index.metric.chip.live">Live</div>
-                <div class="chip status-await" data-i18n="status.awaiting">Awaiting Sessions</div>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="donut-wrap">
-                <div class="donut-glow-ring" aria-hidden="true"></div>
-                <svg viewBox="0 0 120 120" class="donut" aria-label="Average accuracy donut chart">
-                  <defs>
-                    <linearGradient id="donutGradient" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#6E7CFF" />
-                    <stop offset="100%" stop-color="#9B8CFF" />
-                    </linearGradient>
-                  </defs>
-                  <circle cx="60" cy="60" r="46" class="donut-track"></circle>
-                  <circle cx="60" cy="60" r="46" class="donut-value" stroke="url(#donutGradient)"></circle>
-                </svg>
-                <div class="donut-center">
-                  <div class="donut-value-text" id="metric-accuracy"></div>
-                  <div class="donut-empty-label" data-i18n="empty.metric.accuracy">Accuracy updates when sessions begin streaming.</div>
-                  <div class="muted" data-i18n="index.metric.allSessions">All sessions</div>
+                <div class="metric-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="3"></circle>
+                    <path d="M5 20c1.5-4 12.5-4 14 0"></path>
+                  </svg>
                 </div>
+                <div class="micro-label" data-i18n="label.children">Children</div>
+              </div>
+              <div class="kpi-sparkline" id="spark-children"></div>
+            </div>
+            <div class="card-body">
+              <div class="metric-value kpi-value" id="metric-children"></div>
+              <div class="kpi-mini">
+                <div class="kpi-chip" id="metric-children-today">-</div>
+                <div class="kpi-chip" id="metric-children-week">-</div>
               </div>
             </div>
           </div>
-          <div class="card metric-card" style="--delay: 0.1s;">
+          <div class="card metric-card metric-card--specialists kpi-card" style="--delay: 0.2s;" aria-label="Specialists KPI">
             <div class="card-header">
               <div>
-                <div class="glow-line"></div>
-                <h3 class="card-title" id="metric-title-sessions" data-i18n="index.metric.sessions">Sessions</h3>
+                <div class="metric-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="3"></circle>
+                    <path d="M5 20c1.5-4 12.5-4 14 0"></path>
+                  </svg>
+                </div>
+                <div class="micro-label" data-i18n="label.specialists">Specialists</div>
               </div>
-              <div class="metric-status">
-                <div class="chip status-default" data-i18n="index.metric.chip.computed">Computed</div>
-                <div class="chip status-await" data-i18n="status.awaiting">Awaiting Sessions</div>
-              </div>
+              <div class="kpi-sparkline" id="spark-specialists"></div>
             </div>
             <div class="card-body">
-              <div class="metric-value" id="metric-sessions"></div>
-              <div class="metric-helper">
-                <span class="metric-helper-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M12 7v5l3 3"></path>
-                  </svg>
-                </span>
-                <span class="metric-helper-text" data-i18n="empty.metric.sessions">Sessions will appear after your first sync.</span>
+              <div class="metric-value kpi-value" id="metric-specialists"></div>
+              <div class="kpi-mini">
+                <div class="kpi-chip" id="metric-specialists-today">-</div>
+                <div class="kpi-chip" id="metric-specialists-week">-</div>
               </div>
-            </div>
-            <div class="card-footer">
-              <div class="metric-foot" id="metric-foot-sessions" data-i18n="index.metric.allSessions">All sessions</div>
             </div>
           </div>
-          <div class="card metric-card" style="--delay: 0.15s;">
+          <div class="card metric-card metric-card--centers kpi-card" style="--delay: 0.25s;" aria-label="Centers KPI">
             <div class="card-header">
               <div>
-                <div class="glow-line"></div>
-                <h3 class="card-title" id="metric-title-children" data-i18n="index.metric.children">Children</h3>
+                <div class="metric-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="4" y="6" width="16" height="14" rx="2"></rect>
+                    <path d="M9 6V4h6v2"></path>
+                  </svg>
+                </div>
+                <div class="micro-label" data-i18n="label.centers">Centers</div>
               </div>
-              <div class="metric-status">
-                <div class="chip status-default" data-i18n="index.metric.chip.computed">Computed</div>
-                <div class="chip status-await" data-i18n="status.awaiting">Awaiting Sessions</div>
-              </div>
+              <div class="kpi-sparkline" id="spark-centers"></div>
             </div>
             <div class="card-body">
-              <div class="metric-value" id="metric-children"></div>
-              <div class="metric-helper">
-                <span class="metric-helper-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <rect x="4" y="5" width="16" height="14" rx="3"></rect>
-                    <path d="M8 3v4"></path>
-                    <path d="M16 3v4"></path>
-                  </svg>
-                </span>
-                <span class="metric-helper-text" data-i18n="empty.metric.children">Children metrics appear once profiles sync.</span>
+              <div class="metric-value kpi-value" id="metric-centers">0</div>
+              <div class="kpi-mini">
+                <div class="kpi-chip" id="metric-centers-today">-</div>
+                <div class="kpi-chip" id="metric-centers-week">-</div>
               </div>
-            </div>
-            <div class="card-footer">
-              <div class="metric-foot" id="metric-foot-children" data-i18n="index.metric.activeChildren">Active children</div>
             </div>
           </div>
-          <div class="card metric-card" style="--delay: 0.2s;">
+          <div class="card metric-card metric-card--vr kpi-card" style="--delay: 0.3s;" aria-label="VR KPI">
             <div class="card-header">
               <div>
-                <div class="glow-line"></div>
-                <h3 class="card-title" id="metric-title-specialists" data-i18n="index.metric.specialists">Specialists</h3>
+                <div class="metric-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 10a8 8 0 0 1 16 0"></path>
+                    <rect x="3" y="10" width="18" height="7" rx="3"></rect>
+                    <path d="M8 17v3"></path>
+                    <path d="M16 17v3"></path>
+                  </svg>
+                </div>
+                <div class="micro-label" data-i18n="label.vrExperiences">VR Experiences</div>
               </div>
-              <div class="metric-status">
-                <div class="chip status-default" data-i18n="index.metric.chip.computed">Computed</div>
-                <div class="chip status-await" data-i18n="status.awaiting">Awaiting Sessions</div>
-              </div>
+              <div class="kpi-sparkline" id="spark-vr"></div>
             </div>
             <div class="card-body">
-              <div class="metric-value" id="metric-specialists"></div>
-              <div class="metric-helper">
-                <span class="metric-helper-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4 16l5-6 4 4 5-8"></path>
-                    <path d="M20 7v5h-5"></path>
-                  </svg>
-                </span>
-                <span class="metric-helper-text" data-i18n="empty.metric.specialists">Specialists populate after the next directory sync.</span>
+              <div class="metric-value kpi-value" id="metric-vr">0</div>
+              <div class="kpi-mini">
+                <div class="kpi-chip" id="metric-vr-today">-</div>
+                <div class="kpi-chip" id="metric-vr-week">-</div>
               </div>
-            </div>
-            <div class="card-footer">
-              <div class="metric-foot" id="metric-foot-specialists" data-i18n="index.metric.activeSpecialists">Active specialists</div>
             </div>
           </div>
         </section>
 
-        <section class="grid charts">
-          <div class="card chart-card" style="--delay: 0.25s;">
-            <div class="card-header">
-              <div>
-                <h2 data-i18n="index.chart.weeklySessions">Weekly Sessions</h2>
-                <p class="muted" data-i18n="index.chart.weeklySubtitle">Curved trend from database telemetry</p>
+        <section class="overview-section">
+          <div class="grid snapshot-grid">
+            <div class="card snapshot-card donut-card" style="--delay: 0.35s;" aria-label="Overall accuracy">
+              <div class="micro-label" data-i18n="label.accuracy">Accuracy</div>
+              <svg class="donut-chart" id="snapshot-accuracy-ring" viewBox="0 0 120 120" aria-hidden="true"></svg>
+              <div class="donut-value" id="snapshot-accuracy">-</div>
+              <div class="micro-caption" id="snapshot-accuracy-caption"></div>
+            </div>
+            <div class="card snapshot-card progress-card" style="--delay: 0.4s;" aria-label="Avg session duration">
+              <div class="micro-label" data-i18n="label.duration">Duration</div>
+              <div class="progress-track">
+                <div class="progress-fill" id="snapshot-duration-bar"></div>
+                <span class="baseline-marker" id="snapshot-duration-baseline"></span>
               </div>
-              <div class="pill" data-i18n="index.chart.pastWeek">Past week</div>
+              <div class="snapshot-value" id="snapshot-duration">-</div>
+              <div class="micro-caption" id="snapshot-duration-caption"></div>
             </div>
-            <div class="chart-frame">
-              <div class="chart-grid" aria-hidden="true"></div>
-              <canvas id="sessionChart" height="180" aria-label="Line chart of sessions"></canvas>
-              <div class="chart-skeleton" aria-hidden="true"></div>
-              <div class="chart-empty">
-                <span class="chart-empty-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4 18h16"></path>
-                    <path d="M6 14l3-4 4 3 5-7"></path>
-                  </svg>
-                </span>
-                <span data-i18n="empty.chart.weekly">Weekly sessions will plot once data arrives from centers.</span>
-              </div>
+            <div class="card snapshot-card gauge-card" style="--delay: 0.45s;" aria-label="Avg attempts per question">
+              <div class="micro-label" data-i18n="label.attempts">Attempts</div>
+              <svg class="gauge-chart" id="snapshot-attempts-gauge" viewBox="0 0 120 70" aria-hidden="true"></svg>
+              <div class="snapshot-value" id="snapshot-attempts">-</div>
+              <div class="micro-caption" id="snapshot-attempts-caption"></div>
             </div>
-            <div class="chart-footer">
-              <span data-i18n="index.chart.peakWeek">Peak week</span>
-              <strong id="metric-peak"></strong>
+            <div class="card snapshot-card donut-card" style="--delay: 0.5s;" aria-label="Easy mode usage">
+              <div class="micro-label" data-i18n="label.easy">Easy</div>
+              <svg class="donut-chart" id="snapshot-easy-ring" viewBox="0 0 120 120" aria-hidden="true"></svg>
+              <div class="donut-value" id="snapshot-easy">-</div>
+              <div class="micro-caption" id="snapshot-easy-caption"></div>
             </div>
-            <div class="chart-caption" data-i18n="empty.chart.caption.weekly">Awaiting telemetry to draw the weekly trend.</div>
-          </div>
-          <div class="card chart-card" style="--delay: 0.3s;">
-            <div class="card-header">
-              <div>
-                <h2 data-i18n="index.chart.progressByCenter">Progress Rate by Center</h2>
-                <p class="muted" data-i18n="index.chart.progressSubtitle">Adaptive therapy completion</p>
-              </div>
-              <button class="btn ghost" data-i18n="index.chart.export">Export</button>
-            </div>
-            <div class="chart-frame slim">
-              <div class="chart-grid" aria-hidden="true"></div>
-              <div class="chart-skeleton" aria-hidden="true"></div>
-              <div class="chart-empty">
-                <span class="chart-empty-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4 18h16"></path>
-                    <path d="M6 15l4-5 4 3 4-6"></path>
-                  </svg>
-                </span>
-                <span data-i18n="empty.chart.progress">Center progress rates will populate after sessions sync.</span>
-              </div>
-            </div>
-            <div class="progress-list" id="progress-list"></div>
-            <div class="chart-caption" data-i18n="empty.chart.caption.progress">Awaiting linked centers to report progress.</div>
           </div>
         </section>
+
+        <section class="overview-section"></section>
+
+        <section class="overview-section"></section>
+
+        <section class="overview-section"></section>
       </section>
     </main>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
-
-
-
-

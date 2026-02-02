@@ -3,96 +3,125 @@ const SHEET_CENTERS = "Centers";
 const SHEET_SPECIALISTS = "Specialists";
 const SHEET_CHILDREN = "Children";
 const SHEET_VR = "VR";
-const SHEET_CENTER_VR = "CenterVr";
-const UNITY_SESSIONS_URL = "";
+const SHEET_CENTERVR = "CenterVR";
 
-/* =========================
-   ENTRY POINTS
-========================= */
+const ALLOWED_ROUTES = {
+  login: true,
+  centers: true,
+  specialists: true,
+  children: true,
+  vr: true,
+  centervr: true
+};
+
+function normalizeAction(value) {
+  return String(value || "").trim().toLowerCase();
+}
 
 function doPost(e) {
   try {
-    const body = parseBody(e);
-    const route = body.route;
+    const params = (e && e.parameter) ? e.parameter : {};
+    const route = String(params.route || "").trim().toLowerCase();
+    if (!route) {
+      return jsonError("Missing route");
+    }
+    if (!ALLOWED_ROUTES[route]) {
+      return jsonError("Unknown route");
+    }
 
     if (route === "login") {
-      return jsonSuccess(handleLogin(body.username, body.password));
-    }
-    if (route === "addCenter") {
-      return jsonSuccess(addCenter(body));
-    }
-    if (route === "updateCenter") {
-      return jsonSuccess(updateCenter(body));
-    }
-    if (route === "getCenter") {
-      return jsonSuccess(getCenterForEdit(body.centerId));
-    }
-    if (route === "deleteCenter") {
-      return jsonSuccess(deleteCenter(body.centerId));
-    }
-    if (route === "addSpecialist") {
-      return jsonSuccess(addSpecialist(body));
-    }
-    if (route === "updateSpecialist") {
-      return jsonSuccess(updateSpecialist(body));
-    }
-    if (route === "deleteSpecialist") {
-      return jsonSuccess(deleteSpecialist(body.specialistId));
-    }
-    if (route === "getAccount") {
-      return jsonSuccess(getAccount(body));
-    }
-    if (route === "addChild") {
-      return jsonSuccess(addChild(body));
-    }
-    if (route === "deleteChild") {
-      return jsonSuccess(deleteChild(body.childId));
-    }
-    if (route === "addVr") {
-      return jsonSuccess(addVr(body));
-    }
-    if (route === "updateVr") {
-      return jsonSuccess(updateVr(body));
-    }
-    if (route === "deleteVr") {
-      return jsonSuccess(deleteVr(body.vrId));
-    }
-    if (route === "childSessions") {
-      return jsonSuccess(getChildSessions(body.childId));
+      return jsonSuccess(handleLogin(params.username, params.password));
     }
 
-    return jsonError("Invalid route");
+    const auth = getAuthContext(params);
+    const action = normalizeAction(params.action);
+    if (route === "centers") {
+      if (action === "create") {
+        var createdCenter = createCenter(params);
+        if (createdCenter && createdCenter.error) return jsonError(createdCenter.error);
+        return jsonSuccess({ success: true, data: createdCenter });
+      }
+      if (action === "update") {
+        var updatedCenter = updateCenter(params);
+        if (updatedCenter && updatedCenter.error) return jsonError(updatedCenter.error);
+        return jsonSuccess({ success: true, data: updatedCenter });
+      }
+      if (action === "delete") {
+        var deletedCenter = deleteCenter(params);
+        if (deletedCenter && deletedCenter.error) return jsonError(deletedCenter.error);
+        return jsonSuccess({ success: true, data: deletedCenter });
+      }
+      return jsonSuccess(getCenters(auth));
+    }
+    if (route === "specialists") {
+      if (action === "create") {
+        var createdSpecialist = createSpecialist(params);
+        if (createdSpecialist && createdSpecialist.error) return jsonError(createdSpecialist.error);
+        return jsonSuccess({ success: true, data: createdSpecialist });
+      }
+      if (action === "update") {
+        var updatedSpecialist = updateSpecialist(params);
+        if (updatedSpecialist && updatedSpecialist.error) return jsonError(updatedSpecialist.error);
+        return jsonSuccess({ success: true, data: updatedSpecialist });
+      }
+      if (action === "delete") {
+        var deletedSpecialist = deleteSpecialist(params);
+        if (deletedSpecialist && deletedSpecialist.error) return jsonError(deletedSpecialist.error);
+        return jsonSuccess({ success: true, data: deletedSpecialist });
+      }
+      return jsonSuccess(getSpecialists(auth));
+    }
+    if (route === "children") {
+      if (action === "create") {
+        var createdChild = createChild(params);
+        if (createdChild && createdChild.error) return jsonError(createdChild.error);
+        return jsonSuccess({ success: true, data: createdChild });
+      }
+      if (action === "update") {
+        var updatedChild = updateChild(params);
+        if (updatedChild && updatedChild.error) return jsonError(updatedChild.error);
+        return jsonSuccess({ success: true, data: updatedChild });
+      }
+      if (action === "delete") {
+        var deletedChild = deleteChild(params);
+        if (deletedChild && deletedChild.error) return jsonError(deletedChild.error);
+        return jsonSuccess({ success: true, data: deletedChild });
+      }
+      return jsonSuccess(getChildren(auth));
+    }
+    if (route === "vr") {
+      if (action === "create") {
+        var created = createVr(params);
+        if (created && created.error) return jsonError(created.error);
+        return jsonSuccess({ success: true, data: created });
+      }
+      if (action === "update") {
+        var updatedVr = updateVr(params);
+        if (updatedVr && updatedVr.error) return jsonError(updatedVr.error);
+        return jsonSuccess({ success: true, data: updatedVr });
+      }
+      if (action === "delete") return jsonSuccess({ success: true, data: deleteVr(params) });
+      return jsonSuccess({ success: true, data: listVr(params) });
+    }
+    if (route === "centervr") {
+      if (action === "upsert") {
+        var updated = upsertCenterVr(params);
+        if (updated && updated.error) return jsonError(updated.error);
+        return jsonSuccess({ success: true, data: updated });
+      }
+      if (action === "delete") return jsonSuccess({ success: true, data: deleteCenterVr(params) });
+      return jsonSuccess({ success: true, data: listCenterVr(params) });
+    }
+
+    return jsonError("Unknown route");
   } catch (err) {
     return jsonError("Server error");
   }
 }
 
-function doGet(e) {
-  try {
-    const route = e.parameter.route;
-
-    if (route === "centers") return jsonSuccess(getRows(SHEET_CENTERS));
-    if (route === "getCenter") {
-      return jsonSuccess(getCenterForEdit(e.parameter.centerId));
-    }
-    if (route === "specialists") return jsonSuccess(getRows(SHEET_SPECIALISTS));
-    if (route === "accounts") return jsonSuccess(getRows(SHEET_ACCOUNTS));
-    if (route === "children") return jsonSuccess(getChildrenRows());
-    if (route === "vr") return jsonSuccess(getRows(SHEET_VR));
-    if (route === "centerVr") return jsonSuccess(getRows(SHEET_CENTER_VR));
-    if (route === "getAccount") {
-      return jsonSuccess(getAccount(e.parameter));
-    }
-
-    return jsonError("Invalid route");
-  } catch (err) {
-    return jsonError("Server error");
-  }
+function doOptions() {
+  return withCors(ContentService.createTextOutput(""));
 }
-
-/* =========================
-   LOGIN (SAFE)
-========================= */
 
 function handleLogin(username, password) {
   if (!username || !password) {
@@ -100,955 +129,598 @@ function handleLogin(username, password) {
   }
 
   const rows = getRows(SHEET_ACCOUNTS);
-
-  const user = rows.find(r =>
-    String(r.username).trim() === String(username).trim() &&
-    String(r.password).trim() === String(password).trim() &&
-    String(r.active).trim().toLowerCase() === "true"
-  );
+  const user = rows.find((row) => {
+    return (
+      String(getFieldValue(row, ["username"]) || "").trim() === String(username).trim() &&
+      String(getFieldValue(row, ["password"]) || "").trim() === String(password).trim() &&
+      normalizeActiveFlag(getFieldValue(row, ["active"])) === true
+    );
+  });
 
   if (!user) {
     return { error: "Invalid login" };
   }
 
   return {
-    id: String(user.id || ""),
-    role: String(user.role || "").trim().toLowerCase(),
-    linkedId: String(
-      String(user.role || "").trim().toLowerCase() === "admin"
-        ? (user.centerId || user.linkedId || "")
-        : (user.specialistId || user.linkedId || "")
-    )
+    role: normalizeRole(getFieldValue(user, ["role"])),
+    centerId: String(getFieldValue(user, ["centerId", "centerID"]) || "").trim(),
+    specialistId: String(getFieldValue(user, ["specialistId", "specialistID"]) || "").trim()
   };
 }
 
-function addCenter(body) {
-  const name = String(body.name || "").trim();
-  const location = String(body.location || "").trim();
-  const subscription = String(body.subscription || "").trim();
-  const contactEmail = String(body.contactEmail || "").trim();
-  const contactPhone = String(body.contactPhone || "").trim();
-  const username = String(body.username || "").trim();
-  const password = String(body.password || "").trim();
-  const specialists = String(body.specialists || "").trim();
-  const children = String(body.children || "").trim();
-  let startDate = String(body.startDate || "").trim();
-  let endDate = String(body.endDate || "").trim();
-
-  if (!name || !location || !subscription || !username || !password) {
-    return { error: "Missing required fields" };
-  }
-
-  const now = new Date();
-  if (!startDate) {
-    startDate = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd");
-  }
-  if (!endDate) {
-    const next = new Date(now);
-    next.setFullYear(next.getFullYear() + 1);
-    endDate = Utilities.formatDate(next, Session.getScriptTimeZone(), "yyyy-MM-dd");
-  }
-
-  const centerId = getNextId(SHEET_CENTERS);
-  const accountId = getNextId(SHEET_ACCOUNTS);
-  const centerRow = {
-    id: centerId,
-    accountId,
-    name,
-    location,
-    subscription,
-    startDate,
-    endDate,
-    contactEmail,
-    contactPhone,
-    specialists,
-    children
-  };
-
-  appendRow(SHEET_CENTERS, centerRow);
-
-  const accountRow = {
-    id: accountId,
-    username,
-    password,
-    role: "admin",
-    centerId: centerId,
-    linkedId: centerId,
-    active: true
-  };
-  appendRow(SHEET_ACCOUNTS, accountRow);
-
-  return { ok: true, id: centerId };
-}
-
-function updateCenter(body) {
-  const centerId = String(body.centerId || body.id || "").trim();
-  const name = String(body.name || "").trim();
-  const location = String(body.location || "").trim();
-  const subscription = String(body.subscription || "").trim();
-  const contactEmail = String(body.contactEmail || "").trim();
-  const contactPhone = String(body.contactPhone || "").trim();
-  const specialists = String(body.specialists || "").trim();
-  const children = String(body.children || "").trim();
-  const startDate = String(body.startDate || "").trim();
-  const endDate = String(body.endDate || "").trim();
-
-  if (!centerId) {
-    return { error: "Missing centerId" };
-  }
-  if (!name || !location || !subscription) {
-    return { error: "Missing required fields" };
-  }
-
-  const centers = getRows(SHEET_CENTERS);
-  const center = centers.find(row =>
-    String(getFieldValue(row, ["id"]) || "").trim() === centerId
-  );
-  if (!center) {
-    return { error: "Center not found" };
-  }
-
-  const oldName = String(getFieldValue(center, ["name"]) || "").trim();
-  const updates = {
-    name,
-    location,
-    subscription,
-    contactEmail,
-    contactPhone,
-    specialists,
-    children
-  };
-  if (startDate) updates.startDate = startDate;
-  if (endDate) updates.endDate = endDate;
-
-  const updated = updateRowsByField(SHEET_CENTERS, ["id"], centerId, updates);
-  if (!updated) {
-    return { error: "Center not found" };
-  }
-
-  if (oldName && name && oldName !== name) {
-    updateRowsByField(SHEET_CENTER_VR, ["center"], oldName, { center: name });
-    updateRowsByField(SHEET_SPECIALISTS, ["centerId", "centerID"], centerId, { center: name });
-    updateRowsByField(SHEET_SPECIALISTS, ["center"], oldName, { center: name });
-  }
-
-  const accountUpdates = {};
-  if (body.username) {
-    accountUpdates.username = String(body.username || "").trim();
-  }
-  if (body.password) {
-    accountUpdates.password = String(body.password || "").trim();
-  }
-  if (Object.keys(accountUpdates).length) {
-    updateRowsByField(SHEET_ACCOUNTS, ["centerId", "centerID"], centerId, accountUpdates, row => {
-      const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
-      const active = String(getFieldValue(row, ["active"]) || "").trim().toLowerCase();
-      return role === "admin" && active === "true";
-    });
-  }
-
-  return { ok: true };
-}
-
-function getCenterForEdit(centerId) {
-  const resolvedId = String(centerId || "").trim();
-  if (!resolvedId) {
-    return { error: "Missing centerId" };
-  }
-
-  const centers = getRows(SHEET_CENTERS);
-  const center = centers.find(row =>
-    String(getFieldValue(row, ["id"]) || "").trim() === resolvedId
-  );
-  if (!center) {
-    return { error: "Center not found" };
-  }
-
-  const accounts = getRows(SHEET_ACCOUNTS);
-  const account = accounts.find(row => {
-    const rowCenterId = String(getFieldValue(row, ["centerId", "centerID"]) || "").trim();
-    if (rowCenterId !== resolvedId) return false;
-    const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
-    const active = String(getFieldValue(row, ["active"]) || "").trim().toLowerCase();
-    return role === "admin" && active === "true";
-  });
-
+function getAuthContext(body) {
   return {
-    center: center,
-    account: account
-      ? {
-          username: String(getFieldValue(account, ["username"]) || ""),
-          password: String(getFieldValue(account, ["password"]) || "")
-        }
-      : { username: "", password: "" }
+    role: normalizeRole(body.role),
+    centerId: String(body.centerId || "").trim(),
+    specialistId: String(body.specialistId || "").trim()
   };
 }
 
-function deleteCenter(centerId) {
-  const resolvedId = String(centerId || "").trim();
-  if (!resolvedId) {
-    return { error: "Missing centerId" };
-  }
-
+function getCenters(auth) {
   const centers = getRows(SHEET_CENTERS);
-  const center = centers.find(row =>
-    String(getFieldValue(row, ["id"]) || "").trim() === resolvedId
-  );
-  if (!center) {
-    return { error: "Center not found" };
+  if (auth.role === "admin") return centers;
+  if (auth.role === "center_admin") {
+    return centers.filter((center) =>
+      normalizeKey(getFieldValue(center, ["id"])) === normalizeKey(auth.centerId)
+    );
   }
+  if (auth.role === "specialist") {
+    const specialist = getSpecialistById(auth.specialistId);
+    const centerId = specialist
+      ? String(getFieldValue(specialist, ["centerId", "centerID"]) || "").trim()
+      : "";
+    if (centerId) {
+      return centers.filter((center) =>
+        normalizeKey(getFieldValue(center, ["id"])) === normalizeKey(centerId)
+      );
+    }
+    const centerName = String(getFieldValue(specialist, ["center"]) || "").trim();
+    if (!centerName) return [];
+    return centers.filter((center) =>
+      normalizeKey(getFieldValue(center, ["name"])) === normalizeKey(centerName)
+    );
+  }
+  return [];
+}
 
-  const centerName = String(getFieldValue(center, ["name"]) || "").trim();
-
-  deleteRowsByField(SHEET_CHILDREN, ["centerId", "centerID"], resolvedId);
-
+function getSpecialists(auth) {
   const specialists = getRows(SHEET_SPECIALISTS);
-  const specialistIds = specialists
-    .filter(row => {
-      const rowCenterId = String(getFieldValue(row, ["centerId", "centerID"]) || "").trim();
-      const rowCenterName = String(getFieldValue(row, ["center"]) || "").trim();
-      return (rowCenterId && rowCenterId === resolvedId) || (centerName && rowCenterName === centerName);
-    })
-    .map(row => String(getFieldValue(row, ["id"]) || "").trim())
-    .filter(Boolean);
-
-  specialistIds.forEach(id => {
-    deleteRowsByField(SHEET_SPECIALISTS, ["id"], id);
-    deleteRowsByField(SHEET_ACCOUNTS, ["specialistId", "specialistID"], id, row => {
-      const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
-      return role === "specialist";
-    });
-  });
-
-  deleteRowsByField(SHEET_ACCOUNTS, ["linkedId"], resolvedId, row => {
-    const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
-    return role === "center_admin";
-  });
-  deleteRowsByField(SHEET_ACCOUNTS, ["centerId", "centerID"], resolvedId, row => {
-    const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
-    return role === "admin";
-  });
-
-  if (centerName) {
-    deleteRowsByField(SHEET_CENTER_VR, ["center"], centerName);
+  if (auth.role === "admin") return specialists;
+  if (auth.role === "center_admin") {
+    return specialists.filter((specialist) =>
+      normalizeKey(getFieldValue(specialist, ["centerId", "centerID"])) ===
+      normalizeKey(auth.centerId)
+    );
   }
-
-  const deleted = deleteRowsByField(SHEET_CENTERS, ["id"], resolvedId);
-  return deleted ? { ok: true } : { error: "Center not found" };
+  if (auth.role === "specialist") {
+    return specialists.filter((specialist) =>
+      normalizeKey(getFieldValue(specialist, ["id"])) === normalizeKey(auth.specialistId)
+    );
+  }
+  return [];
 }
 
-function addSpecialist(body) {
-  const name = String(body.name || "").trim();
-  const center = String(body.center || "").trim();
-  const centerId = String(body.centerId || "").trim();
-  const description = String(body.description || "").trim();
-  const children = String(body.children || "").trim();
-  const username = String(body.username || "").trim();
-  const password = String(body.password || "").trim();
-
-  if (!name || !description || !username || !password) {
-    return { error: "Missing required fields" };
-  }
-
-  const specialistId = getNextId(SHEET_SPECIALISTS);
-  const accountId = getNextId(SHEET_ACCOUNTS);
-  const specialistRow = {
-    id: specialistId,
-    accountId,
-    name,
-    center,
-    centerId,
-    description,
-    children,
-  };
-
-  appendRow(SHEET_SPECIALISTS, specialistRow);
-
-  const accountRow = {
-    id: accountId,
-    username,
-    password,
-    role: "specialist",
-    specialistId: specialistId,
-    active: true
-  };
-  appendRow(SHEET_ACCOUNTS, accountRow);
-
-  return { ok: true, id: specialistId };
-}
-
-function updateSpecialist(body) {
-  const specialistId = String(body.specialistId || body.id || "").trim();
-  const name = String(body.name || "").trim();
-  const center = String(body.center || "").trim();
-  const centerId = String(body.centerId || "").trim();
-  const description = String(body.description || "").trim();
-  const children = String(body.children || "").trim();
-
-  if (!specialistId) {
-    return { error: "Missing specialistId" };
-  }
-  if (!name || !description) {
-    return { error: "Missing required fields" };
-  }
-
-  const specialists = getRows(SHEET_SPECIALISTS);
-  const specialist = specialists.find(row =>
-    String(getFieldValue(row, ["id"]) || "").trim() === specialistId
-  );
-  if (!specialist) {
-    return { error: "Specialist not found" };
-  }
-
-  const updates = {
-    name,
-    center,
-    centerId,
-    description,
-    children
-  };
-  const updated = updateRowsByField(SHEET_SPECIALISTS, ["id"], specialistId, updates);
-  if (!updated) {
-    return { error: "Specialist not found" };
-  }
-
-  const accountUpdates = {};
-  if (body.username) {
-    accountUpdates.username = String(body.username || "").trim();
-  }
-  if (body.password) {
-    accountUpdates.password = String(body.password || "").trim();
-  }
-  if (Object.keys(accountUpdates).length) {
-    updateRowsByField(SHEET_ACCOUNTS, ["specialistId", "specialistID"], specialistId, accountUpdates, row => {
-      const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
-      return role === "specialist";
-    });
-  }
-
-  return { ok: true };
-}
-
-function addChild(body) {
-  const childId = String(body.childId || "").trim();
-  const name = String(body.name || "").trim();
-  const age = String(body.age || "").trim();
-  const centerId = String(body.centerId || "").trim();
-  const specialistId = String(body.specialistId || "").trim();
-
-  if (!childId || !name || !centerId || !specialistId) {
-    return { error: "Missing required fields" };
-  }
-
-  const childRow = {
-    childId: childId,
-    name,
-    age,
-    centerId,
-    specialistId,
-    createdAt: new Date().toISOString()
-  };
-
-  appendRow(SHEET_CHILDREN, childRow);
-
-  return { ok: true, childId: childId };
-}
-
-function deleteSpecialist(specialistId) {
-  const resolvedId = String(specialistId || "").trim();
-  if (!resolvedId) {
-    return { error: "Missing specialistId" };
-  }
-
-  const children = getChildrenRows();
-  const hasChildren = children.some(row => {
-    const rowSpecialistId = String(getFieldValue(row, ["specialistId", "specialistID"]) || "").trim();
-    return rowSpecialistId && rowSpecialistId === resolvedId;
-  });
-  if (hasChildren) {
-    return { error: "Cannot delete specialist with linked children" };
-  }
-
-  const deleted = deleteRowsByField(SHEET_SPECIALISTS, ["id"], resolvedId);
-  deleteRowsByField(SHEET_ACCOUNTS, ["specialistId", "specialistID"], resolvedId, row => {
-    const role = String(getFieldValue(row, ["role"]) || "").trim().toLowerCase();
-    return role === "specialist";
-  });
-
-  return deleted ? { ok: true } : { error: "Specialist not found" };
-}
-
-function getAccount(body) {
-  const accountId = String((body && (body.accountId || body.id)) || "").trim();
-  const linkedId = String((body && body.linkedId) || "").trim();
-  const specialistId = String((body && body.specialistId) || "").trim();
-  const centerId = String((body && body.centerId) || "").trim();
-  if (!accountId && !linkedId && !specialistId && !centerId) {
-    return { error: "Missing accountId or linkedId" };
-  }
-
-  const accounts = getRows(SHEET_ACCOUNTS);
-  const match = accounts.find(row => {
-    if (accountId) {
-      const rowId = String(getFieldValue(row, ["id"]) || "").trim();
-      return rowId === accountId;
-    }
-    if (specialistId || linkedId) {
-      const rowSpecialistId = String(getFieldValue(row, ["specialistId", "specialistID"]) || "").trim();
-      if (rowSpecialistId && rowSpecialistId === (specialistId || linkedId)) return true;
-    }
-    if (centerId || linkedId) {
-      const rowCenterId = String(getFieldValue(row, ["centerId", "centerID"]) || "").trim();
-      if (rowCenterId && rowCenterId === (centerId || linkedId)) return true;
-    }
-    return false;
-  });
-
-  if (!match) {
-    return { error: "Account not found" };
-  }
-
-  return {
-    id: String(getFieldValue(match, ["id"]) || ""),
-    username: String(getFieldValue(match, ["username"]) || ""),
-    password: String(getFieldValue(match, ["password"]) || "")
-  };
-}
-
-function deleteChild(childId) {
-  const resolvedId = String(childId || "").trim();
-  if (!resolvedId) {
-    return { error: "Missing childId" };
-  }
-
-  const deleted = deleteRowsByField(SHEET_CHILDREN, ["childId", "ChildID", "childID"], resolvedId);
-  return deleted ? { ok: true } : { error: "Child not found" };
-}
-
-function addVr(body) {
-  const name = String(body.name || "").trim();
-  const description = String(body.description || "").trim();
-  const duration = String(body.duration || "").trim();
-  const difficulty = String(body.difficulty || "").trim();
-  const video = String(body.video || "").trim();
-  const image = String(body.image || "").trim();
-  const centersRaw = String(body.centers || "").trim();
-
-  if (!name || !description || !duration || !difficulty) {
-    return { error: "Missing required fields" };
-  }
-
-  const vrId = getNextId(SHEET_VR);
-  const vrRow = {
-    id: vrId,
-    name,
-    description,
-    duration,
-    difficulty,
-    video,
-    image
-  };
-
-  appendRow(SHEET_VR, vrRow);
-
-  if (centersRaw) {
-    centersRaw
-      .split(",")
-      .map(center => String(center || "").trim())
-      .filter(Boolean)
-      .forEach(centerName => {
-        appendRow(SHEET_CENTER_VR, {
-          center: centerName,
-          vrId,
-          vrName: name
-        });
-      });
-  }
-
-  return { ok: true, id: vrId };
-}
-
-function updateVr(body) {
-  const vrId = String(body.vrId || body.id || "").trim();
-  const name = String(body.name || "").trim();
-  const description = String(body.description || "").trim();
-  const duration = String(body.duration || "").trim();
-  const difficulty = String(body.difficulty || "").trim();
-  const video = String(body.video || "").trim();
-  const centersRaw = String(body.centers || "").trim();
-
-  if (!vrId) {
-    return { error: "Missing vrId" };
-  }
-  if (!name || !description || !duration || !difficulty) {
-    return { error: "Missing required fields" };
-  }
-
-  const updates = {
-    name,
-    description,
-    duration,
-    difficulty,
-    video
-  };
-  if (Object.prototype.hasOwnProperty.call(body, "image")) {
-    updates.image = String(body.image || "").trim();
-  }
-
-  const updated = updateRowsByField(SHEET_VR, ["id"], vrId, updates);
-  if (!updated) {
-    return { error: "Experience not found" };
-  }
-
-  deleteRowsByField(SHEET_CENTER_VR, ["vrId", "id"], vrId);
-  if (centersRaw) {
-    centersRaw
-      .split(",")
-      .map(center => String(center || "").trim())
-      .filter(Boolean)
-      .forEach(centerName => {
-        appendRow(SHEET_CENTER_VR, {
-          center: centerName,
-          vrId,
-          vrName: name
-        });
-      });
-  }
-
-  return { ok: true };
-}
-
-function deleteVr(vrId) {
-  const resolvedId = String(vrId || "").trim();
-  if (!resolvedId) {
-    return { error: "Missing vrId" };
-  }
-
-  const deleted = deleteRowsByField(SHEET_VR, ["id"], resolvedId);
-  deleteRowsByField(SHEET_CENTER_VR, ["vrId", "id"], resolvedId);
-  return deleted ? { ok: true } : { error: "Experience not found" };
-}
-
-/* =========================
-   HELPERS
-========================= */
-
-function getRows(sheetName) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  if (!sheet) return [];
-
-  const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return [];
-
-  const headers = values.shift();
-
-  return values.map(row => {
-    const obj = {};
-    headers.forEach((h, i) => {
-      obj[String(h).trim()] = row[i];
-    });
-    return obj;
-  });
-}
-
-function getChildrenRows() {
-  const rows = getRows(SHEET_CHILDREN);
-  return rows.map(row => {
-    const childId = getFieldValue(row, ["childId", "ChildID", "childID"]);
+function getChildren(auth) {
+  const rows = getRows(SHEET_CHILDREN).map((row) => {
+    const childId = getFieldValue(row, ["childId", "ChildID", "childID", "id", "ID"]);
     const output = Object.assign({}, row);
-    delete output.id;
-    delete output.ID;
     output.childId = normalizeChildId(childId);
     return output;
   });
+
+  if (auth.role === "admin") return rows;
+  if (auth.role === "center_admin") {
+    return rows.filter((child) =>
+      normalizeKey(getFieldValue(child, ["centerId", "centerID"])) === normalizeKey(auth.centerId)
+    );
+  }
+  if (auth.role === "specialist") {
+    return rows.filter((child) =>
+      normalizeKey(getFieldValue(child, ["specialistId", "specialistID"])) ===
+      normalizeKey(auth.specialistId)
+    );
+  }
+  return [];
 }
 
-function appendRow(sheetName, rowData) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  if (!sheet) return;
-
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  if (!headers || !headers.length) return;
-
-  const normalize = value => String(value || "").toLowerCase().replace(/[\s_-]+/g, "");
-  const normalizedRow = Object.keys(rowData).reduce((acc, key) => {
-    acc[normalize(key)] = rowData[key];
-    return acc;
-  }, {});
-
-  const aliases = {
-    centername: "name",
-    specialistname: "name",
-    fullname: "name",
-    subscriptionplan: "subscription",
-    adminusername: "username",
-    adminpassword: "password",
-    contactemail: "contactEmail",
-    contactphone: "contactPhone",
-    linkedid: "linkedId",
-    userid: "id",
-    experienceid: "id",
-    vrid: "id",
-    experiencename: "name",
-    vrname: "name",
-    centerid: "centerId"
+function buildCenterRecord(params) {
+  var id = String(params.id || params.centerId || "").trim();
+  if (!id) id = Utilities.getUuid();
+  return {
+    id: id,
+    name: String(params.name || params.centerName || "").trim(),
+    location: String(params.location || "").trim(),
+    specialists: String(params.specialists || "").trim(),
+    subscription: String(params.subscription || params.plan || "").trim(),
+    contactEmail: String(params.contactEmail || params.email || "").trim(),
+    contactPhone: String(params.contactPhone || params.phone || "").trim(),
+    children: String(params.children || "").trim(),
+    startDate: String(params.startDate || params.start_date || "").trim(),
+    endDate: String(params.endDate || params.end_date || "").trim(),
+    accountId: String(params.accountId || params.accountID || "").trim(),
+    accountUsername: String(params.username || params.accountUsername || "").trim(),
+    accountPassword: String(params.password || params.accountPassword || "").trim(),
+    active: normalizeActiveFlag(params.active)
   };
+}
 
-  if (sheetName === SHEET_CENTER_VR) {
-    aliases.centername = "center";
-    aliases.vrid = "vrId";
-    aliases.vrname = "vrName";
-  }
+function createCenter(params) {
+  var record = buildCenterRecord(params);
+  if (!record.name) return { error: "Missing center name" };
+  writeRow(
+    SHEET_CENTERS,
+    ["id", "name", "location", "specialists", "subscription", "contactEmail", "contactPhone", "children", "startDate", "endDate", "accountId", "accountUsername", "accountPassword", "active"],
+    record
+  );
+  return record;
+}
 
-  const row = headers.map(header => {
-    const rawKey = String(header || "").trim();
-    const normalizedKey = normalize(rawKey);
-    const aliasKey = aliases[normalizedKey] ? normalize(aliases[normalizedKey]) : null;
-    if (Object.prototype.hasOwnProperty.call(normalizedRow, normalizedKey)) {
-      return normalizedRow[normalizedKey];
-    }
-    if (aliasKey && Object.prototype.hasOwnProperty.call(normalizedRow, aliasKey)) {
-      return normalizedRow[aliasKey];
-    }
-    return "";
+function updateCenter(params) {
+  var record = buildCenterRecord(params);
+  if (!record.id) return { error: "Missing center id" };
+  return upsertRow(
+    SHEET_CENTERS,
+    ["id", "name", "location", "specialists", "subscription", "contactEmail", "contactPhone", "children", "startDate", "endDate", "accountId", "accountUsername", "accountPassword", "active"],
+    { id: record.id },
+    record
+  );
+}
+
+function deleteCenter(params) {
+  var id = String(params.id || params.centerId || "").trim();
+  if (!id) return { error: "Missing center id" };
+  return deleteRow(SHEET_CENTERS, { id: id });
+}
+
+function buildSpecialistRecord(params) {
+  var id = String(params.id || params.specialistId || "").trim();
+  if (!id) id = Utilities.getUuid();
+  return {
+    id: id,
+    name: String(params.name || params.fullName || "").trim(),
+    center: String(params.center || "").trim(),
+    centerId: String(params.centerId || params.centerID || "").trim(),
+    description: String(params.description || "").trim(),
+    children: String(params.children || "").trim(),
+    accountId: String(params.accountId || params.accountID || "").trim(),
+    accountUsername: String(params.username || params.accountUsername || "").trim(),
+    accountPassword: String(params.password || params.accountPassword || "").trim(),
+    active: normalizeActiveFlag(params.active)
+  };
+}
+
+function createSpecialist(params) {
+  var record = buildSpecialistRecord(params);
+  if (!record.name) return { error: "Missing specialist name" };
+  writeRow(
+    SHEET_SPECIALISTS,
+    ["id", "name", "center", "centerId", "description", "children", "accountId", "accountUsername", "accountPassword", "active"],
+    record
+  );
+  return record;
+}
+
+function updateSpecialist(params) {
+  var record = buildSpecialistRecord(params);
+  if (!record.id) return { error: "Missing specialist id" };
+  return upsertRow(
+    SHEET_SPECIALISTS,
+    ["id", "name", "center", "centerId", "description", "children", "accountId", "accountUsername", "accountPassword", "active"],
+    { id: record.id },
+    record
+  );
+}
+
+function deleteSpecialist(params) {
+  var id = String(params.id || params.specialistId || "").trim();
+  if (!id) return { error: "Missing specialist id" };
+  return deleteRow(SHEET_SPECIALISTS, { id: id });
+}
+
+function buildChildRecord(params) {
+  var childId = String(params.childId || params.id || params.childID || "").trim();
+  if (!childId) childId = String(new Date().getTime());
+  return {
+    childId: childId,
+    name: String(params.name || params.fullName || params.childName || "").trim(),
+    age: String(params.age || "").trim(),
+    specialistId: String(params.specialistId || params.specialistID || "").trim(),
+    specialist: String(params.specialist || params.specialistName || "").trim(),
+    centerId: String(params.centerId || params.centerID || "").trim(),
+    center: String(params.center || "").trim(),
+    status: String(params.status || "").trim(),
+    accuracy: String(params.accuracy || "").trim(),
+    trend: String(params.trend || "").trim(),
+    attempts: String(params.attempts || params.avgAttempts || "").trim(),
+    operation: String(params.operation || params.primaryOperation || "").trim(),
+    progress: String(params.progress || params.notes || "").trim(),
+    responses: params.responses || params.formAnswers || params.answers || ""
+  };
+}
+
+function createChild(params) {
+  var record = buildChildRecord(params);
+  if (!record.name) return { error: "Missing child name" };
+  writeRow(
+    SHEET_CHILDREN,
+    ["childId", "name", "age", "specialistId", "specialist", "centerId", "center", "status", "accuracy", "trend", "attempts", "operation", "progress", "responses"],
+    record
+  );
+  return record;
+}
+
+function updateChild(params) {
+  var record = buildChildRecord(params);
+  if (!record.childId) return { error: "Missing child id" };
+  return upsertRow(
+    SHEET_CHILDREN,
+    ["childId", "name", "age", "specialistId", "specialist", "centerId", "center", "status", "accuracy", "trend", "attempts", "operation", "progress", "responses"],
+    { childId: record.childId },
+    record
+  );
+}
+
+function deleteChild(params) {
+  var childId = String(params.childId || params.id || params.childID || "").trim();
+  if (!childId) return { error: "Missing child id" };
+  return deleteRow(SHEET_CHILDREN, { childId: childId });
+}
+
+function listVr(params) {
+  var centerId = String(params.centerId || "").trim();
+  var vrRows = getRowsSafe(SHEET_VR);
+  if (!centerId) return vrRows;
+  var linkRows = listCenterVr({ centerId: centerId, activeOnly: true });
+  if (!linkRows.length) return [];
+  var byId = {};
+  vrRows.forEach(function (row) {
+    var id = String(getFieldValue(row, ["id"]) || "").trim();
+    if (id) byId[normalizeKey(id)] = row;
   });
+  var merged = [];
+  linkRows.forEach(function (link) {
+    var vrId = String(getFieldValue(link, ["vrId"]) || "").trim();
+    if (!vrId) return;
+    var match = byId[normalizeKey(vrId)];
+    if (match) {
+      var item = Object.assign({}, match);
+      item.active = true;
+      merged.push(item);
+    }
+  });
+  return merged;
+}
 
+function createVr(params) {
+  var name = String(params.name || "").trim();
+  var duration = String(params.duration || "").trim();
+  var difficulty = String(params.difficulty || "").trim();
+  if (!name || !duration || !difficulty) {
+    return { error: "Missing required fields" };
+  }
+  var id = String(params.id || "").trim();
+  if (!id) id = Utilities.getUuid();
+  var record = {
+    id: id,
+    name: name,
+    description: String(params.description || "").trim(),
+    duration: duration,
+    difficulty: difficulty,
+    video: String(params.video || "").trim(),
+    image: String(params.image || "").trim()
+  };
+  writeRow(SHEET_VR, ["id", "name", "description", "duration", "difficulty", "video", "image"], record);
+  return record;
+}
+
+function updateVr(params) {
+  var id = String(params.id || "").trim();
+  if (!id) return { error: "Missing VR id" };
+  var record = {
+    id: id,
+    name: String(params.name || "").trim(),
+    description: String(params.description || "").trim(),
+    duration: String(params.duration || "").trim(),
+    difficulty: String(params.difficulty || "").trim(),
+    video: String(params.video || "").trim(),
+    image: String(params.image || "").trim()
+  };
+  return upsertRow(
+    SHEET_VR,
+    ["id", "name", "description", "duration", "difficulty", "video", "image"],
+    { id: id },
+    record
+  );
+}
+
+function deleteVr(params) {
+  var id = String(params.id || params.vrId || "").trim();
+  if (!id) return { error: "Missing VR id" };
+  return deleteRow(SHEET_VR, { id: id });
+}
+
+function listCenterVr(params) {
+  var centerId = String(params.centerId || "").trim();
+  if (!centerId) return [];
+  var activeOnly = String(params.activeOnly || "").toLowerCase() === "true";
+  var rows = getRowsSafe(SHEET_CENTERVR);
+  var filtered = rows.filter(function (row) {
+    var rowCenter = String(getFieldValue(row, ["centerId", "centerID"]) || "").trim();
+    if (!rowCenter) return false;
+    if (normalizeKey(rowCenter) !== normalizeKey(centerId)) return false;
+    if (!activeOnly) return true;
+    return normalizeActiveFlag(getFieldValue(row, ["active"])) === true;
+  });
+  return filtered;
+}
+
+function upsertCenterVr(params) {
+  var centerId = String(params.centerId || "").trim();
+  var vrId = String(params.vrId || "").trim();
+  var active = normalizeActiveFlag(params.active);
+  if (!centerId || !vrId) {
+    return { error: "Missing centerId or vrId" };
+  }
+  if (active === null) active = true;
+  return upsertRow(
+    SHEET_CENTERVR,
+    ["centerId", "vrId", "active"],
+    { centerId: centerId, vrId: vrId },
+    { centerId: centerId, vrId: vrId, active: active }
+  );
+}
+
+function deleteCenterVr(params) {
+  var centerId = String(params.centerId || "").trim();
+  var vrId = String(params.vrId || "").trim();
+  if (!centerId || !vrId) return { error: "Missing centerId or vrId" };
+  return deleteRow(SHEET_CENTERVR, { centerId: centerId, vrId: vrId });
+}
+
+function getSpecialistById(specialistId) {
+  if (!specialistId) return null;
+  const specialists = getRows(SHEET_SPECIALISTS);
+  return specialists.find((row) =>
+    normalizeKey(getFieldValue(row, ["id"])) === normalizeKey(specialistId)
+  ) || null;
+}
+
+function getRowById(sheetName, idValue) {
+  if (!idValue) return null;
+  const rows = getRows(sheetName);
+  return rows.find((row) =>
+    normalizeKey(getFieldValue(row, ["id"])) === normalizeKey(idValue)
+  ) || null;
+}
+
+function getRows(sheetName) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  if (!sheet) throw new Error("Missing sheet: " + sheetName);
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return [];
+  const headers = values.shift();
+  const normalizedHeaders = headers.map((header) => normalizeHeader(header));
+  return values.map((row) => {
+    const obj = {};
+    normalizedHeaders.forEach((header, idx) => {
+      if (!header) return;
+      obj[header] = row[idx];
+    });
+    return mapRowForSheet(sheetName, obj);
+  });
+}
+
+function getRowsSafe(sheetName) {
+  try {
+    return getRows(sheetName);
+  } catch (err) {
+    return [];
+  }
+}
+
+function ensureSheet(sheetName, headers) {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = SpreadsheetApp.getActive().insertSheet(sheetName);
+  }
+  var lastRow = sheet.getLastRow();
+  var lastColumn = sheet.getLastColumn();
+  if (lastRow === 0) {
+    sheet.appendRow(headers);
+    return { sheet: sheet, headers: headers };
+  }
+  var headerRow = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  var normalized = headerRow.map(function (header) { return normalizeHeader(header); });
+  headers.forEach(function (header) {
+    var key = normalizeHeader(header);
+    if (normalized.indexOf(key) === -1) {
+      headerRow.push(header);
+      normalized.push(key);
+    }
+  });
+  sheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
+  return { sheet: sheet, headers: headerRow };
+}
+
+function writeRow(sheetName, headers, record) {
+  var info = ensureSheet(sheetName, headers);
+  var sheet = info.sheet;
+  var headerRow = info.headers;
+  var normalized = headerRow.map(function (header) { return normalizeHeader(header); });
+  var row = new Array(headerRow.length);
+  normalized.forEach(function (key, idx) {
+    row[idx] = Object.prototype.hasOwnProperty.call(record, key) ? record[key] : "";
+  });
   sheet.appendRow(row);
 }
 
-function deleteRowsByField(sheetName, fieldNames, matchValue, predicate) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  if (!sheet) return false;
-
-  const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return false;
-
-  const headers = values[0];
-  const headerMap = headers.reduce((acc, header, index) => {
-    acc[normalizeKey(header)] = index;
-    return acc;
-  }, {});
-
-  const fieldIndexes = fieldNames
-    .map(name => headerMap[normalizeKey(name)])
-    .filter(index => index !== undefined);
-  if (!fieldIndexes.length) return false;
-
-  const rowsToDelete = [];
-  for (var i = 1; i < values.length; i += 1) {
-    const row = values[i];
-    const matches = fieldIndexes.some(index => String(row[index] || "").trim() === String(matchValue));
-    if (!matches) continue;
-    if (predicate) {
-      const rowObj = headers.reduce((acc, header, idx) => {
-        acc[String(header || "").trim()] = row[idx];
-        return acc;
-      }, {});
-      if (!predicate(rowObj)) continue;
-    }
-    rowsToDelete.push(i + 1);
+function upsertRow(sheetName, headers, matchFields, record) {
+  var info = ensureSheet(sheetName, headers);
+  var sheet = info.sheet;
+  var headerRow = info.headers;
+  var normalized = headerRow.map(function (header) { return normalizeHeader(header); });
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) {
+    writeRow(sheetName, headers, record);
+    return record;
   }
-
-  rowsToDelete.reverse().forEach(rowIndex => sheet.deleteRow(rowIndex));
-  return rowsToDelete.length > 0;
-}
-
-function updateRowsByField(sheetName, fieldNames, matchValue, updates, predicate) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  if (!sheet) return false;
-
-  const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return false;
-
-  const headers = values[0];
-  const headerMap = headers.reduce((acc, header, index) => {
-    acc[normalizeKey(header)] = index;
-    return acc;
-  }, {});
-
-  const fieldIndexes = fieldNames
-    .map(name => headerMap[normalizeKey(name)])
-    .filter(index => index !== undefined);
-  if (!fieldIndexes.length) return false;
-
-  const normalizedUpdates = Object.keys(updates || {}).reduce((acc, key) => {
-    acc[normalizeKey(key)] = updates[key];
-    return acc;
-  }, {});
-
-  let updated = false;
-  for (var i = 1; i < values.length; i += 1) {
-    const row = values[i];
-    const matches = fieldIndexes.some(index => String(row[index] || "").trim() === String(matchValue));
-    if (!matches) continue;
-    if (predicate) {
-      const rowObj = headers.reduce((acc, header, idx) => {
-        acc[String(header || "").trim()] = row[idx];
-        return acc;
-      }, {});
-      if (!predicate(rowObj)) continue;
+  var matchRow = -1;
+  for (var i = 1; i < data.length; i += 1) {
+    var row = data[i];
+    var isMatch = true;
+    for (var field in matchFields) {
+      var key = normalizeHeader(field);
+      var idx = normalized.indexOf(key);
+      if (idx === -1) { isMatch = false; break; }
+      var cell = String(row[idx] || "").trim();
+      if (normalizeKey(cell) !== normalizeKey(matchFields[field])) { isMatch = false; break; }
     }
-
-    const nextRow = row.slice();
-    headers.forEach((header, idx) => {
-      const normalizedHeader = normalizeKey(header);
-      if (Object.prototype.hasOwnProperty.call(normalizedUpdates, normalizedHeader)) {
-        nextRow[idx] = normalizedUpdates[normalizedHeader];
-      }
-    });
-    sheet.getRange(i + 1, 1, 1, nextRow.length).setValues([nextRow]);
-    updated = true;
-  }
-
-  return updated;
-}
-
-function getNextId(sheetName) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  if (!sheet) return 1;
-
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return 1;
-
-  const headers = data.shift();
-  const idIndex = headers.findIndex(h => String(h || "").trim().toLowerCase() === "id");
-  if (idIndex === -1) return sheet.getLastRow();
-
-  const maxId = data.reduce((maxValue, row) => {
-    const value = Number(row[idIndex]);
-    return Number.isFinite(value) ? Math.max(maxValue, value) : maxValue;
-  }, 0);
-
-  return maxId + 1;
-}
-
-function jsonSuccess(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function jsonError(message) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ error: message }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function parseBody(e) {
-  if (!e) return {};
-
-  const params = (e.parameter && Object.keys(e.parameter).length)
-    ? e.parameter
-    : null;
-  if (params) return params;
-
-  if (!e.postData || !e.postData.contents) return {};
-
-  if (e.postData.type === "application/json") {
-    try {
-      return JSON.parse(e.postData.contents);
-    } catch (err) {
-      return {};
+    if (isMatch) {
+      matchRow = i + 1;
+      break;
     }
   }
-
-  try {
-    return JSON.parse(e.postData.contents);
-  } catch (err) {
-    return {};
+  var outputRow = new Array(headerRow.length);
+  normalized.forEach(function (key, idx) {
+    outputRow[idx] = Object.prototype.hasOwnProperty.call(record, key) ? record[key] : (matchRow > -1 ? data[matchRow - 1][idx] : "");
+  });
+  if (matchRow > -1) {
+    sheet.getRange(matchRow, 1, 1, outputRow.length).setValues([outputRow]);
+  } else {
+    sheet.appendRow(outputRow);
   }
+  return record;
+}
+
+function deleteRow(sheetName, matchFields) {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  if (!sheet) return { error: "Missing sheet: " + sheetName };
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return { deleted: false };
+  var headers = data[0].map(function (header) { return normalizeHeader(header); });
+  for (var i = 1; i < data.length; i += 1) {
+    var row = data[i];
+    var isMatch = true;
+    for (var field in matchFields) {
+      var key = normalizeHeader(field);
+      var idx = headers.indexOf(key);
+      if (idx === -1) { isMatch = false; break; }
+      var cell = String(row[idx] || "").trim();
+      if (normalizeKey(cell) !== normalizeKey(matchFields[field])) { isMatch = false; break; }
+    }
+    if (isMatch) {
+      sheet.deleteRow(i + 1);
+      return { deleted: true };
+    }
+  }
+  return { deleted: false };
+}
+
+function mapRowForSheet(sheetName, row) {
+  const output = Object.assign({}, row);
+  if (!output.subscription) {
+    if (output.plan) output.subscription = output.plan;
+    if (output.subscriptionPlan) output.subscription = output.subscriptionPlan;
+  }
+  if (!output.contactEmail && output.email) output.contactEmail = output.email;
+  if (!output.contactPhone && output.phone) output.contactPhone = output.phone;
+
+  if (sheetName === SHEET_CHILDREN) {
+    if (!output.childId && output.id) output.childId = output.id;
+  }
+
+  return output;
+}
+
+function normalizeHeader(value) {
+  if (value === undefined || value === null) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+  const spaced = raw
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .trim();
+  if (!spaced) return "";
+  const parts = spaced.split(/\s+/);
+  let key = parts[0].toLowerCase();
+  for (let i = 1; i < parts.length; i += 1) {
+    const part = parts[i];
+    key += part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+  }
+  const compact = key.toLowerCase();
+  const aliases = {
+    childid: "childId",
+    centerid: "centerId",
+    specialistid: "specialistId",
+    accountid: "accountId",
+    accountusername: "accountUsername",
+    accountpassword: "accountPassword",
+    plan: "subscription",
+    subscriptionplan: "subscription",
+    contactemail: "contactEmail",
+    contactphone: "contactPhone"
+  };
+  return aliases[compact] || key;
+}
+
+function normalizeRole(value) {
+  const role = String(value || "").trim().toLowerCase();
+  if (!role) return "";
+  if (role === "admin" || role === "center_admin" || role === "specialist") return role;
+  return role;
+}
+
+function normalizeActiveFlag(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const lowered = raw.toLowerCase();
+  if (lowered === "true" || lowered === "1") return true;
+  if (lowered === "false" || lowered === "0") return false;
+  return null;
+}
+
+function getFieldValue(obj, candidates) {
+  if (!obj || !candidates) return "";
+  for (var i = 0; i < candidates.length; i += 1) {
+    var key = candidates[i];
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      return obj[key];
+    }
+    var normalized = normalizeKey(key);
+    for (var prop in obj) {
+      if (normalizeKey(prop) === normalized) return obj[prop];
+    }
+  }
+  return "";
 }
 
 function normalizeKey(value) {
   return String(value || "").toLowerCase().replace(/[\s_-]+/g, "");
 }
 
-function getFieldValue(obj, candidates) {
-  if (!obj) return "";
-  const map = Object.keys(obj).reduce((acc, key) => {
-    acc[normalizeKey(key)] = obj[key];
-    return acc;
-  }, {});
-  for (var i = 0; i < candidates.length; i += 1) {
-    var key = normalizeKey(candidates[i]);
-    if (Object.prototype.hasOwnProperty.call(map, key)) {
-      const value = map[key];
-      if (value === 0 || value === false) return value;
-      if (value !== undefined && value !== null && String(value).trim() !== "") {
-        return value;
-      }
-    }
-  }
-  return "";
-}
-
 function normalizeChildId(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const num = Number(raw);
-  return Number.isFinite(num) ? num : raw;
+  return String(value || "").trim();
 }
 
-function toNumber(value) {
-  const num = Number(value);
-  return Number.isFinite(num) ? num : 0;
+function withCors(output) {
+  if (output && typeof output.setHeader === "function") {
+    output.setHeader("Access-Control-Allow-Origin", "*");
+    output.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    output.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  return output;
 }
 
-function parseSessionDate(value) {
-  if (value === undefined || value === null || value === "") return null;
-  if (typeof value === "number") return new Date(value);
-  const raw = String(value).trim();
-  if (!raw) return null;
-  const numeric = Number(raw);
-  if (Number.isFinite(numeric)) return new Date(numeric);
-  const parsed = new Date(raw);
-  return isNaN(parsed.getTime()) ? null : parsed;
+function jsonSuccess(data) {
+  return withCors(
+    ContentService.createTextOutput(JSON.stringify(data))
+      .setMimeType(ContentService.MimeType.JSON)
+  );
 }
 
-function getChildSessions(childId) {
-  const resolvedChildId = normalizeChildId(childId);
-  if (!resolvedChildId && resolvedChildId !== 0) {
-    return { error: "Missing childId" };
-  }
-
-  const zeroMetrics = {
-    totalSessions: 0,
-    averageDuration: 0,
-    accuracyPercentage: 0,
-    averageAttempts: 0,
-    completionRate: 0,
-    trend: []
-  };
-
-  if (!UNITY_SESSIONS_URL) {
-    return { childId: resolvedChildId, metrics: zeroMetrics, sessions: [] };
-  }
-
-  let rawSessions = [];
-  try {
-    const response = UrlFetchApp.fetch(UNITY_SESSIONS_URL, { muteHttpExceptions: true });
-    const content = response.getContentText();
-    const parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) {
-      rawSessions = parsed;
-    } else if (parsed && Array.isArray(parsed.sessions)) {
-      rawSessions = parsed.sessions;
-    } else if (parsed && Array.isArray(parsed.data)) {
-      rawSessions = parsed.data;
-    }
-  } catch (err) {
-    return { childId: resolvedChildId, metrics: zeroMetrics, sessions: [] };
-  }
-
-  const filteredSessions = rawSessions.filter(session => {
-    const sessionChildId = normalizeChildId(getFieldValue(session, ["childId", "ChildID", "childID"]));
-    return String(sessionChildId) === String(resolvedChildId);
-  });
-
-  if (!filteredSessions.length) {
-    return { childId: resolvedChildId, metrics: zeroMetrics, sessions: [] };
-  }
-
-  let durationTotal = 0;
-  let accuracyTotal = 0;
-  let accuracyCount = 0;
-  let attemptsTotal = 0;
-  let attemptsCount = 0;
-  let completionValues = [];
-  let completedCount = 0;
-
-  const trend = filteredSessions.map(session => {
-    const durationValue = toNumber(getFieldValue(session, [
-      "duration",
-      "durationSeconds",
-      "durationSec",
-      "sessionDuration",
-      "sessionLength"
-    ]));
-    durationTotal += durationValue;
-
-    const accuracyValueRaw = getFieldValue(session, [
-      "accuracy",
-      "accuracyPercent",
-      "accuracyPercentage"
-    ]);
-    if (accuracyValueRaw !== "") {
-      let accuracyValue = toNumber(accuracyValueRaw);
-      if (accuracyValue > 0 && accuracyValue <= 1) accuracyValue *= 100;
-      accuracyTotal += accuracyValue;
-      accuracyCount += 1;
-    }
-
-    const attemptsValueRaw = getFieldValue(session, [
-      "attempts",
-      "attemptCount",
-      "avgAttempts"
-    ]);
-    if (attemptsValueRaw !== "") {
-      const attemptsValue = toNumber(attemptsValueRaw);
-      attemptsTotal += attemptsValue;
-      attemptsCount += 1;
-    }
-
-    const completionRaw = getFieldValue(session, [
-      "completion",
-      "completionRate",
-      "completed",
-      "isComplete"
-    ]);
-    if (completionRaw !== "") {
-      if (completionRaw === true || String(completionRaw).toLowerCase() === "true") {
-        completedCount += 1;
-      } else {
-        let completionValue = toNumber(completionRaw);
-        if (completionValue > 0 && completionValue <= 1) completionValue *= 100;
-        if (completionValue) completionValues.push(completionValue);
-      }
-    }
-
-    const dateValue = getFieldValue(session, [
-      "date",
-      "sessionDate",
-      "timestamp",
-      "createdAt"
-    ]);
-    const dateParsed = parseSessionDate(dateValue);
-    return {
-      date: dateParsed ? dateParsed.toISOString() : "",
-      duration: durationValue,
-      accuracy: accuracyValueRaw !== "" ? toNumber(accuracyValueRaw) : 0,
-      attempts: attemptsValueRaw !== "" ? toNumber(attemptsValueRaw) : 0,
-      completion: completionRaw !== "" ? completionRaw : ""
-    };
-  });
-
-  trend.sort((a, b) => {
-    if (!a.date && !b.date) return 0;
-    if (!a.date) return 1;
-    if (!b.date) return -1;
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
-  });
-
-  const totalSessions = filteredSessions.length;
-  const averageDuration = totalSessions ? durationTotal / totalSessions : 0;
-  const accuracyPercentage = accuracyCount ? accuracyTotal / accuracyCount : 0;
-  const averageAttempts = attemptsCount ? attemptsTotal / attemptsCount : 0;
-  const completionRate = completionValues.length
-    ? completionValues.reduce((sum, value) => sum + value, 0) / completionValues.length
-    : totalSessions
-      ? (completedCount / totalSessions) * 100
-      : 0;
-
-  return {
-    childId: resolvedChildId,
-    metrics: {
-      totalSessions: totalSessions,
-      averageDuration: averageDuration,
-      accuracyPercentage: accuracyPercentage,
-      averageAttempts: averageAttempts,
-      completionRate: completionRate,
-      trend: trend
-    },
-    sessions: filteredSessions
-  };
+function jsonError(message) {
+  return withCors(
+    ContentService.createTextOutput(JSON.stringify({ success: false, error: message }))
+      .setMimeType(ContentService.MimeType.JSON)
+  );
 }
